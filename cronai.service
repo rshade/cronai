@@ -1,0 +1,15 @@
+[Unit]
+Description=CronAI Service
+After=network.target
+
+[Service]
+Type=simple
+User=your_username
+WorkingDirectory=/path/to/cronai
+ExecStart=/path/to/cronai/cronai start
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/path/to/cronai/.env
+
+[Install]
+WantedBy=multi-user.target
