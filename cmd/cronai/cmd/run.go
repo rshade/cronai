@@ -17,6 +17,7 @@ var (
 	processorName string
 	templateName  string
 	varsString    string
+	modelParams   string
 )
 
 var runCmd = &cobra.Command{
@@ -55,6 +56,10 @@ var runCmd = &cobra.Command{
 				fmt.Printf("  %s: %s\n", k, v)
 			}
 		}
+		
+		if modelParams != "" {
+			fmt.Printf("Model parameters: %s\n", modelParams)
+		}
 
 		// Load the prompt with variables if provided
 		var promptContent string
@@ -71,8 +76,8 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		// Execute the model
-		response, err := models.ExecuteModel(modelName, promptName, promptContent, variables)
+		// Execute the model with model parameters
+		response, err := models.ExecuteModel(modelName, promptContent, variables, modelParams)
 		if err != nil {
 			fmt.Printf("Error executing model: %v\n", err)
 			return
@@ -97,6 +102,7 @@ func init() {
 	runCmd.Flags().StringVar(&processorName, "processor", "", "Response processor to use")
 	runCmd.Flags().StringVar(&templateName, "template", "", "Optional template name to use for formatting the response")
 	runCmd.Flags().StringVar(&varsString, "vars", "", "Variables in format key1=value1,key2=value2")
+	runCmd.Flags().StringVar(&modelParams, "model-params", "", "Model parameters in format temperature=0.7,max_tokens=1024")
 
 	// Fail fast if we can't mark flags as required - this indicates a serious configuration issue
 	markFlagRequiredOrFail(runCmd, "model")

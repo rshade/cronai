@@ -1,0 +1,29 @@
+# CronAI Configuration Example with Model-Specific Parameters
+# Format: timestamp model prompt.md response_processor [variables] [model_params:...]
+# Variables format: key1=value1,key2=value2,...
+# Model parameters format: model_params:param1=value1,param2=value2,...
+# Model-specific parameters format: model_params:model_name.param=value,...
+
+# OpenAI-specific configuration
+0 8 * * * openai product_manager slack-pm-channel model_params:openai.model=gpt-4-turbo,openai.system_message=You are a product manager AI assistant focused on actionable insights.
+
+# Claude-specific configuration
+0 9 * * 1 claude weekly_report email-team@company.com reportType=Weekly,date={{CURRENT_DATE}} model_params:claude.model=claude-3-opus-20240229,claude.system_message=You are a business analyst AI assistant specialized in creating insightful weekly reports.
+
+# Gemini-specific configuration with safety settings
+*/15 * * * * gemini system_health webhook-monitoring cluster=Primary model_params:gemini.model=gemini-1.5-pro,gemini.safety_setting=harmful=block,gemini.safety_setting=harassment=warn
+
+# Mixed common and model-specific parameters
+0 22 * * * claude test_prompt slack-dev-channel model_params:temperature=0.5,max_tokens=2000,claude.model=claude-3-haiku-20240307,claude.system_message=You are a systems analyst providing clear, actionable insights.
+
+# Multiple model configuration in one file
+# Each task uses its own model with appropriate configuration
+
+# Morning health check with Gemini
+0 8 * * * gemini system_health webhook-monitoring model_params:temperature=0.1,gemini.model=gemini-pro
+
+# Midday report with Claude
+0 12 * * * claude product_manager slack-pm-channel model_params:claude.model=claude-3-sonnet-20240229,claude.system_message=You are a product management assistant.
+
+# Evening analysis with OpenAI
+0 17 * * * openai weekly_report email-team@company.com model_params:temperature=0.7,openai.model=gpt-4,openai.system_message=You are an analysis assistant.

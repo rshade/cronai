@@ -1,0 +1,19 @@
+# CronAI Configuration Example with Model Parameters
+# Format: timestamp model prompt.md response_processor [variables] [model_params:...]
+# Variables format: key1=value1,key2=value2,...
+# Model parameters format: model_params:temperature=0.7,max_tokens=2048,model=gpt-4
+
+# Run daily at 8 AM using Claude with custom temperature and model
+0 8 * * * claude product_manager slack-pm-channel model_params:temperature=0.8,model=claude-3-opus-20240229
+
+# Run weekly with OpenAI using custom parameters and variables
+0 9 * * 1 openai report_template email-team@company.com reportType=Weekly,date={{CURRENT_DATE}} model_params:temperature=0.5,max_tokens=4000,model=gpt-4
+
+# Run system health check with very precise (low temperature) settings
+*/15 * * * * claude system_health webhook-monitoring cluster=Primary model_params:temperature=0.1,max_tokens=1000
+
+# Run with Gemini using default parameters but variables
+0 9-17 * * 1-5 gemini monitoring_check log-to-file service=CronAI,environment=Production
+
+# Run daily at 10 PM using Claude with custom system message
+0 22 * * * claude test_prompt slack-dev-channel model_params:temperature=0.7,system_message=You are a systems analyst providing clear, actionable insights.

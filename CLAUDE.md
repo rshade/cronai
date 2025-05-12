@@ -46,6 +46,8 @@ The templating system follows these patterns:
 - Follow conventional commit standards
 - Keep PR sizes manageable (ideally under 300 lines of changes)
 - Update documentation when changing functionality
+  - When adding or modifying features, always update the README.md to keep it in sync
+  - Ensure all examples in documentation reflect the latest capabilities
 - Use GitHub Actions for CI/CD pipelines
 - Ensure CI passes before merging PRs
 
