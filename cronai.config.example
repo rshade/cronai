@@ -1,14 +1,17 @@
 # CronAI Configuration Example
-# Format: timestamp model prompt.md response_processor
+# Format: timestamp model prompt response_processor [template] [variables]
 
-# Run daily at 8 AM using Claude, sending to slack
+# Basic configuration without template
 0 8 * * * claude product_manager slack-pm-channel
 
-# Run every Monday at 9 AM using OpenAI, sending to email
-0 9 * * 1 openai weekly_report email-team@company.com
+# Configuration with template
+0 9 * * * claude system_health slack-alerts system_alert
 
-# Run every hour during business hours using Gemini, sending to file
-0 9-17 * * 1-5 gemini monitoring_check log-to-file
+# Configuration with template and variables
+0 9 1 * * claude report_template email-team@company.com monthly_report reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
 
-# Run every 15 mins using Claude, sending output to webhook
-*/15 * * * * claude system_health webhook-monitoring
+# Configuration for webhook with custom template
+0 */2 * * * openai monitoring_check webhook-monitoring monitoring_alert
+
+# Configuration for file output with template
+0 12 * * * gemini weekly_report log-to-file weekly_report_file

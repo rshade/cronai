@@ -7,89 +7,173 @@ import (
 	"time"
 
 	"github.com/rshade/cronai/internal/models"
+	"github.com/rshade/cronai/internal/processor/template"
 )
 
 // ProcessResponse processes a model response using the specified processor
-func ProcessResponse(processorName string, response *models.ModelResponse) error {
+func ProcessResponse(processorName string, response *models.ModelResponse, templateName string) error {
+	// Create template data
+	tmplData := template.TemplateData{
+		Content:     response.Content,
+		Model:       response.Model,
+		Timestamp:   time.Now(),
+		PromptName:  response.PromptName,
+		Variables:   response.Variables,
+		ExecutionID: response.ExecutionID,
+	}
+
 	// Handle special processor formats
 	if strings.HasPrefix(processorName, "slack-") {
 		slackChannel := strings.TrimPrefix(processorName, "slack-")
-		return processSlack(slackChannel, response)
+		return processSlackWithTemplate(slackChannel, tmplData, templateName)
 	}
 
 	if strings.HasPrefix(processorName, "email-") {
 		emailAddress := strings.TrimPrefix(processorName, "email-")
-		return processEmail(emailAddress, response)
+		return processEmailWithTemplate(emailAddress, tmplData, templateName)
 	}
 
 	// Handle standard processors
 	switch processorName {
 	case "webhook-monitoring":
-		return processWebhook("monitoring", response)
+		return processWebhookWithTemplate("monitoring", tmplData, templateName)
 	case "log-to-file":
-		return processFile(response)
+		return processFileWithTemplate(tmplData, templateName)
 	default:
 		return fmt.Errorf("unsupported processor: %s", processorName)
 	}
 }
 
-// processSlack sends the response to a Slack channel
-func processSlack(channel string, response *models.ModelResponse) error {
+// processSlackWithTemplate sends formatted messages to Slack
+func processSlackWithTemplate(channel string, data template.TemplateData, templateName string) error {
 	// Check for Slack token
 	slackToken := os.Getenv("SLACK_TOKEN")
 	if slackToken == "" {
 		return fmt.Errorf("SLACK_TOKEN environment variable not set")
 	}
 
+	// Get template manager
+	manager := template.GetManager()
+
+	// Use default template if none specified
+	if templateName == "" {
+		templateName = "default_slack"
+	}
+
+	// Execute template to get payload
+	payload := manager.SafeExecute(templateName, data)
+
 	// TODO: Implement actual Slack API call
-	fmt.Printf("Would send to Slack channel %s: %s\n", channel, response.Content)
+	fmt.Printf("Would send to Slack channel %s: %s\n", channel, payload)
+
 	return nil
 }
 
-// processEmail sends the response via email
-func processEmail(email string, response *models.ModelResponse) error {
+// processEmailWithTemplate with multipart support
+func processEmailWithTemplate(email string, data template.TemplateData, templateName string) error {
 	// Check for SMTP settings
 	smtpServer := os.Getenv("SMTP_SERVER")
 	if smtpServer == "" {
 		return fmt.Errorf("SMTP_SERVER environment variable not set")
 	}
 
-	// TODO: Implement actual email sending
-	fmt.Printf("Would send email to %s: %s\n", email, response.Content)
-	return nil
-}
+	// Get template manager
+	manager := template.GetManager()
 
-// processWebhook sends the response to a webhook
-func processWebhook(webhookType string, response *models.ModelResponse) error {
-	// Check for webhook URL
-	webhookURL := os.Getenv("WEBHOOK_URL")
-	if webhookURL == "" {
-		return fmt.Errorf("WEBHOOK_URL environment variable not set")
+	// Use default template if none specified
+	if templateName == "" {
+		templateName = "default_email"
 	}
 
-	// TODO: Implement actual webhook call
-	fmt.Printf("Would send to webhook (%s): %s\n", webhookType, response.Content)
+	// Execute subject template
+	subject := manager.SafeExecute(templateName+"_subject", data)
+
+	// Execute HTML body template - currently just logging but would use in actual implementation
+	_ = manager.SafeExecute(templateName+"_html", data)
+
+	// Execute text body template (fallback) - currently just logging but would use in actual implementation
+	_ = manager.SafeExecute(templateName+"_text", data)
+
+	// TODO: Implement actual email sending
+	fmt.Printf("Would send email to %s: %s\n", email, subject)
+
 	return nil
 }
 
-// processFile saves the response to a file
-func processFile(response *models.ModelResponse) error {
+// processWebhookWithTemplate sends webhook payload using template
+func processWebhookWithTemplate(webhookType string, data template.TemplateData, templateName string) error {
+	// Check for webhook URL
+	webhookURL := os.Getenv(fmt.Sprintf("WEBHOOK_URL_%s", strings.ToUpper(webhookType)))
+	if webhookURL == "" {
+		webhookURL = os.Getenv("WEBHOOK_URL") // fallback
+		if webhookURL == "" {
+			return fmt.Errorf("webhook URL environment variable not set")
+		}
+	}
+
+	// Get template manager
+	manager := template.GetManager()
+
+	// Use default template if none specified
+	if templateName == "" {
+		templateName = fmt.Sprintf("default_webhook_%s", webhookType)
+		// If specific webhook type template doesn't exist, use generic
+		if _, err := manager.GetTemplate(templateName); err != nil {
+			templateName = "default_webhook"
+		}
+	}
+
+	// Execute template to get payload
+	payload := manager.SafeExecute(templateName, data)
+
+	// TODO: Implement actual webhook call
+	fmt.Printf("Would send to webhook %s: %s\n", webhookURL, payload)
+
+	return nil
+}
+
+// processFileWithTemplate saves response to file using template
+func processFileWithTemplate(data template.TemplateData, templateName string) error {
 	// Create logs directory if it doesn't exist
 	err := os.MkdirAll("logs", 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create logs directory: %w", err)
 	}
 
-	// Create filename with timestamp
-	timestamp := time.Now().Format("2006-01-02-15-04-05")
-	filename := fmt.Sprintf("logs/%s-%s.txt", response.Model, timestamp)
+	// Get template manager
+	manager := template.GetManager()
 
-	// Write response to file
-	err = os.WriteFile(filename, []byte(response.Content), 0644)
+	// Use default template if none specified
+	if templateName == "" {
+		templateName = "default_file"
+	}
+
+	// Execute filename template
+	filename := manager.SafeExecute(templateName+"_filename", data)
+
+	// Execute content template
+	content := manager.SafeExecute(templateName+"_content", data)
+
+	// Write to file
+	err = os.WriteFile(filename, []byte(content), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write response to file: %w", err)
 	}
 
 	fmt.Printf("Response saved to file: %s\n", filename)
+	return nil
+}
+
+// InitTemplates initializes the template system
+func InitTemplates(templateDir string) error {
+	manager := template.GetManager()
+
+	// Load templates from directory if specified
+	if templateDir != "" {
+		if err := manager.LoadTemplatesFromDir(templateDir); err != nil {
+			return fmt.Errorf("failed to load templates from directory: %w", err)
+		}
+	}
+
 	return nil
 }

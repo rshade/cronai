@@ -1,0 +1,37 @@
+{
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "⚠️ System Health Alert"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Time:* {{.Timestamp.Format \"Jan 2, 2006 15:04:05\"}}\n*Model:* {{.Model}}"
+      }
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "{{.Content}}"
+      }
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "ID: {{.ExecutionID}}"
+        }
+      ]
+    }
+  ]
+}

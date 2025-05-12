@@ -17,7 +17,11 @@ clean:
 
 # Run linter
 lint:
+	@echo "Running gofmt check..."
+	@test -z "$$(gofmt -l .)" || (echo "The following files need formatting with gofmt:"; gofmt -l . && exit 1)
+	@echo "Running go vet..."
 	go vet ./...
+	@echo "Running golangci-lint..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run; \
 	else \

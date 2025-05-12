@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Implementation Patterns
+
+### Templating System
+
+The templating system follows these patterns:
+- Uses Go's built-in `text/template` package
+- Singleton pattern for the template manager
+- Default templates are registered at initialization
+- SafeExecute method with fallback mechanism for templates
+- Naming conventions for templates based on processor type and purpose
+
 ## Coding Standards and Robustness
 
 ### Error Handling

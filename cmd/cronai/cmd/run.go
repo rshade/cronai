@@ -15,6 +15,7 @@ var (
 	modelName     string
 	promptName    string
 	processorName string
+	templateName  string
 	varsString    string
 )
 
@@ -71,14 +72,14 @@ var runCmd = &cobra.Command{
 		}
 
 		// Execute the model
-		response, err := models.ExecuteModel(modelName, promptContent, variables)
+		response, err := models.ExecuteModel(modelName, promptName, promptContent, variables)
 		if err != nil {
 			fmt.Printf("Error executing model: %v\n", err)
 			return
 		}
 
 		// Process the response
-		err = processor.ProcessResponse(processorName, response)
+		err = processor.ProcessResponse(processorName, response, templateName)
 		if err != nil {
 			fmt.Printf("Error processing response: %v\n", err)
 			return
@@ -94,6 +95,7 @@ func init() {
 	runCmd.Flags().StringVar(&modelName, "model", "", "AI model to use (openai, claude, gemini)")
 	runCmd.Flags().StringVar(&promptName, "prompt", "", "Name of prompt file in cron_prompts directory")
 	runCmd.Flags().StringVar(&processorName, "processor", "", "Response processor to use")
+	runCmd.Flags().StringVar(&templateName, "template", "", "Optional template name to use for formatting the response")
 	runCmd.Flags().StringVar(&varsString, "vars", "", "Variables in format key1=value1,key2=value2")
 
 	// Fail fast if we can't mark flags as required - this indicates a serious configuration issue

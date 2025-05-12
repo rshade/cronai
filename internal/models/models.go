@@ -3,26 +3,52 @@ package models
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 // ModelResponse represents a response from an AI model
 type ModelResponse struct {
-	Content string
-	Model   string
+	Content     string
+	Model       string
+	PromptName  string            // Name of the prompt used
+	Variables   map[string]string // Variables used in the prompt
+	Timestamp   time.Time         // When the response was generated
+	ExecutionID string            // Unique execution identifier
 }
 
 // ExecuteModel executes a prompt using the specified model and returns the response
-func ExecuteModel(modelName string, promptContent string, variables map[string]string) (*ModelResponse, error) {
+func ExecuteModel(modelName string, promptName string, promptContent string, variables map[string]string) (*ModelResponse, error) {
+	var response *ModelResponse
+	var err error
+
 	switch modelName {
 	case "openai":
-		return executeOpenAI(promptContent)
+		response, err = executeOpenAI(promptContent)
 	case "claude":
-		return executeClaude(promptContent)
+		response, err = executeClaude(promptContent)
 	case "gemini":
-		return executeGemini(promptContent)
+		response, err = executeGemini(promptContent)
 	default:
 		return nil, fmt.Errorf("unsupported model: %s", modelName)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Add additional metadata
+	response.PromptName = promptName
+	response.Variables = variables
+	response.Timestamp = time.Now()
+	response.ExecutionID = generateExecutionID(modelName, promptName)
+
+	return response, nil
+}
+
+// generateExecutionID creates a unique ID for the execution
+func generateExecutionID(modelName, promptName string) string {
+	timestamp := time.Now().Format("20060102150405")
+	return fmt.Sprintf("%s-%s-%s", modelName, promptName, timestamp)
 }
 
 // executeOpenAI executes a prompt using OpenAI's API

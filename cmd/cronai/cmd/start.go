@@ -22,8 +22,8 @@ var startCmd = &cobra.Command{
 
 		// Start the cron service
 		if err := cron.StartService(configPath); err != nil {
-		fmt.Printf("Error starting cron service: %v\n", err)
-	}
+			fmt.Printf("Error starting cron service: %v\n", err)
+		}
 	},
 }
 
