@@ -12,7 +12,7 @@ type ModelResponse struct {
 }
 
 // ExecuteModel executes a prompt using the specified model and returns the response
-func ExecuteModel(modelName string, promptContent string) (*ModelResponse, error) {
+func ExecuteModel(modelName string, promptContent string, variables map[string]string) (*ModelResponse, error) {
 	switch modelName {
 	case "openai":
 		return executeOpenAI(promptContent)

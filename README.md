@@ -33,13 +33,14 @@ Create a configuration file called `cronai.config` with your scheduled tasks.
 ### Format
 
 ```
-timestamp model prompt response_processor
+timestamp model prompt response_processor [variables]
 ```
 
 - **timestamp**: Standard cron format (minute hour day-of-month month day-of-week)
 - **model**: AI model to use (openai, claude, gemini)
 - **prompt**: Name of prompt file in cron_prompts directory (with or without .md extension)
 - **response_processor**: How to process the response (email, slack, webhook, file)
+- **variables** (optional): Variables to replace in the prompt file, in the format `key1=value1,key2=value2,...`
 
 ### Example Configuration
 
@@ -49,9 +50,12 @@ timestamp model prompt response_processor
 
 # Run every Monday at 9 AM using OpenAI, sending to email
 0 9 * * 1 openai weekly_report email-team@company.com
+
+# Run monthly report with variables on the 1st of each month
+0 9 1 * * claude report_template email-execs@company.com reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
 ```
 
-See [cronai.config.example](cronai.config.example) for more examples.
+See [cronai.config.example](cronai.config.example) and [cronai.config.variables.example](cronai.config.variables.example) for more examples.
 
 ## Prompt Files
 
@@ -67,6 +71,27 @@ Include the following:
 2. Customer feedback that needs immediate attention
 ...
 ```
+
+### Variables in Prompts
+
+You can use variables in prompt files with the syntax `{{variable_name}}`. These variables will be replaced with values from the configuration:
+
+```markdown
+# {{reportType}} Report for {{date}}
+
+## Overview
+
+This is an automatically generated {{reportType}} report for {{project}} created on {{date}}.
+
+## Team Details
+
+Team: {{team}}
+```
+
+Special variables that are automatically populated:
+- `{{CURRENT_DATE}}`: Current date in YYYY-MM-DD format
+- `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
+- `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
 
 ## Response Processors
 
@@ -106,6 +131,9 @@ cronai start --config /path/to/config
 
 # Run a single task immediately
 cronai run --model claude --prompt product_manager --processor slack-pm-channel
+
+# Run a task with variables
+cronai run --model claude --prompt report_template --processor email-execs@company.com --vars "reportType=Weekly,date=2025-05-11,project=CronAI"
 
 # List all scheduled tasks
 cronai list

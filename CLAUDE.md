@@ -2,6 +2,42 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Coding Standards and Robustness
+
+### Error Handling
+
+- All error returns must be properly checked and handled
+- Use `fmt.Errorf("error message: %w", err)` for error wrapping
+- Defer functions should handle errors using anonymous functions
+- Use multi-error approach for preserving both original and secondary errors (e.g., file close errors)
+- For critical configuration errors, use early failure strategies (e.g., panic with clear messages)
+- File operations must have proper error checking, especially for:
+  - Close operations on files
+  - Remove operations on temporary files
+
+### Code Quality and Linting
+
+- Run `make lint` after every code change to check for issues
+- Adhere to Go idiomatic patterns
+- Use named return values where it improves readability
+- Use switch statements instead of long if-else chains
+- Follow strict function signature requirements
+
+### Testing Requirements
+
+- All new functions should have corresponding tests
+- Test coverage should be maintained or improved with each PR
+- Mock external dependencies in tests
+- Use table-driven tests when appropriate
+
+### Git and CI/CD Practices
+
+- Follow conventional commit standards
+- Keep PR sizes manageable (ideally under 300 lines of changes)
+- Update documentation when changing functionality
+- Use GitHub Actions for CI/CD pipelines
+- Ensure CI passes before merging PRs
+
 ## Project Overview
 
 CronAI is a Go utility designed to run AI model prompts on a cron-type schedule. It allows scheduled execution of AI prompts and automatic processing of responses through various channels (email, Slack, webhooks, file output).
@@ -12,6 +48,12 @@ This project follows standard Go project structure:
 
 ```
 cronai/
+├── .github/               # GitHub configuration
+│   └── workflows/         # GitHub Actions workflows
+│       ├── build.yml      # Build workflow
+│       ├── commit-check.yml # Conventional commit checker
+│       ├── pr-check.yml   # PR validation workflow
+│       └── todo.yml       # TODO to Issue converter
 ├── cmd/cronai/            # Main application entry point
 │   ├── main.go            # Entry point
 │   └── cmd/               # CLI commands (using Cobra)
@@ -34,12 +76,16 @@ cronai/
 │   └── config/            # Configuration loading
 ├── cron_prompts/          # Directory for markdown prompt files
 │   ├── product_manager.md # Example prompt
+│   ├── report_template.md # Example prompt with variables
 │   ├── weekly_report.md   # Example prompt
 │   ├── system_health.md   # Example prompt
 │   └── monitoring_check.md # Example prompt
 ├── docs/                  # Documentation
 │   └── systemd.md         # Systemd service setup guide
+├── .commitlintrc.js       # Commitlint configuration
+├── .goreleaser.yml        # GoReleaser configuration
 ├── cronai.config.example  # Example configuration file
+├── cronai.config.variables.example # Example with variables
 ├── cronai.service         # Systemd service file
 ├── .env.example           # Example environment variables
 ├── Makefile               # Build and development commands
@@ -50,7 +96,7 @@ cronai/
 
 The configuration file uses the following format:
 ```
-timestamp model prompt response_processor
+timestamp model prompt response_processor [variables]
 ```
 
 Where:
@@ -58,11 +104,23 @@ Where:
 - **model**: AI model to use (openai, claude, gemini)
 - **prompt**: Name of prompt file in cron_prompts directory (with or without .md extension)
 - **response_processor**: How to process the response (email, slack, webhook, file)
+- **variables** (optional): Variables to replace in the prompt file, in the format `key1=value1,key2=value2,...`
 
-Example:
+Examples:
 ```
+# Basic configuration without variables
 0 8 * * * claude product_manager slack-pm-channel
+
+# Configuration with variables
+0 9 1 * * claude report_template email-team@company.com reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
 ```
+
+### Special Variables
+
+Special variables that are automatically populated:
+- `{{CURRENT_DATE}}`: Current date in YYYY-MM-DD format
+- `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
+- `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
 
 ## Development Commands
 
@@ -141,7 +199,7 @@ golangci-lint run
 The project has a defined roadmap divided into four milestones:
 
 ### Q2 2025 - MVP Release
-- Basic variable support in prompts (#5)
+- ✅ Basic variable support in prompts (#5)
 - Model-specific configuration support (#6)
 - Response processor templating (#7)
 - Model fallback mechanism (#8)
@@ -191,6 +249,9 @@ Located in `internal/models` - Implements adapters for different AI models (Open
 
 ### Prompt Loader
 Located in `internal/prompt` - Loads and prepares prompt files for submission to models.
+- `LoadPrompt` - Loads a prompt file from the cron_prompts directory
+- `LoadPromptWithVariables` - Loads a prompt file and replaces variables with provided values
+- `ApplyVariables` - Replaces variable placeholders in format {{variable_name}} with their values
 
 ### Response Processors
 Located in `internal/processor` - Processes model responses (sending to email, Slack, webhooks, or saving to file).
@@ -208,4 +269,8 @@ The application uses a `.env` file for configuration with the following variable
 The application uses Cobra for CLI commands:
 - `cronai start` - Start the service with the configuration file
 - `cronai run` - Run a single task immediately
+  - `--model`: AI model to use
+  - `--prompt`: Name of prompt file
+  - `--processor`: Response processor to use
+  - `--vars`: Variables for the prompt in format "key1=value1,key2=value2"
 - `cronai list` - List all scheduled tasks

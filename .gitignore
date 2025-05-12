@@ -23,5 +23,21 @@ go.work.sum
 
 # env file
 .env
+.env.local
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+cronai
+
+# PR message file
+PR_MESSAGE.md
+
+# Log files
+*.log
 
 **/.claude/settings.local.json

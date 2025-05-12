@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/rshade/cronai/internal/models"
 	"github.com/rshade/cronai/internal/processor"
 	"github.com/rshade/cronai/internal/prompt"
@@ -19,6 +20,7 @@ type Task struct {
 	Model     string
 	Prompt    string
 	Processor string
+	Variables map[string]string
 }
 
 // StartService starts the CronAI service with the given configuration file
@@ -58,14 +60,29 @@ func ListTasks(configPath string) ([]Task, error) {
 }
 
 // parseConfigFile parses the configuration file and returns a list of tasks
-func parseConfigFile(configPath string) ([]Task, error) {
+func parseConfigFile(configPath string) (tasks []Task, err error) {
 	file, err := os.Open(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
-	defer file.Close()
 
-	var tasks []Task
+	// Using named return values and multierror to preserve both errors
+	defer func() {
+		closeErr := file.Close()
+		if closeErr != nil {
+			// If we have both processing and close errors, combine them
+			if err != nil {
+				err = multierror.Append(
+					err,
+					fmt.Errorf("failed to close config file: %w", closeErr),
+				)
+			} else {
+				// If we only have close error, just use that
+				err = fmt.Errorf("failed to close config file: %w", closeErr)
+			}
+		}
+	}()
+
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
 
@@ -100,12 +117,38 @@ func parseConfigFile(configPath string) ([]Task, error) {
 		prompt := parts[1]
 		processor := parts[2]
 
+		// Parse variables if present (optional 4th field)
+		variables := make(map[string]string)
+		if len(parts) > 3 {
+			varString := parts[3]
+			for _, varPair := range strings.Split(varString, ",") {
+				keyValue := strings.SplitN(varPair, "=", 2)
+				if len(keyValue) == 2 {
+					key := strings.TrimSpace(keyValue[0])
+					value := strings.TrimSpace(keyValue[1])
+
+					// Handle special variables
+					switch value {
+					case "{{CURRENT_DATE}}":
+						value = time.Now().Format("2006-01-02")
+					case "{{CURRENT_TIME}}":
+						value = time.Now().Format("15:04:05")
+					case "{{CURRENT_DATETIME}}":
+						value = time.Now().Format("2006-01-02 15:04:05")
+					}
+
+					variables[key] = value
+				}
+			}
+		}
+
 		// Add the task
 		tasks = append(tasks, Task{
 			Schedule:  schedule,
 			Model:     model,
 			Prompt:    prompt,
 			Processor: processor,
+			Variables: variables,
 		})
 	}
 
@@ -120,15 +163,23 @@ func parseConfigFile(configPath string) ([]Task, error) {
 func executeTask(task Task) {
 	fmt.Printf("Executing task at %s: %s %s %s\n", time.Now().Format(time.RFC3339), task.Model, task.Prompt, task.Processor)
 
-	// Load the prompt
-	promptContent, err := prompt.LoadPrompt(task.Prompt)
+	// Load the prompt with variables
+	var promptContent string
+	var err error
+
+	if len(task.Variables) > 0 {
+		promptContent, err = prompt.LoadPromptWithVariables(task.Prompt, task.Variables)
+	} else {
+		promptContent, err = prompt.LoadPrompt(task.Prompt)
+	}
+
 	if err != nil {
 		fmt.Printf("Error loading prompt: %v\n", err)
 		return
 	}
 
 	// Execute the model
-	response, err := models.ExecuteModel(task.Model, promptContent)
+	response, err := models.ExecuteModel(task.Model, promptContent, task.Variables)
 	if err != nil {
 		fmt.Printf("Error executing model: %v\n", err)
 		return

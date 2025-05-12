@@ -1,0 +1,18 @@
+# CronAI Configuration Example with Variables
+# Format: timestamp model prompt.md response_processor [variables]
+# Variables format: key1=value1,key2=value2,...
+
+# Run daily at 8 AM using Claude, sending to slack
+0 8 * * * claude product_manager slack-pm-channel
+
+# Run every Monday at 9 AM using OpenAI, sending to email with variables
+0 9 * * 1 openai report_template email-team@company.com reportType=Weekly,date={{CURRENT_DATE}},project=CronAI,team=Engineering,period=LastWeek
+
+# Run monthly report on the 1st of each month
+0 9 1 * * claude report_template email-execs@company.com reportType=Monthly,date={{CURRENT_DATE}},project=CronAI,team=All,period=LastMonth
+
+# Run every hour during business hours using Gemini, sending to file
+0 9-17 * * 1-5 gemini monitoring_check log-to-file service=CronAI,environment=Production
+
+# Run every 15 mins using Claude, sending output to webhook
+*/15 * * * * claude system_health webhook-monitoring cluster=Primary

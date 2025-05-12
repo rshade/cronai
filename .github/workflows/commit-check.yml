@@ -1,0 +1,24 @@
+name: Conventional Commit Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  commit-check:
+    name: Conventional Commit Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check Conventional Commits
+        uses: wagoid/commitlint-github-action@v6
+        with:
+          configFile: .commitlintrc.mjs
+
+      - name: Install commitlint
+        run: |
+          npm install --save-dev @commitlint/config-conventional @commitlint/cli
