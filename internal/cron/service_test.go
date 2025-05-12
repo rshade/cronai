@@ -12,6 +12,7 @@ func TestParseConfigFile(t *testing.T) {
 0 8 * * * claude product_manager slack-pm-channel
 0 9 * * 1 openai weekly_report email-team@company.com
 */15 * * * * gemini monitoring_check log-to-file
+0 12 * * * claude report_template email-execs@company.com reportType=Weekly,project=CronAI,team=Dev
 
 # Invalid lines
 invalid line
@@ -23,7 +24,11 @@ invalid line
 	if err != nil {
 		t.Fatalf("Failed to create test config file: %v", err)
 	}
-	defer os.Remove(testConfigPath)
+	defer func() {
+		if err := os.Remove(testConfigPath); err != nil {
+			t.Logf("Warning: Failed to remove test config file: %v", err)
+		}
+	}()
 
 	// Parse the config file
 	tasks, err := parseConfigFile(testConfigPath)
@@ -32,8 +37,8 @@ invalid line
 	}
 
 	// Verify the tasks
-	if len(tasks) != 3 {
-		t.Errorf("Expected 3 tasks, got %d", len(tasks))
+	if len(tasks) != 5 {
+		t.Errorf("Expected 5 tasks, got %d", len(tasks))
 	}
 
 	// Check the first task
@@ -76,6 +81,34 @@ invalid line
 	}
 	if tasks[2].Processor != "log-to-file" {
 		t.Errorf("Expected processor 'log-to-file', got '%s'", tasks[2].Processor)
+	}
+
+	// Check the fourth task (with variables)
+	if tasks[3].Schedule != "0 12 * * *" {
+		t.Errorf("Expected schedule '0 12 * * *', got '%s'", tasks[3].Schedule)
+	}
+	if tasks[3].Model != "claude" {
+		t.Errorf("Expected model 'claude', got '%s'", tasks[3].Model)
+	}
+	if tasks[3].Prompt != "report_template" {
+		t.Errorf("Expected prompt 'report_template', got '%s'", tasks[3].Prompt)
+	}
+	if tasks[3].Processor != "email-execs@company.com" {
+		t.Errorf("Expected processor 'email-execs@company.com', got '%s'", tasks[3].Processor)
+	}
+
+	// Check variables
+	if len(tasks[3].Variables) != 3 {
+		t.Errorf("Expected 3 variables, got %d", len(tasks[3].Variables))
+	}
+	if tasks[3].Variables["reportType"] != "Weekly" {
+		t.Errorf("Expected reportType 'Weekly', got '%s'", tasks[3].Variables["reportType"])
+	}
+	if tasks[3].Variables["project"] != "CronAI" {
+		t.Errorf("Expected project 'CronAI', got '%s'", tasks[3].Variables["project"])
+	}
+	if tasks[3].Variables["team"] != "Dev" {
+		t.Errorf("Expected team 'Dev', got '%s'", tasks[3].Variables["team"])
 	}
 
 	// Test non-existent config file

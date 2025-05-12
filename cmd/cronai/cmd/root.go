@@ -41,8 +41,6 @@ func initConfig() {
 		fmt.Println("Warning: No .env file found or error loading it")
 	}
 
-	// If a config file is provided, use it
-	if cfgFile != "" {
-		// Config handling will be implemented in pkg/config
-	}
+	// Config file will be used in the individual commands
+	// The actual config handling is implemented in pkg/config
 }
