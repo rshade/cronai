@@ -16,12 +16,13 @@ import (
 
 // Task represents a scheduled task
 type Task struct {
-	Schedule  string
-	Model     string
-	Prompt    string
-	Processor string
-	Template  string            // Optional template name
-	Variables map[string]string // Variables for the prompt
+	Schedule      string
+	Model         string
+	Prompt        string
+	Processor     string
+	Template      string            // Optional template name
+	Variables     map[string]string // Variables for the prompt
+	ModelParams   string            // Model-specific parameters (temperature, tokens, etc.)
 }
 
 // StartService starts the CronAI service with the given configuration file
@@ -115,7 +116,9 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 		// Parse optional template and variables
 		var template string
 		variables := make(map[string]string)
-
+		var modelParams string
+		
+		// Parse optional template if present
 		if len(parts) > 8 {
 			// Check if the next part is a template or variables
 			if !strings.Contains(parts[8], "=") {
@@ -131,15 +134,23 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 				parseVariables(varString, variables)
 			}
 		}
+		
+		// Check for model parameters as field after variables
+		if len(parts) > 9 && strings.HasPrefix(parts[9], "model_params:") {
+			modelParams = strings.TrimPrefix(parts[9], "model_params:")
+		} else if len(parts) > 8 && strings.HasPrefix(parts[8], "model_params:") {
+			modelParams = strings.TrimPrefix(parts[8], "model_params:")
+		}
 
 		// Add the task
 		tasks = append(tasks, Task{
-			Schedule:  schedule,
-			Model:     model,
-			Prompt:    prompt,
-			Processor: processor,
-			Template:  template,
-			Variables: variables,
+			Schedule:    schedule,
+			Model:       model,
+			Prompt:      prompt,
+			Processor:   processor,
+			Template:    template,
+			Variables:   variables,
+			ModelParams: modelParams,
 		})
 	}
 
@@ -192,8 +203,8 @@ func executeTask(task Task) {
 		return
 	}
 
-	// Execute the model
-	response, err := models.ExecuteModel(task.Model, task.Prompt, promptContent, task.Variables)
+	// Execute the model with model parameters
+	response, err := models.ExecuteModel(task.Model, promptContent, task.Variables, task.ModelParams)
 	if err != nil {
 		fmt.Printf("Error executing model: %v\n", err)
 		return

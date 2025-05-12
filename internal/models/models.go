@@ -2,8 +2,9 @@ package models
 
 import (
 	"fmt"
-	"os"
 	"time"
+
+	"github.com/rshade/cronai/pkg/config"
 )
 
 // ModelResponse represents a response from an AI model
@@ -16,31 +17,63 @@ type ModelResponse struct {
 	ExecutionID string            // Unique execution identifier
 }
 
+// ModelClient defines the interface for AI model clients
+type ModelClient interface {
+	Execute(promptContent string) (*ModelResponse, error)
+}
+
 // ExecuteModel executes a prompt using the specified model and returns the response
-func ExecuteModel(modelName string, promptName string, promptContent string, variables map[string]string) (*ModelResponse, error) {
-	var response *ModelResponse
-	var err error
+func ExecuteModel(modelName string, promptContent string, variables map[string]string, modelParams string) (*ModelResponse, error) {
+	// Parse model parameters if provided
+	params, err := config.ParseModelParams(modelParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse model parameters: %w", err)
+	}
+
+	// Create a model configuration with default values
+	modelConfig := config.DefaultModelConfig()
+
+	// Load configuration from environment variables
+	modelConfig.LoadFromEnvironment()
+
+	// Update configuration with any provided parameters
+	if err := modelConfig.UpdateFromParams(params); err != nil {
+		return nil, fmt.Errorf("invalid model parameters: %w", err)
+	}
+
+	// Validate the configuration
+	if err := modelConfig.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid model configuration: %w", err)
+	}
+
+	// Create the appropriate client based on the model name
+	var client ModelClient
 
 	switch modelName {
 	case "openai":
-		response, err = executeOpenAI(promptContent)
+		client, err = NewOpenAIClient(modelConfig)
 	case "claude":
-		response, err = executeClaude(promptContent)
+		client, err = NewClaudeClient(modelConfig)
 	case "gemini":
-		response, err = executeGemini(promptContent)
+		client, err = NewGeminiClient(modelConfig)
 	default:
 		return nil, fmt.Errorf("unsupported model: %s", modelName)
 	}
 
 	if err != nil {
+		return nil, fmt.Errorf("failed to create %s client: %w", modelName, err)
+	}
+
+	// Execute the prompt using the selected client
+	response, err := client.Execute(promptContent)
+	if err != nil {
 		return nil, err
 	}
 
 	// Add additional metadata
-	response.PromptName = promptName
 	response.Variables = variables
 	response.Timestamp = time.Now()
-	response.ExecutionID = generateExecutionID(modelName, promptName)
+	response.ExecutionID = generateExecutionID(modelName, "")
 
 	return response, nil
 }
@@ -49,52 +82,4 @@ func ExecuteModel(modelName string, promptName string, promptContent string, var
 func generateExecutionID(modelName, promptName string) string {
 	timestamp := time.Now().Format("20060102150405")
 	return fmt.Sprintf("%s-%s-%s", modelName, promptName, timestamp)
-}
-
-// executeOpenAI executes a prompt using OpenAI's API
-func executeOpenAI(promptContent string) (*ModelResponse, error) {
-	// Check for API key
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("OPENAI_API_KEY environment variable not set")
-	}
-
-	// TODO: Implement actual API call
-	// For now, return a mock response
-	return &ModelResponse{
-		Content: "This is a mock response from OpenAI",
-		Model:   "openai",
-	}, nil
-}
-
-// executeClaude executes a prompt using Claude's API
-func executeClaude(promptContent string) (*ModelResponse, error) {
-	// Check for API key
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("ANTHROPIC_API_KEY environment variable not set")
-	}
-
-	// TODO: Implement actual API call
-	// For now, return a mock response
-	return &ModelResponse{
-		Content: "This is a mock response from Claude",
-		Model:   "claude",
-	}, nil
-}
-
-// executeGemini executes a prompt using Gemini's API
-func executeGemini(promptContent string) (*ModelResponse, error) {
-	// Check for API key
-	apiKey := os.Getenv("GOOGLE_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("GOOGLE_API_KEY environment variable not set")
-	}
-
-	// TODO: Implement actual API call
-	// For now, return a mock response
-	return &ModelResponse{
-		Content: "This is a mock response from Gemini",
-		Model:   "gemini",
-	}, nil
 }

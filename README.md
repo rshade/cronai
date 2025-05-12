@@ -33,7 +33,7 @@ Create a configuration file called `cronai.config` with your scheduled tasks.
 ### Format
 
 ```
-timestamp model prompt response_processor [variables]
+timestamp model prompt response_processor [variables] [model_params:...]
 ```
 
 - **timestamp**: Standard cron format (minute hour day-of-month month day-of-week)
@@ -41,6 +41,7 @@ timestamp model prompt response_processor [variables]
 - **prompt**: Name of prompt file in cron_prompts directory (with or without .md extension)
 - **response_processor**: How to process the response (email, slack, webhook, file)
 - **variables** (optional): Variables to replace in the prompt file, in the format `key1=value1,key2=value2,...`
+- **model_params** (optional): Model-specific parameters in the format `model_params:param1=value1,param2=value2,...`
 
 ### Example Configuration
 
@@ -53,9 +54,12 @@ timestamp model prompt response_processor [variables]
 
 # Run monthly report with variables on the 1st of each month
 0 9 1 * * claude report_template email-execs@company.com reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
+
+# Run with custom model parameters (temperature and specific model version)
+0 9 * * 1 openai weekly_report email-team@company.com model_params:temperature=0.5,model=gpt-4
 ```
 
-See [cronai.config.example](cronai.config.example) and [cronai.config.variables.example](cronai.config.variables.example) for more examples.
+See [cronai.config.example](cronai.config.example), [cronai.config.variables.example](cronai.config.variables.example), and [cronai.config.model-params.example](cronai.config.model-params.example) for more examples.
 
 ## Prompt Files
 
@@ -92,6 +96,50 @@ Special variables that are automatically populated:
 - `{{CURRENT_DATE}}`: Current date in YYYY-MM-DD format
 - `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
 - `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
+
+## Model Parameters
+
+You can configure model-specific parameters to fine-tune AI model behavior. The supported parameters include:
+
+| Parameter          | Type   | Range        | Description                                        |
+|--------------------|--------|-------------|----------------------------------------------------|
+| temperature        | float  | 0.0 - 1.0   | Controls response randomness (higher = more random) |
+| max_tokens         | int    | > 0         | Maximum number of tokens to generate                |
+| top_p              | float  | 0.0 - 1.0   | Nucleus sampling parameter                         |
+| frequency_penalty  | float  | -2.0 - 2.0  | Penalize frequent tokens                           |
+| presence_penalty   | float  | -2.0 - 2.0  | Penalize new tokens based on presence              |
+| model              | string | -           | Specific model version to use                      |
+| system_message     | string | -           | System message for the model                       |
+
+### Default Model Versions
+
+- **OpenAI**: `gpt-3.5-turbo`
+- **Claude**: `claude-3-sonnet-20240229`
+- **Gemini**: `gemini-pro`
+
+### Configuration Methods
+
+You can configure model parameters in three ways (in order of precedence):
+
+1. **Task-specific parameters in the config file**:
+   ```
+   0 8 * * * claude product_manager slack-pm-channel model_params:temperature=0.8,model=claude-3-opus-20240229
+   ```
+
+2. **Environment variables**:
+   ```
+   MODEL_TEMPERATURE=0.7
+   MODEL_MAX_TOKENS=2048
+   OPENAI_MODEL=gpt-4
+   CLAUDE_MODEL=claude-3-opus-20240229
+   ```
+
+3. **Command line parameters** (with the `run` command):
+   ```bash
+   cronai run --model openai --prompt weekly_report --processor email-team@company.com --model-params "temperature=0.5,model=gpt-4"
+   ```
+
+For more details, see [docs/model-parameters.md](docs/model-parameters.md).
 
 ## Response Processors
 
