@@ -1,0 +1,200 @@
+# Response Processor Templating
+
+CronAI supports template-based formatting for all response processors (email, Slack, webhook, file). This document explains how to use and customize templates for each processor type.
+
+## Template System Overview
+
+The template system is built on Go's `text/template` package and allows for:
+
+- Consistent formatting across different output channels
+- Custom templates defined by users
+- Variable substitution within templates
+- Conditional logic based on response data
+- Multiple template formats for different processor types
+
+## Available Data in Templates
+
+All templates have access to the following data:
+
+- `{{.Content}}` - The content of the AI model response
+- `{{.Model}}` - The name of the model (openai, claude, gemini)
+- `{{.PromptName}}` - The name of the prompt used
+- `{{.Timestamp}}` - The time when the response was generated
+  - Use with format function: `{{.Timestamp.Format "2006-01-02 15:04:05"}}`
+- `{{.Variables}}` - Map of variables used in the prompt
+  - Access specific variable: `{{.Variables.key_name}}`
+- `{{.ExecutionID}}` - Unique identifier for this execution
+- `{{.Metadata}}` - Additional metadata about the execution
+  - Access specific metadata: `{{.Metadata.key_name}}`
+
+## Template Functions
+
+The template system provides various utility functions:
+
+### Variable Handling
+- `hasVar .Variables "key"` - Checks if a variable exists
+- `getVar .Variables "key" "default"` - Gets a variable with a default value
+
+### String Operations
+- `eq "a" "b"` - Equals comparison
+- `ne "a" "b"` - Not equals comparison
+- `contains "haystack" "needle"` - Check if string contains substring
+- `hasPrefix "str" "prefix"` - Check if string starts with prefix
+- `hasSuffix "str" "suffix"` - Check if string ends with suffix
+- `upper "str"` - Convert string to uppercase
+- `lower "str"` - Convert string to lowercase
+- `title "str"` - Convert string to title case
+- `trim "str"` - Trim whitespace from string
+
+### Numeric Comparison
+- `lt "5" "10"` - Less than
+- `le "5" "10"` - Less than or equal
+- `gt "5" "10"` - Greater than
+- `ge "5" "10"` - Greater than or equal
+
+### Boolean Operations
+- `not value` - Logical NOT
+- `and value1 value2` - Logical AND (built-in)
+- `or value1 value2` - Logical OR (built-in)
+
+### Date Operations
+- `now` - Current time
+- `formatDate "2006-01-02" .Timestamp` - Format a timestamp
+- `addDays 7 .Timestamp` - Add days to a timestamp
+
+### JSON Utilities
+- `marshalJSON .Content` - Properly escape content for JSON
+
+## Template Types by Processor
+
+Each processor type uses different sets of templates:
+
+### Email Processor
+
+Email processors use three templates:
+- `[name]_subject.tmpl` - Subject line
+- `[name]_html.tmpl` - HTML body content
+- `[name]_text.tmpl` - Plain text fallback content
+
+Example email configuration:
+```
+0 9 * * * claude weekly_report email-team@example.com monthly_report
+```
+
+### Slack Processor
+
+Slack processors use a single template that must output valid Slack Block Kit JSON:
+- `[name].tmpl` - Slack Block Kit JSON payload
+
+Example Slack configuration:
+```
+0 12 * * * claude system_health slack-alerts system_alert
+```
+
+### Webhook Processor
+
+Webhook processors use a single template that must output valid JSON:
+- `[name].tmpl` - JSON payload for webhook
+
+Example webhook configuration:
+```
+0 * * * * claude monitoring_check webhook-monitoring
+```
+
+### File Processor
+
+File processors use two templates:
+- `[name]_filename.tmpl` - Template for generating the output filename
+- `[name]_content.tmpl` - Template for formatting the file content
+
+Example file configuration:
+```
+0 0 1 * * claude monthly_report file monthly_report
+```
+
+## Default Templates
+
+CronAI includes default templates for each processor type:
+
+- Email: `default_email_subject`, `default_email_html`, `default_email_text`
+- Slack: `default_slack`, `default_slack_monitoring`
+- Webhook: `default_webhook`, `default_webhook_monitoring`
+- File: `default_file_filename`, `default_file_content`
+
+When no template is specified, the system will:
+1. Try to use a specific default based on processor type
+2. Fall back to the generic default if the specific one doesn't exist
+3. Fall back to the raw response content if no template is available
+
+## Creating Custom Templates
+
+To create a custom template:
+
+1. Create a `.tmpl` file in the `templates` directory with the appropriate naming convention
+2. Use Go template syntax with the available data fields
+3. Reference the template in your CronAI configuration (without the `.tmpl` extension)
+
+Example template for a monthly report email (HTML):
+
+```html
+<!-- templates/monthly_report_html.tmpl -->
+<html>
+<body>
+<h1>{{.Variables.reportType}} Report for {{.Variables.project}}</h1>
+<p><strong>Date:</strong> {{.Variables.date}}</p>
+
+<div style="border: 1px solid #ccc; padding: 15px; margin: 20px 0;">
+{{.Content}}
+</div>
+
+<p>Generated by {{.Model}} on {{.Timestamp.Format "Jan 2, 2006"}}</p>
+</body>
+</html>
+```
+
+## Template Validation
+
+You can validate your templates using the `validate` command:
+
+```bash
+# Validate a single template
+./cronai validate --file templates/my_template.tmpl
+
+# Validate all templates in a directory
+./cronai validate --dir templates/
+```
+
+## Using Templates in Configuration
+
+To specify a template in your CronAI configuration, add it after the processor:
+
+```
+# Format: timestamp model prompt response_processor [template] [variables]
+0 9 1 * * claude report_template email-team@example.com monthly_report reportType=Monthly,date={{CURRENT_DATE}}
+```
+
+In this example:
+- `report_template` is the prompt name
+- `email-team@example.com` is the processor
+- `monthly_report` is the template name
+- Variables follow after the template name
+
+## Conditional Logic in Templates
+
+Templates support conditional logic for dynamic content generation:
+
+```
+{{if eq .Model "claude"}}
+This response was generated by Claude.
+{{else if eq .Model "openai"}}
+This response was generated by OpenAI.
+{{else}}
+This response was generated by {{.Model}}.
+{{end}}
+
+{{if .Variables.priority}}
+Priority: {{.Variables.priority}}
+{{end}}
+```
+
+This allows for different output formatting based on the response data and variables.

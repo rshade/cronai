@@ -1,6 +1,6 @@
 # CronAI Template Examples
 
-This directory contains example templates for CronAI response processors.
+This directory contains example templates for CronAI response processors. For comprehensive documentation on the template system, see [Response Processor Templating](../docs/response-templating.md).
 
 ## Template Files
 
@@ -14,6 +14,7 @@ Templates use Go's standard `text/template` package syntax. Within a template, y
 - `{{.Variables}}` - Map of variables used in the prompt
   - Access specific variable: `{{.Variables.key_name}}`
 - `{{.ExecutionID}}` - Unique identifier for this execution
+- `{{.Metadata}}` - Additional metadata about the execution
 
 ## Naming Conventions
 
@@ -49,3 +50,16 @@ You can also validate templates using the `validate` command:
 # Validate all templates in a directory
 ./cronai validate --dir templates/
 ```
+
+## Template Functions
+
+The template system provides many utility functions:
+
+- Variable handling: `hasVar`, `getVar`
+- String operations: `eq`, `ne`, `contains`, `hasPrefix`, `hasSuffix`, `upper`, `lower`, `title`, `trim`
+- Numeric comparison: `lt`, `le`, `gt`, `ge`
+- Boolean operations: `not`, `and`, `or`
+- Date operations: `now`, `formatDate`, `addDays`
+- JSON utilities: `marshalJSON`
+
+See the full documentation for details and examples.

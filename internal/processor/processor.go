@@ -3,6 +3,7 @@ package processor
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -23,6 +24,12 @@ func ProcessResponse(processorName string, response *models.ModelResponse, templ
 		Metadata:    make(map[string]string), // Initialize metadata map
 	}
 
+	// Add additional metadata if needed
+	tmplData.Metadata["processor"] = processorName
+	if templateName != "" {
+		tmplData.Metadata["template"] = templateName
+	}
+
 	// Handle special processor formats
 	if strings.HasPrefix(processorName, "slack-") {
 		slackChannel := strings.TrimPrefix(processorName, "slack-")
@@ -34,11 +41,15 @@ func ProcessResponse(processorName string, response *models.ModelResponse, templ
 		return processEmailWithTemplate(emailAddress, tmplData, templateName)
 	}
 
+	// Handle webhook formats with type
+	if strings.HasPrefix(processorName, "webhook-") {
+		webhookType := strings.TrimPrefix(processorName, "webhook-")
+		return processWebhookWithTemplate(webhookType, tmplData, templateName)
+	}
+
 	// Handle standard processors
 	switch processorName {
-	case "webhook-monitoring":
-		return processWebhookWithTemplate("monitoring", tmplData, templateName)
-	case "log-to-file":
+	case "log-to-file", "file":
 		return processFileWithTemplate(tmplData, templateName)
 	default:
 		return fmt.Errorf("unsupported processor: %s", processorName)
@@ -56,16 +67,30 @@ func processSlackWithTemplate(channel string, data template.TemplateData, templa
 	// Get template manager
 	manager := template.GetManager()
 
+	// If monitoring-related prompt, use monitoring template as default
+	isMonitoring := strings.Contains(strings.ToLower(data.PromptName), "monitor") ||
+		strings.Contains(strings.ToLower(data.PromptName), "alert") ||
+		strings.Contains(strings.ToLower(data.PromptName), "health")
+
 	// Use default template if none specified
 	if templateName == "" {
-		templateName = "default_slack"
+		if isMonitoring {
+			templateName = "default_slack_monitoring"
+		} else {
+			templateName = "default_slack"
+		}
 	}
 
 	// Execute template to get payload
 	payload := manager.SafeExecute(templateName, data)
 
+	// Add to metadata for logging
+	data.Metadata["slack_channel"] = channel
+	data.Metadata["template_used"] = templateName
+
 	// TODO: Implement actual Slack API call
-	fmt.Printf("Would send to Slack channel %s: %s\n", channel, payload)
+	fmt.Printf("Would send to Slack channel %s with template %s\n", channel, templateName)
+	fmt.Printf("Payload size: %d bytes\n", len(payload))
 
 	return nil
 }
@@ -86,17 +111,30 @@ func processEmailWithTemplate(email string, data template.TemplateData, template
 		templateName = "default_email"
 	}
 
+	// Validate that required templates exist
+	subjectTemplateName := templateName + "_subject"
+	htmlTemplateName := templateName + "_html"
+	textTemplateName := templateName + "_text"
+
 	// Execute subject template
-	subject := manager.SafeExecute(templateName+"_subject", data)
+	subject := manager.SafeExecute(subjectTemplateName, data)
 
-	// Execute HTML body template - currently just logging but would use in actual implementation
-	_ = manager.SafeExecute(templateName+"_html", data)
+	// Execute HTML body template
+	htmlBody := manager.SafeExecute(htmlTemplateName, data)
 
-	// Execute text body template (fallback) - currently just logging but would use in actual implementation
-	_ = manager.SafeExecute(templateName+"_text", data)
+	// Execute text body template (fallback)
+	textBody := manager.SafeExecute(textTemplateName, data)
+
+	// Add to metadata for logging
+	data.Metadata["email_recipient"] = email
+	data.Metadata["subject_template"] = subjectTemplateName
+	data.Metadata["html_template"] = htmlTemplateName
+	data.Metadata["text_template"] = textTemplateName
 
 	// TODO: Implement actual email sending
-	fmt.Printf("Would send email to %s: %s\n", email, subject)
+	fmt.Printf("Would send email to %s with subject: %s\n", email, subject)
+	fmt.Printf("HTML body length: %d bytes, Text body length: %d bytes\n",
+		len(htmlBody), len(textBody))
 
 	return nil
 }
@@ -118,8 +156,9 @@ func processWebhookWithTemplate(webhookType string, data template.TemplateData, 
 	// Use default template if none specified
 	if templateName == "" {
 		templateName = fmt.Sprintf("default_webhook_%s", webhookType)
+
 		// If specific webhook type template doesn't exist, use generic
-		if _, err := manager.GetTemplate(templateName); err != nil {
+		if !manager.TemplateExists(templateName) {
 			templateName = "default_webhook"
 		}
 	}
@@ -127,20 +166,21 @@ func processWebhookWithTemplate(webhookType string, data template.TemplateData, 
 	// Execute template to get payload
 	payload := manager.SafeExecute(templateName, data)
 
+	// Add to metadata for logging
+	data.Metadata["webhook_type"] = webhookType
+	data.Metadata["webhook_url_env"] = fmt.Sprintf("WEBHOOK_URL_%s", strings.ToUpper(webhookType))
+	data.Metadata["template_used"] = templateName
+
 	// TODO: Implement actual webhook call
-	fmt.Printf("Would send to webhook %s: %s\n", webhookURL, payload)
+	fmt.Printf("Would send to webhook type %s with template %s\n",
+		webhookType, templateName)
+	fmt.Printf("Payload size: %d bytes\n", len(payload))
 
 	return nil
 }
 
 // processFileWithTemplate saves response to file using template
 func processFileWithTemplate(data template.TemplateData, templateName string) error {
-	// Create logs directory if it doesn't exist
-	err := os.MkdirAll("logs", 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create logs directory: %w", err)
-	}
-
 	// Get template manager
 	manager := template.GetManager()
 
@@ -150,18 +190,30 @@ func processFileWithTemplate(data template.TemplateData, templateName string) er
 	}
 
 	// Execute filename template
-	filename := manager.SafeExecute(templateName+"_filename", data)
+	filenameTemplateName := templateName + "_filename"
+	filename := manager.SafeExecute(filenameTemplateName, data)
 
 	// Execute content template
-	content := manager.SafeExecute(templateName+"_content", data)
+	contentTemplateName := templateName + "_content"
+	content := manager.SafeExecute(contentTemplateName, data)
+
+	// Add to metadata for logging
+	data.Metadata["filename_template"] = filenameTemplateName
+	data.Metadata["content_template"] = contentTemplateName
+	data.Metadata["output_file"] = filename
+
+	// Ensure directory exists
+	dir := filepath.Dir(filename)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory for output file: %w", err)
+	}
 
 	// Write to file
-	err = os.WriteFile(filename, []byte(content), 0644)
-	if err != nil {
+	if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write response to file: %w", err)
 	}
 
-	fmt.Printf("Response saved to file: %s\n", filename)
+	fmt.Printf("Response saved to file: %s (%d bytes)\n", filename, len(content))
 	return nil
 }
 

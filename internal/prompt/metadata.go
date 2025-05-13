@@ -81,11 +81,11 @@ func ExtractMetadata(content, path string) (*PromptMetadata, string, error) {
 	// Extract variables - specific pattern for the test case
 	varNamePattern := regexp.MustCompile(`(?m)^\s*-\s*name:\s*(\w+)$`)
 	varDescPattern := regexp.MustCompile(`(?m)^\s*description:\s*(.+)$`)
-	
+
 	// Find all variable name matches
 	varNameMatches := varNamePattern.FindAllStringSubmatch(metadataStr, -1)
 	varDescMatches := varDescPattern.FindAllStringSubmatch(metadataStr, -1)
-	
+
 	if len(varNameMatches) > 0 && len(varNameMatches) == len(varDescMatches) {
 		metadata.Variables = make([]PromptVariable, len(varNameMatches))
 		for i := range varNameMatches {

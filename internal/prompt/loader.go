@@ -271,19 +271,19 @@ func ProcessIncludes(content string) (string, error) {
 		// Trim any extra whitespace and ensure proper newlines
 		parsedContent = strings.TrimSpace(parsedContent)
 		originalInclude := includeMatch[0]
-		
+
 		// Replace the include directive while maintaining newlines correctly
 		if strings.HasPrefix(originalInclude, "\n") {
 			parsedContent = "\n" + parsedContent
 		}
-		
+
 		// Ensure the replacement ends with a newline if the original did
 		if strings.HasSuffix(originalInclude, "\n") {
 			parsedContent = parsedContent + "\n"
 		} else {
 			parsedContent = parsedContent + "\n"
 		}
-		
+
 		result = strings.Replace(result, originalInclude, parsedContent, 1)
 	}
 
