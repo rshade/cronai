@@ -1,0 +1,38 @@
+style: github
+template: CHANGELOG.tpl.md
+info:
+  title: CHANGELOG
+  repository_url: https://github.com/rshade/cronai
+options:
+  commits:
+    filters:
+      Type:
+        - feat
+        - fix
+        - perf
+        - refactor
+        - docs
+        - test
+        - build
+        - ci
+        - chore
+  commit_groups:
+    title_maps:
+      feat: Features
+      fix: Bug Fixes
+      perf: Performance Improvements
+      refactor: Code Refactoring
+      docs: Documentation
+      test: Tests
+      build: Build System
+      ci: Continuous Integration
+      chore: Chores
+  header:
+    pattern: "^(\\w*)(?:\\(([\\w\\$\\.\\-\\*\\s]*)\\))?\\:\\s(.*)$"
+    pattern_maps:
+      - Type
+      - Scope
+      - Subject
+  notes:
+    keywords:
+      - BREAKING CHANGE

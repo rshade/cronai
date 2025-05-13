@@ -66,6 +66,13 @@ The templating system follows these patterns:
   - PR_MESSAGE.md should use the same conventional commit format
   - Update PR_MESSAGE.md whenever you have changes ready to commit
   - This allows for review of commit messages before actual commits are created
+  - **ALWAYS validate PR_MESSAGE.md with commitlint before committing**:
+    - Ensure commit messages follow all commitlint rules
+    - Keep body lines under 100 characters to avoid `body-max-line-length` errors
+    - Use line breaks to split long descriptions into multiple shorter lines
+    - If using multi-paragraph bodies, ensure proper line breaks and formatting
+    - Run `npx commitlint --from PR_MESSAGE.md` to validate before committing
+    - Fix any commitlint errors before proceeding with the commit
 - Make PR titles follow the same conventional commit format
 - Keep PR sizes manageable (ideally under 300 lines of changes)
 - Update documentation when changing functionality
@@ -73,6 +80,25 @@ The templating system follows these patterns:
   - Ensure all examples in documentation reflect the latest capabilities
 - Use GitHub Actions for CI/CD pipelines
 - Ensure CI passes before merging PRs
+
+### Changelog Management
+
+- Changelogs are generated automatically from conventional commit messages
+- Use `make changelog` to generate a CHANGELOG.md file for releases
+  - By default, it generates changes since the last tag (or initial commit if no tags)
+  - Specify custom range with `make changelog FROM=<tag/commit> TO=<tag/commit>`
+- The generated changelog categorizes commits by type:
+  - Features (feat)
+  - Bug Fixes (fix)
+  - Performance Improvements (perf)
+  - Code Refactoring (refactor)
+  - Documentation (docs)
+  - Tests (test)
+  - Build System (build)
+  - Continuous Integration (ci)
+  - Chores (chore)
+- Always generate a changelog before creating a new release
+- Include the changelog in release notes when creating GitHub releases
 
 ## Project Overview
 

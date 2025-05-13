@@ -1,4 +1,4 @@
-.PHONY: all build test clean lint run
+.PHONY: all build test clean lint run changelog
 
 # Default target
 all: build
@@ -48,6 +48,12 @@ run-task:
 # List tasks from config
 list:
 	go run ./cmd/cronai/main.go list
+
+# Generate changelog from conventional commits
+changelog:
+	@echo "Generating changelog..."
+	@./scripts/generate_changelog.sh $(FROM) $(TO)
+	@echo "Changelog generated at CHANGELOG.md"
 
 # Setup development environment
 setup:
