@@ -28,7 +28,13 @@ The templating system follows these patterns:
 
 ### Code Quality and Linting
 
-- Run `make lint` after every code change to check for issues
+- **ALWAYS run `make lint` before committing any code changes**
+- **ALWAYS run `make lint` after every code change to ensure compliance with coding standards**
+- Fix all linting issues before submitting pull requests
+- The linting process checks:
+  - Code formatting with `gofmt`
+  - Static analysis with `go vet`
+  - Comprehensive linting with `golangci-lint`
 - Adhere to Go idiomatic patterns
 - Use named return values where it improves readability
 - Use switch statements instead of long if-else chains
@@ -43,7 +49,24 @@ The templating system follows these patterns:
 
 ### Git and CI/CD Practices
 
-- Follow conventional commit standards
+- **ALWAYS use conventional commit format for ALL commits**:
+  - Format: `<type>(<scope>): <description>`
+  - Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert
+  - Scope: Optional component name (e.g., prompt, cron, models)
+  - Description: Concise present-tense summary
+  - Examples:
+    - `feat(prompt): implement file-based prompt management`
+    - `fix(cron): resolve issue with scheduler timing`
+    - `docs: update API documentation for prompt commands`
+    - `refactor(models): improve claude client implementation`
+  - For breaking changes, add `BREAKING CHANGE:` in the footer
+  - See [Conventional Commits specification](https://www.conventionalcommits.org/) for details
+- Commits that do not follow this format will be automatically rejected by CI
+- **NEVER commit directly - always update PR_MESSAGE.md** with your commit message:
+  - PR_MESSAGE.md should use the same conventional commit format
+  - Update PR_MESSAGE.md whenever you have changes ready to commit
+  - This allows for review of commit messages before actual commits are created
+- Make PR titles follow the same conventional commit format
 - Keep PR sizes manageable (ideally under 300 lines of changes)
 - Update documentation when changing functionality
   - When adding or modifying features, always update the README.md to keep it in sync

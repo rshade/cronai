@@ -12,6 +12,14 @@ import (
 	"github.com/rshade/cronai/internal/processor/template"
 )
 
+// Standard categories for prompt organization
+var PromptCategories = []string{
+	"system",
+	"monitoring",
+	"reports",
+	"templates",
+}
+
 // LoadPrompt loads a prompt from the cron_prompts directory
 func LoadPrompt(promptName string) (string, error) {
 	// Add .md extension if not present
@@ -20,18 +28,38 @@ func LoadPrompt(promptName string) (string, error) {
 	}
 
 	// Try different paths for the prompt file
-	// First check relative to the current directory
-	promptPath := filepath.Join("cron_prompts", promptName)
-
-	// If not found, try relative to the project root
-	if _, err := os.Stat(promptPath); os.IsNotExist(err) {
-		// Try with project root path
-		promptPath = filepath.Join("..", "..", "cron_prompts", promptName)
+	paths := []string{
+		// First try the exact path provided (which might include a category subdirectory)
+		filepath.Join("cron_prompts", promptName),
+		// Then try from project root
+		filepath.Join("..", "..", "cron_prompts", promptName),
 	}
 
-	// Check if file exists
-	if _, err := os.Stat(promptPath); os.IsNotExist(err) {
-		return "", fmt.Errorf("prompt file not found: %s", promptPath)
+	// If promptName doesn't contain a directory separator, also try category subdirectories
+	if !strings.Contains(promptName, string(os.PathSeparator)) {
+		baseFilename := filepath.Base(promptName)
+		for _, category := range PromptCategories {
+			// Try category subdirectories relative to current directory
+			paths = append(paths, filepath.Join("cron_prompts", category, baseFilename))
+			// Try category subdirectories relative to project root
+			paths = append(paths, filepath.Join("..", "..", "cron_prompts", category, baseFilename))
+		}
+	}
+
+	// Try each path until we find the file
+	var promptPath string
+	var fileExists bool
+
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			promptPath = path
+			fileExists = true
+			break
+		}
+	}
+
+	if !fileExists {
+		return "", fmt.Errorf("prompt file not found: %s (tried all category directories)", promptName)
 	}
 
 	// Read the prompt file
@@ -51,19 +79,31 @@ func LoadPromptWithVariables(promptName string, variables map[string]string) (st
 		return "", err
 	}
 
-	// First check if the prompt contains template directives
-	if containsTemplateDirectives(promptContent) {
+	// Extract metadata and content
+	_, content, err := ExtractMetadata(promptContent, promptName)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract content: %w", err)
+	}
+
+	// Process includes
+	processedContent, err := ProcessIncludes(content)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if the processed content contains template directives
+	if containsTemplateDirectives(processedContent) {
 		// Validate template syntax
-		if err := ValidatePromptTemplate(promptContent); err != nil {
+		if err := ValidatePromptTemplate(processedContent); err != nil {
 			return "", fmt.Errorf("prompt '%s' contains invalid template syntax: %w", promptName, err)
 		}
 
 		// Process as a template with the template engine
-		return processPromptAsTemplate(promptContent, promptName, variables)
+		return processPromptAsTemplate(processedContent, promptName, variables)
 	}
 
 	// Fallback to simple variable substitution for backward compatibility
-	return ApplyVariables(promptContent, variables), nil
+	return ApplyVariables(processedContent, variables), nil
 }
 
 // containsTemplateDirectives checks if the content contains template directives like {{if}}, {{else}}, etc.
@@ -174,4 +214,106 @@ func ApplyVariables(content string, variables map[string]string) string {
 	})
 
 	return result
+}
+
+// ProcessIncludes processes {{include "template_name"}} directives in the prompt content
+func ProcessIncludes(content string) (string, error) {
+	// Regular expression to match {{include "template_name"}} patterns
+	includePattern := regexp.MustCompile(`\{\{include\s+"([^"]+)"\}\}`)
+
+	// Find all includes in the content
+	includes := includePattern.FindAllStringSubmatch(content, -1)
+	if len(includes) == 0 {
+		return content, nil
+	}
+
+	// Process each include
+	result := content
+	for _, includeMatch := range includes {
+		if len(includeMatch) < 2 {
+			continue
+		}
+
+		includePath := includeMatch[1]
+		var includeContent string
+		var err error
+
+		// Check if the includePath is an absolute path that exists (for tests)
+		if filepath.IsAbs(includePath) {
+			if _, statErr := os.Stat(includePath); statErr == nil {
+				data, readErr := os.ReadFile(includePath)
+				if readErr != nil {
+					return "", fmt.Errorf("failed to read include file %q: %w", includePath, readErr)
+				}
+				includeContent = string(data)
+			} else {
+				// If the absolute path doesn't exist, try to load it as a regular prompt
+				includeContent, err = LoadPrompt(includePath)
+				if err != nil {
+					return "", fmt.Errorf("failed to load include %q: %w", includePath, err)
+				}
+			}
+		} else {
+			// Regular prompt loading for non-absolute paths
+			includeContent, err = LoadPrompt(includePath)
+			if err != nil {
+				return "", fmt.Errorf("failed to load include %q: %w", includePath, err)
+			}
+		}
+
+		// Extract included content without its metadata
+		_, parsedContent, err := ExtractMetadata(includeContent, includePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to extract content from include %q: %w", includePath, err)
+		}
+
+		// Replace the include directive with the content
+		// Trim any extra whitespace and ensure proper newlines
+		parsedContent = strings.TrimSpace(parsedContent)
+		originalInclude := includeMatch[0]
+		
+		// Replace the include directive while maintaining newlines correctly
+		if strings.HasPrefix(originalInclude, "\n") {
+			parsedContent = "\n" + parsedContent
+		}
+		
+		// Ensure the replacement ends with a newline if the original did
+		if strings.HasSuffix(originalInclude, "\n") {
+			parsedContent = parsedContent + "\n"
+		} else {
+			parsedContent = parsedContent + "\n"
+		}
+		
+		result = strings.Replace(result, originalInclude, parsedContent, 1)
+	}
+
+	// Check if there are nested includes that need to be processed
+	if includePattern.MatchString(result) {
+		return ProcessIncludes(result)
+	}
+
+	return result, nil
+}
+
+// LoadPromptWithIncludes loads a prompt and processes any {{include}} directives
+func LoadPromptWithIncludes(promptName string) (string, error) {
+	// Load the base prompt
+	promptContent, err := LoadPrompt(promptName)
+	if err != nil {
+		return "", err
+	}
+
+	// Extract metadata and content
+	_, content, err := ExtractMetadata(promptContent, promptName)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract content: %w", err)
+	}
+
+	// Process includes
+	processedContent, err := ProcessIncludes(content)
+	if err != nil {
+		return "", err
+	}
+
+	return processedContent, nil
 }
