@@ -1,44 +1,36 @@
-# CronAI Product Management Strategic Overview
+# CronAI Technical Planning Overview
 
-As the product manager for CronAI, please provide a comprehensive strategic analysis and roadmap. Include the following:
+As a technical planner for CronAI, please provide insights on improving this utility tool. CronAI is a command-line application and service-oriented tool with a simple configuration format of `timestamp model promptfile processor`. It will always remain a CLI/service tool with no UI or database components, utilizing the filesystem for all storage needs.
 
-## Market Analysis
-- Assess the current landscape of AI-prompt scheduling tools
-- Identify key competitors and their strengths/weaknesses
-- Analyze primary use cases and target customer segments
-- Determine market gaps that CronAI can uniquely address
-
-## Feature Prioritization
-- Rank the following potential features by impact vs. effort:
+## Feature Planning
+- Evaluate the following potential features by technical value and implementation effort:
   1. Additional AI model integrations beyond OpenAI, Claude, and Gemini
   2. Enhanced prompt templating with variables and conditional logic
-  3. Web UI for configuration and monitoring
-  4. Improved response processing options
-  5. Multi-user access with role-based permissions
-  6. API endpoint for external integration
-  7. Prompt version control and history
-  8. Cost tracking and budget management features
-  9. Performance analytics and reporting
-  10. Response validation and error handling improvements
+  3. Improved response processing options (email, Slack, GitHub, file output, webhooks)
+  4. Simple API endpoint for external triggers
+  5. Performance improvements and optimizations
+  6. Response validation and error handling improvements
+  7. File-based prompt organization and management
+  8. Enhanced configuration file validation
+  9. Command-line testing tools and debugging options
+  10. Logging enhancements
+  11. Flexible prompt standards support for model-specific formatting
+  12. MCP (Model Context Protocol) support for standardized context provision to LLMs
+  13. Standardized processor response API for extensibility
 
-## Release Planning
+## Implementation Planning
 - Suggest next 3-5 features to focus on for immediate development
-- Outline a quarterly roadmap for the next 12 months
-- Define criteria for MVP vs. future enhancements
+- Outline implementation priorities for the next 6 months
+- Identify technical challenges and potential solutions
 
-## User Feedback
-- Analyze patterns from initial user testing
-- Recommend improvements based on friction points
-- Identify potential extension points based on user requests
+## Technical Improvements
+- Suggest improvements to the codebase structure
+- Identify areas for better error handling or performance
+- Recommend testing approaches for reliability
 
-## Competitive Differentiation
-- Define our unique value proposition
-- Highlight key differentiators from similar tools
-- Suggest positioning strategy in the market
+## CLI Experience
+- Propose improvements to the command-line interface
+- Suggest helpful command options for better usability
+- Identify ways to make configuration more intuitive
 
-## Resource Requirements
-- Estimate engineering resources needed for roadmap
-- Identify skill gaps that need to be addressed
-- Suggest partnership opportunities
-
-Present your analysis with clear recommendations for immediate next steps and long-term strategic direction.
+Present your technical recommendations with focus on making CronAI a useful, reliable, and easy-to-use command-line utility.

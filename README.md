@@ -61,18 +61,47 @@ timestamp model prompt response_processor [variables] [model_params:...]
 
 See [cronai.config.example](cronai.config.example), [cronai.config.variables.example](cronai.config.variables.example), and [cronai.config.model-params.example](cronai.config.model-params.example) for more examples.
 
-## Prompt Files
+## Prompt Management
 
-Store your prompt files as markdown in the `cron_prompts` directory. Example:
+CronAI includes a robust file-based prompt management system to help you organize, discover, and reuse prompts efficiently.
+
+### Prompt Structure and Organization
+
+Prompts are organized in a category-based directory structure:
+
+```
+cron_prompts/
+├── monitoring/     # Monitoring-related prompts
+├── reports/        # Report generation prompts
+├── system/         # System operations prompts
+├── templates/      # Reusable templates
+└── [custom]/       # Your custom categories
+```
+
+### Prompt Files
+
+Each prompt is stored as a markdown file and can include an optional metadata section:
 
 ```markdown
-# Product Manager Daily Task List
+---
+name: System Health Check
+description: Analyzes system health metrics
+author: CronAI Team
+version: 1.0
+category: system
+tags: health, monitoring, metrics
+variables:
+  - name: cpu_usage
+    description: Current CPU usage percentage
+  - name: memory_usage
+    description: Current memory usage percentage
+---
 
-As a product manager, please generate a prioritized task list for today.
+# System Health Check
 
-Include the following:
-1. Top 3 urgent items to address
-2. Customer feedback that needs immediate attention
+Analyze the following system metrics:
+- CPU Usage: {{cpu_usage}}%
+- Memory Usage: {{memory_usage}}%
 ...
 ```
 
@@ -135,6 +164,44 @@ Available conditional features:
 - Nested conditionals for complex logic
 
 For a full guide to conditional syntax and examples, see [docs/conditional-templates.md](docs/conditional-templates.md).
+
+### Prompt Composition
+
+You can include content from other prompt files using the include directive:
+
+```markdown
+{{include "templates/common_header.md"}}
+
+# Main Content
+
+Your specific prompt content goes here.
+
+{{include "templates/common_footer.md"}}
+```
+
+### Managing Prompts
+
+CronAI includes CLI commands for prompt management:
+
+```bash
+# List all prompts
+cronai prompt list
+
+# List prompts in a specific category
+cronai prompt list --category system
+
+# Search for prompts
+cronai prompt search "health check"
+cronai prompt search --content --query "CPU"
+
+# Show prompt details
+cronai prompt show system/system_health --vars
+
+# Preview a prompt with variables
+cronai prompt preview system/system_health --vars "cpu_usage=85,memory_usage=70"
+```
+
+For more details, see [docs/prompt-management.md](docs/prompt-management.md).
 
 ## Model Parameters
 
@@ -224,6 +291,12 @@ cronai run --model claude --prompt report_template --processor email-execs@compa
 
 # List all scheduled tasks
 cronai list
+
+# Manage prompts
+cronai prompt list
+cronai prompt search "monitoring"
+cronai prompt show system/system_health
+cronai prompt preview reports/monthly_report --vars "month=May,year=2025,team=Engineering"
 ```
 
 ## Running as a systemd Service
