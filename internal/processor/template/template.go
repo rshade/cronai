@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -46,10 +47,71 @@ func GetManager() *Manager {
 	return instance
 }
 
+// getTemplateFuncMap returns the function map for templates
+func getTemplateFuncMap() template.FuncMap {
+	return template.FuncMap{
+		// Variable existence check
+		"hasVar": func(v map[string]string, key string) bool {
+			_, exists := v[key]
+			return exists
+		},
+		// Variable access with default value
+		"getVar": func(v map[string]string, key, defaultVal string) string {
+			if val, exists := v[key]; exists {
+				return val
+			}
+			return defaultVal
+		},
+		// String comparison operators
+		"eq":        func(a, b string) bool { return a == b },
+		"ne":        func(a, b string) bool { return a != b },
+		"contains":  strings.Contains,
+		"hasPrefix": strings.HasPrefix,
+		"hasSuffix": strings.HasSuffix,
+		// Boolean operators
+		"not": func(b bool) bool { return !b },
+		// Numeric comparison (converts strings to numbers first)
+		"lt": func(a, b string) bool {
+			aVal, aErr := strconv.ParseFloat(a, 64)
+			bVal, bErr := strconv.ParseFloat(b, 64)
+			if aErr != nil || bErr != nil {
+				return a < b // Fallback to string comparison
+			}
+			return aVal < bVal
+		},
+		"le": func(a, b string) bool {
+			aVal, aErr := strconv.ParseFloat(a, 64)
+			bVal, bErr := strconv.ParseFloat(b, 64)
+			if aErr != nil || bErr != nil {
+				return a <= b // Fallback to string comparison
+			}
+			return aVal <= bVal
+		},
+		"gt": func(a, b string) bool {
+			aVal, aErr := strconv.ParseFloat(a, 64)
+			bVal, bErr := strconv.ParseFloat(b, 64)
+			if aErr != nil || bErr != nil {
+				return a > b // Fallback to string comparison
+			}
+			return aVal > bVal
+		},
+		"ge": func(a, b string) bool {
+			aVal, aErr := strconv.ParseFloat(a, 64)
+			bVal, bErr := strconv.ParseFloat(b, 64)
+			if aErr != nil || bErr != nil {
+				return a >= b // Fallback to string comparison
+			}
+			return aVal >= bVal
+		},
+	}
+}
+
 // RegisterTemplate adds or updates a template
 func (m *Manager) RegisterTemplate(name, content string) error {
 	// Parse the template to validate it
-	tmpl, err := template.New(name).Parse(content)
+	tmpl, err := template.New(name).
+		Funcs(getTemplateFuncMap()).
+		Parse(content)
 	if err != nil {
 		return fmt.Errorf("invalid template: %w", err)
 	}
@@ -111,7 +173,9 @@ func (m *Manager) SafeExecute(name string, data TemplateData) string {
 
 // Validate checks if a template is valid
 func (m *Manager) Validate(content string) error {
-	_, err := template.New("validation").Parse(content)
+	_, err := template.New("validation").
+		Funcs(getTemplateFuncMap()).
+		Parse(content)
 	return err
 }
 

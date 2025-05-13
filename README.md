@@ -97,6 +97,45 @@ Special variables that are automatically populated:
 - `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
 - `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
 
+### Conditional Logic in Prompts
+
+CronAI supports conditional blocks in prompts, allowing for dynamic content based on variables:
+
+```markdown
+{{if eq .Variables.environment "production"}}
+## Production Environment
+This is a production system. Be cautious with recommendations.
+{{else if eq .Variables.environment "staging"}}
+## Staging Environment
+This is a staging system. Testing is allowed.
+{{else}}
+## Development Environment
+This is a development system. Feel free to experiment.
+{{end}}
+
+{{if hasVar .Variables "includeMetrics"}}
+## Metrics Analysis
+Detailed metrics included as requested.
+{{end}}
+
+{{if gt (getVar .Variables "errorCount" "0") "5"}}
+High error count detected: {{.Variables.errorCount}}
+{{else}}
+Low or no errors detected.
+{{end}}
+```
+
+Available conditional features:
+- If-else branching based on variable values
+- Variable existence checks with `hasVar`
+- Default values with `getVar`
+- String comparisons: eq (equals), ne (not equals), contains, hasPrefix, hasSuffix
+- Numeric comparisons: lt (less than), gt (greater than), le (less than or equal), ge (greater than or equal)
+- Logical operators: and, or, not
+- Nested conditionals for complex logic
+
+For a full guide to conditional syntax and examples, see [docs/conditional-templates.md](docs/conditional-templates.md).
+
 ## Model Parameters
 
 You can configure model-specific parameters to fine-tune AI model behavior. The supported parameters include:

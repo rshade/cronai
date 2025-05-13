@@ -10,16 +10,16 @@ import (
 // ModelConfig defines common configuration parameters for AI models
 type ModelConfig struct {
 	// Common parameters
-	Temperature    float64 // Controls randomness (0.0-1.0)
-	MaxTokens      int     // Maximum response length
-	TopP           float64 // Nucleus sampling parameter (0.0-1.0)
+	Temperature      float64 // Controls randomness (0.0-1.0)
+	MaxTokens        int     // Maximum response length
+	TopP             float64 // Nucleus sampling parameter (0.0-1.0)
 	FrequencyPenalty float64 // Penalize frequent tokens (-2.0 to 2.0)
 	PresencePenalty  float64 // Penalize new tokens based on presence (-2.0 to 2.0)
-	
+
 	// Model-specific configurations
-	OpenAIConfig   *OpenAIConfig
-	ClaudeConfig   *ClaudeConfig
-	GeminiConfig   *GeminiConfig
+	OpenAIConfig *OpenAIConfig
+	ClaudeConfig *ClaudeConfig
+	GeminiConfig *GeminiConfig
 }
 
 // OpenAIConfig holds OpenAI-specific configuration
@@ -36,28 +36,28 @@ type ClaudeConfig struct {
 
 // GeminiConfig holds Google Gemini-specific configuration
 type GeminiConfig struct {
-	Model         string // Gemini model to use (e.g., "gemini-pro", "gemini-1.5-pro")
+	Model          string            // Gemini model to use (e.g., "gemini-pro", "gemini-1.5-pro")
 	SafetySettings map[string]string // Safety settings for Gemini
 }
 
 // DefaultModelConfig returns default configuration values
 func DefaultModelConfig() *ModelConfig {
 	return &ModelConfig{
-		Temperature:     0.7,
-		MaxTokens:       1024,
-		TopP:            1.0,
+		Temperature:      0.7,
+		MaxTokens:        1024,
+		TopP:             1.0,
 		FrequencyPenalty: 0.0,
 		PresencePenalty:  0.0,
-		OpenAIConfig:    &OpenAIConfig{
+		OpenAIConfig: &OpenAIConfig{
 			Model:         "gpt-3.5-turbo",
 			SystemMessage: "You are a helpful assistant.",
 		},
-		ClaudeConfig:    &ClaudeConfig{
+		ClaudeConfig: &ClaudeConfig{
 			Model:         "claude-3-sonnet-20240229",
 			SystemMessage: "You are a helpful assistant.",
 		},
-		GeminiConfig:    &GeminiConfig{
-			Model:         "gemini-pro",
+		GeminiConfig: &GeminiConfig{
+			Model:          "gemini-pro",
 			SafetySettings: make(map[string]string),
 		},
 	}
@@ -127,23 +127,23 @@ func (mc *ModelConfig) LoadFromEnvironment() {
 // Format: "temperature=0.8,max_tokens=2048,model=gpt-4"
 func ParseModelParams(paramsStr string) (map[string]string, error) {
 	params := make(map[string]string)
-	
+
 	if paramsStr == "" {
 		return params, nil
 	}
-	
+
 	for _, paramPair := range strings.Split(paramsStr, ",") {
 		parts := strings.SplitN(paramPair, "=", 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid parameter format: %s", paramPair)
 		}
-		
+
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
-		
+
 		params[key] = value
 	}
-	
+
 	return params, nil
 }
 

@@ -95,8 +95,8 @@ func TestLoadFromEnvironment(t *testing.T) {
 
 	// Test safety settings
 	expectedSettings := map[string]string{
-		"harmful":     "block",
-		"harassment":  "warn",
+		"harmful":    "block",
+		"harassment": "warn",
 	}
 	if !reflect.DeepEqual(config.GeminiConfig.SafetySettings, expectedSettings) {
 		t.Errorf("Expected safety settings %v, got %v", expectedSettings, config.GeminiConfig.SafetySettings)
@@ -130,7 +130,7 @@ func TestParseModelParams(t *testing.T) {
 			name:  "model-specific parameters",
 			input: "openai.model=gpt-4,claude.system_message=Custom message",
 			expected: map[string]string{
-				"openai.model":         "gpt-4",
+				"openai.model":          "gpt-4",
 				"claude.system_message": "Custom message",
 			},
 			wantErr: false,
@@ -197,45 +197,45 @@ func TestUpdateFromParams(t *testing.T) {
 				"model": "gpt-4",
 			},
 			checkFunc: func(c *ModelConfig) bool {
-				return c.OpenAIConfig.Model == "gpt-4" && 
-				       c.ClaudeConfig.Model == "gpt-4" && 
-				       c.GeminiConfig.Model == "gpt-4"
+				return c.OpenAIConfig.Model == "gpt-4" &&
+					c.ClaudeConfig.Model == "gpt-4" &&
+					c.GeminiConfig.Model == "gpt-4"
 			},
 			errMessage: "Model parameter not applied to all models",
 		},
 		{
 			name: "OpenAI specific parameters",
 			params: map[string]string{
-				"openai.model":         "gpt-4",
+				"openai.model":          "gpt-4",
 				"openai.system_message": "OpenAI specific message",
 			},
 			checkFunc: func(c *ModelConfig) bool {
-				return c.OpenAIConfig.Model == "gpt-4" && 
-				       c.OpenAIConfig.SystemMessage == "OpenAI specific message"
+				return c.OpenAIConfig.Model == "gpt-4" &&
+					c.OpenAIConfig.SystemMessage == "OpenAI specific message"
 			},
 			errMessage: "OpenAI specific parameters not updated correctly",
 		},
 		{
 			name: "Claude specific parameters",
 			params: map[string]string{
-				"claude.model":         "claude-3-opus-20240229",
+				"claude.model":          "claude-3-opus-20240229",
 				"claude.system_message": "Claude specific message",
 			},
 			checkFunc: func(c *ModelConfig) bool {
-				return c.ClaudeConfig.Model == "claude-3-opus-20240229" && 
-				       c.ClaudeConfig.SystemMessage == "Claude specific message"
+				return c.ClaudeConfig.Model == "claude-3-opus-20240229" &&
+					c.ClaudeConfig.SystemMessage == "Claude specific message"
 			},
 			errMessage: "Claude specific parameters not updated correctly",
 		},
 		{
 			name: "Gemini specific parameters",
 			params: map[string]string{
-				"gemini.model":           "gemini-1.5-pro",
-				"gemini.safety_setting":  "harmful=block",
+				"gemini.model":          "gemini-1.5-pro",
+				"gemini.safety_setting": "harmful=block",
 			},
 			checkFunc: func(c *ModelConfig) bool {
-				return c.GeminiConfig.Model == "gemini-1.5-pro" && 
-				       c.GeminiConfig.SafetySettings["harmful"] == "block"
+				return c.GeminiConfig.Model == "gemini-1.5-pro" &&
+					c.GeminiConfig.SafetySettings["harmful"] == "block"
 			},
 			errMessage: "Gemini specific parameters not updated correctly",
 		},
@@ -249,7 +249,7 @@ func TestUpdateFromParams(t *testing.T) {
 					return false
 				}
 				return c.GeminiConfig.SafetySettings["harmful"] == "block" &&
-				       c.GeminiConfig.SafetySettings["harassment"] == "warn"
+					c.GeminiConfig.SafetySettings["harassment"] == "warn"
 			},
 			errMessage: "Multiple safety settings not handled correctly",
 		},
@@ -259,7 +259,7 @@ func TestUpdateFromParams(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			config := DefaultModelConfig()
 			err := config.UpdateFromParams(tc.params)
-			
+
 			if tc.checkFunc == nil {
 				// We expect an error
 				if err == nil {
@@ -271,7 +271,7 @@ func TestUpdateFromParams(t *testing.T) {
 					t.Errorf("UpdateFromParams() error = %v", err)
 					return
 				}
-				
+
 				// Check if the parameters were updated correctly
 				if !tc.checkFunc(config) {
 					t.Errorf("%s", tc.errMessage)
@@ -368,7 +368,7 @@ func TestValidate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			config := DefaultModelConfig()
 			tc.configure(config)
-			
+
 			err := config.Validate()
 			if (err != nil) != tc.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tc.wantErr)
