@@ -23,7 +23,14 @@ var (
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a single task immediately",
-	Long:  `Run a single task immediately without scheduling.`,
+	Long: `Run a single task immediately without scheduling.
+
+Prompt files can now use conditional template logic with variables. For example:
+- {{if eq .Variables.environment "production"}} Production content {{end}}
+- {{if hasVar .Variables "feature"}} Feature exists {{end}}
+- {{if gt .Variables.count "5"}} Count is more than 5 {{end}}
+
+See the docs/conditional-templates.md file for detailed syntax and examples.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Parse variables if provided
 		variables := make(map[string]string)
@@ -56,7 +63,7 @@ var runCmd = &cobra.Command{
 				fmt.Printf("  %s: %s\n", k, v)
 			}
 		}
-		
+
 		if modelParams != "" {
 			fmt.Printf("Model parameters: %s\n", modelParams)
 		}
@@ -66,13 +73,23 @@ var runCmd = &cobra.Command{
 		var err error
 
 		if len(variables) > 0 {
+			// Load the prompt with variables, which will use template processing if needed
+			fmt.Println("Loading prompt with variables and template processing if applicable...")
 			promptContent, err = prompt.LoadPromptWithVariables(promptName, variables)
 		} else {
+			// Load the prompt without variables
+			fmt.Println("Loading prompt without variables...")
 			promptContent, err = prompt.LoadPrompt(promptName)
 		}
 
 		if err != nil {
-			fmt.Printf("Error loading prompt: %v\n", err)
+			// Provide more specific error messages for template-related errors
+			if strings.Contains(err.Error(), "template") {
+				fmt.Printf("Error processing prompt template: %v\n", err)
+				fmt.Println("Please check the template syntax in your prompt file.")
+			} else {
+				fmt.Printf("Error loading prompt: %v\n", err)
+			}
 			return
 		}
 

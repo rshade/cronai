@@ -20,6 +20,7 @@ func ProcessResponse(processorName string, response *models.ModelResponse, templ
 		PromptName:  response.PromptName,
 		Variables:   response.Variables,
 		ExecutionID: response.ExecutionID,
+		Metadata:    make(map[string]string), // Initialize metadata map
 	}
 
 	// Handle special processor formats
