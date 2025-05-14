@@ -1,0 +1,15 @@
+{{if hasVar .Variables "alertLevel"}}
+{{if eq .Variables.alertLevel "critical"}}
+🚨 **CRITICAL ALERT** 🚨
+{{else if eq .Variables.alertLevel "warning"}}
+⚠️ **WARNING** ⚠️
+{{else if eq .Variables.alertLevel "info"}}
+ℹ️ **INFORMATION** ℹ️
+{{else}}
+📢 **NOTIFICATION** 📢
+{{end}}
+{{else}}
+📢 **NOTIFICATION** 📢
+{{end}}
+
+{{if hasVar .Variables "alertTitle"}}**{{.Variables.alertTitle}}**{{end}}

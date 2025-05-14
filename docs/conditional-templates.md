@@ -1,6 +1,6 @@
 # Conditional Logic in Templates
 
-CronAI now supports conditional logic in prompt templates, allowing for dynamic content based on variables and conditions.
+CronAI supports conditional logic in prompt templates, allowing for dynamic content based on variables and conditions. This can be combined with [template inheritance and composition](template-inheritance.md) for advanced template reuse.
 
 ## Basic Syntax
 
