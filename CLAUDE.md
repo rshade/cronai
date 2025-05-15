@@ -4,6 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Implementation Patterns
 
+### Model Configuration System
+
+The model configuration system follows these patterns:
+- Provides consistent configuration across multiple AI models (OpenAI, Claude, Gemini)
+- Offers common parameters (temperature, max_tokens) applicable to all models
+- Supports model-specific parameters through dot notation (e.g., `openai.system_message`, `gemini.safety_setting`)
+- Configuration can be loaded from environment variables, command-line arguments, or config files
+- Implements a clear parameter precedence: task-specific > environment > defaults
+- Uses official SDKs for all model integrations (go-openai, anthropic-sdk-go, generative-ai-go)
+- Validates all parameter values before use
+
 ### Templating System
 
 The templating system follows these patterns:

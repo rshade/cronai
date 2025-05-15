@@ -108,6 +108,13 @@ func (mc *ModelConfig) LoadFromEnvironment() {
 	// Load safety settings from environment if provided
 	// Format: GEMINI_SAFETY_SETTINGS=category1=level1,category2=level2
 	if safetySettings := os.Getenv("GEMINI_SAFETY_SETTINGS"); safetySettings != "" {
+		// Ensure SafetySettings is initialized
+		if mc.GeminiConfig == nil {
+			mc.GeminiConfig = &GeminiConfig{
+				Model: "gemini-pro",
+			}
+		}
+
 		if mc.GeminiConfig.SafetySettings == nil {
 			mc.GeminiConfig.SafetySettings = make(map[string]string)
 		}
@@ -149,7 +156,13 @@ func ParseModelParams(paramsStr string) (map[string]string, error) {
 
 // UpdateFromParams updates the configuration based on the provided parameters
 func (mc *ModelConfig) UpdateFromParams(params map[string]string) error {
+	// First pass: Process generic parameters
 	for key, value := range params {
+		// Skip model-specific parameters in the first pass
+		if strings.Contains(key, ".") {
+			continue
+		}
+
 		// Handle common parameters
 		switch strings.ToLower(key) {
 		case "temperature":
@@ -233,13 +246,21 @@ func (mc *ModelConfig) UpdateFromParams(params map[string]string) error {
 
 			// Safe logging for debugging if needed
 			// log.Printf("Generic system message applied to applicable model configurations")
+		}
+	}
 
-		// Model-specific parameters with prefixes
-		default:
-			// Handle prefixed model-specific parameters
+	// Second pass: Process model-specific parameters to override generic ones
+	for key, value := range params {
+		// Only process model-specific parameters in the second pass
+		if !strings.Contains(key, ".") {
+			continue
+		}
+
+		// Handle prefixed model-specific parameters
+		if err := mc.handleModelSpecificParam(key, value); err != nil {
 			// We'll allow unknown parameters to pass through silently
 			// This allows for forward compatibility with future parameters
-			_ = mc.handleModelSpecificParam(key, value)
+			continue
 		}
 	}
 
