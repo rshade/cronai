@@ -2,6 +2,8 @@
 
 This directory contains example templates for CronAI response processors.
 
+The `library/` subdirectory contains reusable template components that can be used with template inheritance and composition patterns.
+
 ## Template Files
 
 Templates use Go's standard `text/template` package syntax. Within a template, you have access to the following variables:
@@ -49,3 +51,21 @@ You can also validate templates using the `validate` command:
 # Validate all templates in a directory
 ./cronai validate --dir templates/
 ```
+
+## Template Inheritance and Composition
+
+CronAI supports advanced template inheritance and composition patterns:
+
+```
+# Template inheritance
+{{extends "base_template"}}
+{{block "section" .}}Override content{{end}}
+
+# Template inclusion
+{{include "component_template"}}
+
+# Template embedding
+{{template "partial_template" .}}
+```
+
+For complete documentation on these features, see [Template Inheritance and Composition](../docs/template-inheritance.md).

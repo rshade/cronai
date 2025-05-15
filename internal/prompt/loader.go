@@ -80,12 +80,22 @@ func LoadPromptWithVariables(promptName string, variables map[string]string) (st
 	}
 
 	// Extract metadata and content
-	_, content, err := ExtractMetadata(promptContent, promptName)
+	metadata, content, err := ExtractMetadata(promptContent, promptName)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract content: %w", err)
 	}
 
-	// Process includes
+	// Check if this prompt extends another template (inheritance)
+	if metadata.Extends != "" {
+		// Process the prompt with inheritance support
+		_, finalContent, err := ProcessPromptWithInheritance(promptName, promptContent, variables)
+		if err != nil {
+			return "", fmt.Errorf("failed to process prompt with inheritance: %w", err)
+		}
+		return finalContent, nil
+	}
+
+	// Process includes for non-inheritance templates
 	processedContent, err := ProcessIncludes(content)
 	if err != nil {
 		return "", err
@@ -219,7 +229,7 @@ func ApplyVariables(content string, variables map[string]string) string {
 // ProcessIncludes processes {{include "template_name"}} directives in the prompt content
 func ProcessIncludes(content string) (string, error) {
 	// Regular expression to match {{include "template_name"}} patterns
-	includePattern := regexp.MustCompile(`\{\{include\s+"([^"]+)"\}\}`)
+	includePattern := regexp.MustCompile(`\{\{include\s+"([^"]+)"(\s+.*)?\}\}`)
 
 	// Find all includes in the content
 	includes := includePattern.FindAllStringSubmatch(content, -1)
@@ -235,29 +245,60 @@ func ProcessIncludes(content string) (string, error) {
 		}
 
 		includePath := includeMatch[1]
+		// We'll preserve parameter parsing for future enhancements
+		// but won't use it for now
+		// if len(includeMatch) > 2 && includeMatch[2] != "" {
+		//	includeParams = includeMatch[2]
+		// }
+
 		var includeContent string
 		var err error
 
-		// Check if the includePath is an absolute path that exists (for tests)
-		if filepath.IsAbs(includePath) {
-			if _, statErr := os.Stat(includePath); statErr == nil {
-				data, readErr := os.ReadFile(includePath)
+		// First check library path for component templates
+		libraryPaths := []string{
+			filepath.Join("templates", "library", includePath+".tmpl"),
+			filepath.Join("templates", "library", includePath+".md"),
+			filepath.Join("..", "templates", "library", includePath+".tmpl"),
+			filepath.Join("..", "templates", "library", includePath+".md"),
+			filepath.Join("..", "..", "templates", "library", includePath+".tmpl"),
+			filepath.Join("..", "..", "templates", "library", includePath+".md"),
+		}
+
+		foundInLibrary := false
+		for _, libPath := range libraryPaths {
+			if _, statErr := os.Stat(libPath); statErr == nil {
+				data, readErr := os.ReadFile(libPath)
 				if readErr != nil {
-					return "", fmt.Errorf("failed to read include file %q: %w", includePath, readErr)
+					return "", fmt.Errorf("failed to read library template %q: %w", libPath, readErr)
 				}
 				includeContent = string(data)
+				foundInLibrary = true
+				break
+			}
+		}
+
+		if !foundInLibrary {
+			// Check if the includePath is an absolute path that exists (for tests)
+			if filepath.IsAbs(includePath) {
+				if _, statErr := os.Stat(includePath); statErr == nil {
+					data, readErr := os.ReadFile(includePath)
+					if readErr != nil {
+						return "", fmt.Errorf("failed to read include file %q: %w", includePath, readErr)
+					}
+					includeContent = string(data)
+				} else {
+					// If the absolute path doesn't exist, try to load it as a regular prompt
+					includeContent, err = LoadPrompt(includePath)
+					if err != nil {
+						return "", fmt.Errorf("failed to load include %q: %w", includePath, err)
+					}
+				}
 			} else {
-				// If the absolute path doesn't exist, try to load it as a regular prompt
+				// Regular prompt loading for non-absolute paths
 				includeContent, err = LoadPrompt(includePath)
 				if err != nil {
 					return "", fmt.Errorf("failed to load include %q: %w", includePath, err)
 				}
-			}
-		} else {
-			// Regular prompt loading for non-absolute paths
-			includeContent, err = LoadPrompt(includePath)
-			if err != nil {
-				return "", fmt.Errorf("failed to load include %q: %w", includePath, err)
 			}
 		}
 
@@ -271,19 +312,19 @@ func ProcessIncludes(content string) (string, error) {
 		// Trim any extra whitespace and ensure proper newlines
 		parsedContent = strings.TrimSpace(parsedContent)
 		originalInclude := includeMatch[0]
-		
+
 		// Replace the include directive while maintaining newlines correctly
 		if strings.HasPrefix(originalInclude, "\n") {
 			parsedContent = "\n" + parsedContent
 		}
-		
+
 		// Ensure the replacement ends with a newline if the original did
 		if strings.HasSuffix(originalInclude, "\n") {
 			parsedContent = parsedContent + "\n"
 		} else {
 			parsedContent = parsedContent + "\n"
 		}
-		
+
 		result = strings.Replace(result, originalInclude, parsedContent, 1)
 	}
 
@@ -316,4 +357,81 @@ func LoadPromptWithIncludes(promptName string) (string, error) {
 	}
 
 	return processedContent, nil
+}
+
+// ProcessPromptWithInheritance processes a prompt with template inheritance
+func ProcessPromptWithInheritance(path, content string, variables map[string]string) (map[string]string, string, error) {
+	// Extract metadata to check for 'extends' property
+	metadata, extractedContent, err := ExtractMetadata(content, path)
+	if err != nil {
+		return variables, "", fmt.Errorf("failed to extract metadata: %w", err)
+	}
+
+	// Check if this prompt extends another
+	if metadata.Extends != "" {
+		// Try to load the parent prompt
+		parentPrompt, err := LoadPrompt(metadata.Extends)
+		if err != nil {
+			return variables, "", fmt.Errorf("failed to load parent prompt %q: %w", metadata.Extends, err)
+		}
+
+		// Extract parent content
+		_, parentContent, err := ExtractMetadata(parentPrompt, metadata.Extends)
+		if err != nil {
+			return variables, "", fmt.Errorf("failed to extract parent content: %w", err)
+		}
+
+		// Process includes in parent content
+		processedParentContent, err := ProcessIncludes(parentContent)
+		if err != nil {
+			return variables, "", err
+		}
+
+		// Process includes in child content
+		processedChildContent, err := ProcessIncludes(extractedContent)
+		if err != nil {
+			return variables, "", err
+		}
+
+		// Use the template engine to handle block overrides
+		// This would merge the child's blocks into the parent template
+		tmplManager := template.GetManager()
+
+		// Register parent template first
+		parentName := "parent_" + filepath.Base(path)
+		err = tmplManager.RegisterTemplate(parentName, processedParentContent)
+		if err != nil {
+			return variables, "", fmt.Errorf("failed to register parent template: %w", err)
+		}
+
+		// Register child template with extends directive
+		childName := "child_" + filepath.Base(path)
+		childContentWithExtends := "{{extends \"" + parentName + "\"}}\n" + processedChildContent
+		err = tmplManager.RegisterTemplate(childName, childContentWithExtends)
+		if err != nil {
+			return variables, "", fmt.Errorf("failed to register child template: %w", err)
+		}
+
+		// Create template data with variables
+		data := template.TemplateData{
+			Variables: variables,
+			Timestamp: time.Now(),
+		}
+
+		// Execute the child template (which will inherit from parent)
+		result, err := tmplManager.Execute(childName, data)
+		if err != nil {
+			return variables, "", fmt.Errorf("failed to execute template with inheritance: %w", err)
+		}
+
+		return variables, result, nil
+	}
+
+	// If no inheritance, just process normally
+	processedContent, err := ProcessIncludes(extractedContent)
+	if err != nil {
+		return variables, "", err
+	}
+
+	return variables, ApplyVariables(processedContent, variables), nil
 }

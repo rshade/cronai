@@ -4,7 +4,7 @@ import "fmt"
 
 // registerOrPanic registers a template and panics if there is an error
 func registerOrPanic(m *Manager, name, content string) {
-	if err := m.RegisterTemplate(name, content); err != nil {
+	if err := m.RegisterTemplateWithIncludes(name, content); err != nil {
 		panic(fmt.Sprintf("Failed to register default template %s: %v", name, err))
 	}
 }

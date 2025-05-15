@@ -1,0 +1,2 @@
+| {{if hasVar .Variables "columnNames"}}{{.Variables.columnNames}}{{else}}Column 1 | Column 2 | Column 3{{end}} |
+|{{if hasVar .Variables "columnNames"}}{{range $i, $e := split .Variables.columnNames "|"}} --- |{{end}}{{else}} --- | --- | --- |{{end}}

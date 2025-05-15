@@ -1,0 +1,34 @@
+{{extends "base_report"}}
+
+{{block "content" .}}
+# Monthly Report: {{if hasVar .Variables "month"}}{{.Variables.month}}{{else}}{{.Timestamp.Format "January 2006"}}{{end}}
+
+## Executive Summary
+
+{{if hasVar .Variables "summary"}}
+{{.Variables.summary}}
+{{else}}
+This monthly report provides an overview of key metrics and performance indicators.
+{{end}}
+
+## Key Metrics
+
+{{template "table_start" .}}
+| Revenue | ${{if hasVar .Variables "revenue"}}{{.Variables.revenue}}{{else}}0.00{{end}} |
+| Expenses | ${{if hasVar .Variables "expenses"}}{{.Variables.expenses}}{{else}}0.00{{end}} |
+| Net Profit | ${{if hasVar .Variables "profit"}}{{.Variables.profit}}{{else}}0.00{{end}} |
+
+## Performance Analysis
+
+{{.Content}}
+
+## Action Items
+
+{{if hasVar .Variables "actionItems"}}
+{{.Variables.actionItems}}
+{{else}}
+1. Review monthly performance
+2. Adjust strategies as needed
+3. Prepare for next month's goals
+{{end}}
+{{end}}

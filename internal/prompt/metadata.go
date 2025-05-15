@@ -21,7 +21,8 @@ type PromptMetadata struct {
 	Category    string           `yaml:"category"`
 	Tags        []string         `yaml:"tags"`
 	Variables   []PromptVariable `yaml:"variables"`
-	Path        string           `yaml:"-"` // Path is not part of the YAML but added for reference
+	Extends     string           `yaml:"extends"` // Name of the template this one extends
+	Path        string           `yaml:"-"`       // Path is not part of the YAML but added for reference
 }
 
 // ExtractMetadata extracts the metadata from a prompt content string
@@ -50,6 +51,7 @@ func ExtractMetadata(content, path string) (*PromptMetadata, string, error) {
 	versionPattern := regexp.MustCompile(`(?m)^version:\s*(.*)$`)
 	categoryPattern := regexp.MustCompile(`(?m)^category:\s*(.*)$`)
 	tagsPattern := regexp.MustCompile(`(?m)^tags:\s*(.*)$`)
+	extendsPattern := regexp.MustCompile(`(?m)^extends:\s*(.*)$`)
 
 	// Extract simple fields
 	if nameMatches := namePattern.FindStringSubmatch(metadataStr); len(nameMatches) > 1 {
@@ -77,15 +79,18 @@ func ExtractMetadata(content, path string) (*PromptMetadata, string, error) {
 			}
 		}
 	}
+	if extendsMatches := extendsPattern.FindStringSubmatch(metadataStr); len(extendsMatches) > 1 {
+		metadata.Extends = strings.TrimSpace(extendsMatches[1])
+	}
 
 	// Extract variables - specific pattern for the test case
 	varNamePattern := regexp.MustCompile(`(?m)^\s*-\s*name:\s*(\w+)$`)
 	varDescPattern := regexp.MustCompile(`(?m)^\s*description:\s*(.+)$`)
-	
+
 	// Find all variable name matches
 	varNameMatches := varNamePattern.FindAllStringSubmatch(metadataStr, -1)
 	varDescMatches := varDescPattern.FindAllStringSubmatch(metadataStr, -1)
-	
+
 	if len(varNameMatches) > 0 && len(varNameMatches) == len(varDescMatches) {
 		metadata.Variables = make([]PromptVariable, len(varNameMatches))
 		for i := range varNameMatches {

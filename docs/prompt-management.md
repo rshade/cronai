@@ -28,6 +28,7 @@ author: CronAI Team
 version: 1.0
 category: system
 tags: health, monitoring, metrics, analysis
+extends: templates/base_system_check
 variables:
   - name: cpu_usage
     description: Current CPU usage percentage
@@ -39,6 +40,8 @@ variables:
 
 The content of your prompt goes here...
 ```
+
+The `extends` field is optional and allows the prompt to inherit from another template. See [Template Inheritance and Composition](template-inheritance.md) for more details.
 
 ## Prompt Composition
 
@@ -53,6 +56,8 @@ Your specific prompt content goes here.
 
 {{include "templates/common_footer.md"}}
 ```
+
+For more advanced template reuse patterns, CronAI now also supports template inheritance with the `{{extends}}` and `{{block}}` directives. See [Template Inheritance and Composition](template-inheritance.md) for complete documentation.
 
 ## CLI Commands
 
