@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/sashabaranov/go-openai v1.39.1
+	github.com/sashabaranov/go-openai v1.40.0
 	github.com/spf13/cobra v1.9.1
 	google.golang.org/api v0.211.0
 )
