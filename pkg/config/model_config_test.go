@@ -253,6 +253,45 @@ func TestUpdateFromParams(t *testing.T) {
 			},
 			errMessage: "Multiple safety settings not handled correctly",
 		},
+		{
+			name: "Mixed common and model-specific parameters",
+			params: map[string]string{
+				"temperature":           "0.6",
+				"max_tokens":            "1500",
+				"openai.model":          "gpt-4-turbo",
+				"claude.model":          "claude-3-haiku-20240307",
+				"gemini.model":          "gemini-1.5-pro",
+				"system_message":        "Generic system message",
+				"claude.system_message": "Claude-specific message",
+			},
+			checkFunc: func(c *ModelConfig) bool {
+				return c.Temperature == 0.6 &&
+					c.MaxTokens == 1500 &&
+					c.OpenAIConfig.Model == "gpt-4-turbo" &&
+					c.ClaudeConfig.Model == "claude-3-haiku-20240307" &&
+					c.GeminiConfig.Model == "gemini-1.5-pro" &&
+					c.OpenAIConfig.SystemMessage == "Generic system message" &&
+					c.ClaudeConfig.SystemMessage == "Claude-specific message"
+			},
+			errMessage: "Mixed common and model-specific parameters not handled correctly",
+		},
+		{
+			name: "Model-specific parameters override common parameters",
+			params: map[string]string{
+				"model":                 "gpt-3.5-turbo",
+				"openai.model":          "gpt-4",
+				"system_message":        "Generic system message",
+				"openai.system_message": "OpenAI specific message",
+			},
+			checkFunc: func(c *ModelConfig) bool {
+				return c.OpenAIConfig.Model == "gpt-4" &&
+					c.ClaudeConfig.Model == "gpt-3.5-turbo" &&
+					c.GeminiConfig.Model == "gpt-3.5-turbo" &&
+					c.OpenAIConfig.SystemMessage == "OpenAI specific message" &&
+					c.ClaudeConfig.SystemMessage == "Generic system message"
+			},
+			errMessage: "Model-specific parameters should override common parameters",
+		},
 	}
 
 	for _, tc := range testCases {
