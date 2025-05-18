@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/robfig/cron/v3"
+	"github.com/rshade/cronai/internal/errors"
+	"github.com/rshade/cronai/internal/logger"
 	"github.com/rshade/cronai/internal/models"
 	"github.com/rshade/cronai/internal/processor"
 	"github.com/rshade/cronai/internal/prompt"
@@ -25,32 +27,58 @@ type Task struct {
 	ModelParams string            // Model-specific parameters (temperature, tokens, etc.)
 }
 
+// Default logger for the cron package
+var log = logger.DefaultLogger()
+
+// SetLogger sets the logger for the cron package
+func SetLogger(l *logger.Logger) {
+	log = l
+}
+
 // StartService starts the CronAI service with the given configuration file
 func StartService(configPath string) error {
+	log.Info("Starting CronAI service", logger.Fields{"config_path": configPath})
+
 	// Parse config file
 	tasks, err := parseConfigFile(configPath)
 	if err != nil {
-		return err
+		log.Error("Failed to parse config file", logger.Fields{"error": err.Error()})
+		return errors.Wrap(errors.CategoryConfiguration, err, "failed to parse configuration file")
 	}
+
+	log.Info("Parsed configuration file", logger.Fields{"task_count": len(tasks)})
 
 	// Create a new cron scheduler
 	c := cron.New()
 
 	// Add each task to the scheduler
-	for _, task := range tasks {
+	for i, task := range tasks {
 		task := task // Create a copy of the task for the closure
 		_, err = c.AddFunc(task.Schedule, func() {
 			executeTask(task)
 		})
 		if err != nil {
-			fmt.Printf("Error scheduling task: %v\n", err)
+			log.Error("Error scheduling task", logger.Fields{
+				"task_index": i,
+				"schedule":   task.Schedule,
+				"model":      task.Model,
+				"prompt":     task.Prompt,
+				"error":      err.Error(),
+			})
 			continue
 		}
-		fmt.Printf("Scheduled task: %s %s %s %s\n", task.Schedule, task.Model, task.Prompt, task.Processor)
+		log.Info("Scheduled task", logger.Fields{
+			"task_index": i,
+			"schedule":   task.Schedule,
+			"model":      task.Model,
+			"prompt":     task.Prompt,
+			"processor":  task.Processor,
+		})
 	}
 
 	// Start the scheduler
 	c.Start()
+	log.Info("Cron scheduler started")
 
 	// Keep running until terminated
 	select {}
@@ -63,15 +91,19 @@ func ListTasks(configPath string) ([]Task, error) {
 
 // parseConfigFile parses the configuration file and returns a list of tasks
 func parseConfigFile(configPath string) (tasks []Task, err error) {
+	log.Info("Parsing configuration file", logger.Fields{"path": configPath})
+
 	file, err := os.Open(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open config file: %w", err)
+		log.Error("Failed to open config file", logger.Fields{"path": configPath, "error": err.Error()})
+		return nil, errors.Wrap(errors.CategoryConfiguration, err, "failed to open config file")
 	}
 
 	// Using named return values and multierror to preserve both errors
 	defer func() {
 		closeErr := file.Close()
 		if closeErr != nil {
+			log.Warn("Failed to close config file", logger.Fields{"error": closeErr.Error()})
 			// If we have both processing and close errors, combine them
 			if err != nil {
 				err = multierror.Append(
@@ -101,7 +133,12 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 		// Parse the line
 		parts := strings.Fields(line)
 		if len(parts) < 8 { // Need at least 8 fields: 5 for cron schedule + model + prompt + processor
-			fmt.Printf("Line %d: Invalid format (need at least 8 fields)\n", lineNum)
+			log.Warn("Invalid format in config file", logger.Fields{
+				"line":         lineNum,
+				"line_content": line,
+				"reason":       "insufficient fields",
+				"field_count":  len(parts),
+			})
 			continue
 		}
 
@@ -112,6 +149,14 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 		model := parts[5]
 		prompt := parts[6]
 		processor := parts[7]
+
+		log.Debug("Parsed task parameters", logger.Fields{
+			"line":      lineNum,
+			"schedule":  schedule,
+			"model":     model,
+			"prompt":    prompt,
+			"processor": processor,
+		})
 
 		// Parse optional template and variables
 		var template string
@@ -155,9 +200,11 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading config file: %w", err)
+		log.Error("Error reading config file", logger.Fields{"path": configPath, "error": err.Error()})
+		return nil, errors.Wrap(errors.CategoryConfiguration, err, "error reading config file")
 	}
 
+	log.Info("Successfully parsed configuration file", logger.Fields{"path": configPath, "task_count": len(tasks)})
 	return tasks, nil
 }
 
@@ -186,20 +233,28 @@ func parseVariables(varString string, variables map[string]string) {
 
 // executeTask executes a single task
 func executeTask(task Task) {
-	fmt.Printf("Executing task at %s: %s %s %s\n", time.Now().Format(time.RFC3339), task.Model, task.Prompt, task.Processor)
+	startTime := time.Now()
+	log.Info("Executing task", logger.Fields{
+		"time":      startTime.Format(time.RFC3339),
+		"model":     task.Model,
+		"prompt":    task.Prompt,
+		"processor": task.Processor,
+	})
 
 	// Load the prompt with variables
 	var promptContent string
 	var err error
 
 	if len(task.Variables) > 0 {
+		log.Debug("Loading prompt with variables", logger.Fields{"prompt": task.Prompt, "var_count": len(task.Variables)})
 		promptContent, err = prompt.LoadPromptWithVariables(task.Prompt, task.Variables)
 	} else {
+		log.Debug("Loading prompt without variables", logger.Fields{"prompt": task.Prompt})
 		promptContent, err = prompt.LoadPrompt(task.Prompt)
 	}
 
 	if err != nil {
-		fmt.Printf("Error loading prompt: %v\n", err)
+		log.Error("Error loading prompt", logger.Fields{"prompt": task.Prompt, "error": err.Error()})
 		return
 	}
 
@@ -210,18 +265,28 @@ func executeTask(task Task) {
 	task.Variables["promptName"] = task.Prompt
 
 	// Execute the model with model parameters
+	log.Debug("Executing model", logger.Fields{"model": task.Model, "prompt_length": len(promptContent)})
 	response, err := models.ExecuteModel(task.Model, promptContent, task.Variables, task.ModelParams)
 	if err != nil {
-		fmt.Printf("Error executing model: %v\n", err)
+		log.Error("Error executing model", logger.Fields{"model": task.Model, "error": err.Error()})
 		return
 	}
 
 	// Process the response with template
+	log.Debug("Processing response", logger.Fields{"processor": task.Processor, "template": task.Template})
 	err = processor.ProcessResponse(task.Processor, response, task.Template)
 	if err != nil {
-		fmt.Printf("Error processing response: %v\n", err)
+		log.Error("Error processing response", logger.Fields{"processor": task.Processor, "error": err.Error()})
 		return
 	}
 
-	fmt.Printf("Task completed successfully at %s\n", time.Now().Format(time.RFC3339))
+	endTime := time.Now()
+	duration := endTime.Sub(startTime)
+	log.Info("Task completed successfully", logger.Fields{
+		"time":      endTime.Format(time.RFC3339),
+		"duration":  duration.String(),
+		"model":     task.Model,
+		"prompt":    task.Prompt,
+		"processor": task.Processor,
+	})
 }
