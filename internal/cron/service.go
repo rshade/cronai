@@ -14,6 +14,7 @@ import (
 	"github.com/rshade/cronai/internal/models"
 	"github.com/rshade/cronai/internal/processor"
 	"github.com/rshade/cronai/internal/prompt"
+	"github.com/rshade/cronai/pkg/config"
 )
 
 // Task represents a scheduled task
@@ -36,6 +37,92 @@ func SetLogger(l *logger.Logger) {
 }
 
 // StartService starts the CronAI service with the given configuration file
+// validateTask validates a task configuration
+func validateTask(task Task, lineNum int) error {
+	var validateErrors *multierror.Error
+
+	// Validate cron schedule format
+	_, err := cron.ParseStandard(task.Schedule)
+	if err != nil {
+		validateErrors = multierror.Append(validateErrors,
+			fmt.Errorf("line %d: invalid cron schedule '%s': %w", lineNum, task.Schedule, err))
+	}
+
+	// Validate model
+	switch task.Model {
+	case "openai", "claude", "gemini":
+		// Valid models
+	default:
+		validateErrors = multierror.Append(validateErrors,
+			fmt.Errorf("line %d: unsupported model '%s' (supported: openai, claude, gemini)", lineNum, task.Model))
+	}
+
+	// Validate prompt file exists
+	promptPath := task.Prompt
+	if !strings.HasSuffix(promptPath, ".md") {
+		promptPath += ".md"
+	}
+
+	_, err = os.Stat(fmt.Sprintf("cron_prompts/%s", promptPath))
+	if err != nil {
+		validateErrors = multierror.Append(validateErrors,
+			fmt.Errorf("line %d: prompt file 'cron_prompts/%s' not found: %w", lineNum, promptPath, err))
+	}
+
+	// Validate processor
+	// Check if processor starts with known prefixes
+	validProcessor := false
+	for _, prefix := range []string{"slack-", "email-", "webhook-", "log-to-"} {
+		if strings.HasPrefix(task.Processor, prefix) {
+			validProcessor = true
+			break
+		}
+	}
+	if !validProcessor {
+		validateErrors = multierror.Append(validateErrors,
+			fmt.Errorf("line %d: invalid processor '%s' (should start with slack-, email-, webhook-, or log-to-)",
+				lineNum, task.Processor))
+	}
+
+	// Validate template if specified
+	if task.Template != "" {
+		// Check if template file exists (assuming they're in templates/ directory)
+		_, err = os.Stat(fmt.Sprintf("templates/%s.tmpl", task.Template))
+		if err != nil {
+			// Try checking library/ subdirectory
+			_, err = os.Stat(fmt.Sprintf("templates/library/%s.tmpl", task.Template))
+			if err != nil {
+				validateErrors = multierror.Append(validateErrors,
+					fmt.Errorf("line %d: template '%s.tmpl' not found in templates/ or templates/library/",
+						lineNum, task.Template))
+			}
+		}
+	}
+
+	// Validate model parameters if specified
+	if task.ModelParams != "" {
+		params, err := config.ParseModelParams(task.ModelParams)
+		if err != nil {
+			validateErrors = multierror.Append(validateErrors,
+				fmt.Errorf("line %d: invalid model parameters: %w", lineNum, err))
+		} else {
+			// Apply parameters to verify they're valid
+			cfg := config.DefaultModelConfig()
+			if err := cfg.UpdateFromParams(params); err != nil {
+				validateErrors = multierror.Append(validateErrors,
+					fmt.Errorf("line %d: invalid model parameters: %w", lineNum, err))
+			}
+			// Validate the resulting configuration
+			if err := cfg.Validate(); err != nil {
+				validateErrors = multierror.Append(validateErrors,
+					fmt.Errorf("line %d: model configuration validation failed: %w", lineNum, err))
+			}
+		}
+	}
+
+	return validateErrors.ErrorOrNil()
+}
+
 func StartService(configPath string) error {
 	log.Info("Starting CronAI service", logger.Fields{"config_path": configPath})
 
@@ -119,6 +206,7 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
+	var parseErrors *multierror.Error
 
 	for scanner.Scan() {
 		lineNum++
@@ -133,12 +221,14 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 		// Parse the line
 		parts := strings.Fields(line)
 		if len(parts) < 8 { // Need at least 8 fields: 5 for cron schedule + model + prompt + processor
+			fieldErr := fmt.Errorf("line %d: insufficient fields (need at least 8, got %d)", lineNum, len(parts))
 			log.Warn("Invalid format in config file", logger.Fields{
 				"line":         lineNum,
 				"line_content": line,
 				"reason":       "insufficient fields",
 				"field_count":  len(parts),
 			})
+			parseErrors = multierror.Append(parseErrors, fieldErr)
 			continue
 		}
 
@@ -187,8 +277,8 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 			modelParams = strings.TrimPrefix(parts[8], "model_params:")
 		}
 
-		// Add the task
-		tasks = append(tasks, Task{
+		// Create the task
+		task := Task{
 			Schedule:    schedule,
 			Model:       model,
 			Prompt:      prompt,
@@ -196,12 +286,35 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 			Template:    template,
 			Variables:   variables,
 			ModelParams: modelParams,
-		})
+		}
+
+		// Validate the task
+		if validateErr := validateTask(task, lineNum); validateErr != nil {
+			parseErrors = multierror.Append(parseErrors, validateErr)
+			log.Warn("Task validation failed", logger.Fields{
+				"line":  lineNum,
+				"error": validateErr.Error(),
+			})
+			continue
+		}
+
+		// Add the validated task
+		tasks = append(tasks, task)
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Error("Error reading config file", logger.Fields{"path": configPath, "error": err.Error()})
 		return nil, errors.Wrap(errors.CategoryConfiguration, err, "error reading config file")
+	}
+
+	// Check if we had any parse errors
+	if parseErrors != nil && parseErrors.ErrorOrNil() != nil {
+		log.Error("Configuration file contains errors", logger.Fields{
+			"path":        configPath,
+			"error_count": parseErrors.Len(),
+		})
+		return tasks, errors.Wrap(errors.CategoryConfiguration, parseErrors.ErrorOrNil(),
+			fmt.Sprintf("configuration file contains %d validation errors", parseErrors.Len()))
 	}
 
 	log.Info("Successfully parsed configuration file", logger.Fields{"path": configPath, "task_count": len(tasks)})

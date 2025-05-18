@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -30,15 +31,39 @@ invalid line
 		}
 	}()
 
-	// Parse the config file
-	tasks, err := parseConfigFile(testConfigPath)
-	if err != nil {
-		t.Fatalf("Failed to parse config file: %v", err)
+	// Ensure test prompt files exist
+	if err := os.MkdirAll("cron_prompts", 0755); err != nil {
+		t.Fatalf("Failed to create cron_prompts directory: %v", err)
+	}
+	defer func() {
+		if err := os.RemoveAll("cron_prompts"); err != nil {
+			t.Logf("Warning: Failed to remove cron_prompts directory: %v", err)
+		}
+	}()
+	
+	// Create test prompt files
+	prompts := []string{"product_manager", "weekly_report", "monitoring_check", "report_template"}
+	for _, p := range prompts {
+		if err := os.WriteFile(fmt.Sprintf("cron_prompts/%s.md", p), []byte("Test prompt content"), 0644); err != nil {
+			t.Fatalf("Failed to create test prompt file: %v", err)
+		}
+		defer func(name string) {
+			if err := os.Remove(fmt.Sprintf("cron_prompts/%s.md", name)); err != nil {
+				t.Logf("Warning: Failed to remove test prompt file: %v", err)
+			}
+		}(p)
 	}
 
-	// Verify the tasks
-	if len(tasks) != 5 {
-		t.Errorf("Expected 5 tasks, got %d", len(tasks))
+	// Parse the config file
+	tasks, err := parseConfigFile(testConfigPath)
+	// We expect validation errors but still get some valid tasks
+	if err == nil {
+		t.Errorf("Expected some validation errors but got none")
+	}
+
+	// Verify the tasks - we expect 4 valid tasks due to the validation
+	if len(tasks) != 4 {
+		t.Errorf("Expected 4 tasks, got %d", len(tasks))
 	}
 
 	// Check the first task
