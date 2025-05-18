@@ -1,0 +1,69 @@
+title: "[Show & Tell] "
+labels: ["showcase", "community"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Show & Tell
+        
+        Share how you're using CronAI! We love seeing creative uses of the project.
+        
+        This is a great place to:
+        - Share your prompt templates
+        - Showcase integrations
+        - Demonstrate workflows
+        - Inspire others with your use cases
+  - type: input
+    attributes:
+      label: Project/Use Case Name
+      description: Give your showcase a title
+      placeholder: "e.g., Daily DevOps Report Generator"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Description
+      description: What does your implementation do?
+      placeholder: Describe your use case in detail
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Implementation Details
+      description: Share your configuration, prompts, or code
+      placeholder: |
+        ```yaml
+        # Your cronai.config
+        ```
+        
+        ```markdown
+        # Your prompt template
+        ```
+      render: markdown
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Results & Benefits
+      description: What results have you achieved?
+      placeholder: |
+        - Saves X hours per week
+        - Automates Y process
+        - Provides insights into Z
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Lessons Learned
+      description: Any tips for others implementing similar use cases?
+      placeholder: What worked well? What challenges did you face?
+    validations:
+      required: false
+  - type: checkboxes
+    attributes:
+      label: Sharing Permissions
+      options:
+        - label: I'm okay with this being featured in documentation/examples
+        - label: I'm willing to contribute my templates to the project
+    validations:
+      required: false

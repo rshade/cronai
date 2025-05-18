@@ -12,12 +12,43 @@ var cfgFile string
 
 var rootCmd = &cobra.Command{
 	Use:   "cronai",
-	Short: "Run AI model prompts on a cron schedule",
-	Long: `CronAI is a command-line utility to run AI model prompts on a cron-type schedule.
+	Short: "AI agent for scheduled prompt execution",
+	Long: `CronAI - Your Automated AI Assistant
 
-It supports multiple AI models (OpenAI, Claude, Gemini) and various response
-processors (email, Slack, webhooks, file output).
+CronAI is an intelligent agent that schedules and executes AI model prompts automatically.
+It acts as your personal AI automation system, running tasks on schedule and delivering
+results through your preferred channels.
+
+Key Features:
+  • Schedule AI prompts using cron syntax
+  • Support for multiple AI models (OpenAI, Claude, Gemini)
+  • Process responses through email, Slack, webhooks, or files
+  • Dynamic variables and conditional logic in prompts
+  • Template-based response formatting
+  • Model fallback and error handling
+
+Quick Start:
+  cronai start                    # Start the service
+  cronai run --help              # Run a single task
+  cronai prompt list             # Explore available prompts
+  cronai help                    # Show detailed help
+
+Configuration Example:
+  0 8 * * * openai daily_summary email-team@company.com
+
+For more information, use 'cronai help [command]' or visit the documentation.
 `,
+	Example: `  # Start the service with default config
+  cronai start
+
+  # Run a single task with variables
+  cronai run --model=claude --prompt=report --processor=email --vars="type=weekly"
+
+  # List all scheduled tasks
+  cronai list
+
+  # Search for available prompts
+  cronai prompt search "monitoring"`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

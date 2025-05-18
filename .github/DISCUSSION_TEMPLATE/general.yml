@@ -1,0 +1,33 @@
+title: "[General] "
+labels: ["discussion", "general"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for general discussions about CronAI, best practices, or community topics.
+        
+        Please search existing discussions before starting a new one to avoid duplicates.
+  - type: textarea
+    attributes:
+      label: Topic
+      description: What would you like to discuss?
+      placeholder: Describe your topic in detail
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Context
+      description: Provide any additional context that might be helpful
+      placeholder: Background information, use cases, etc.
+    validations:
+      required: false
+  - type: checkboxes
+    attributes:
+      label: Discussion Type
+      options:
+        - label: General question or discussion
+        - label: Best practices
+        - label: Community announcement
+        - label: Other
+    validations:
+      required: true

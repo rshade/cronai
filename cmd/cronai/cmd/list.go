@@ -9,8 +9,16 @@ import (
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all scheduled tasks",
-	Long:  `List all scheduled tasks from the configuration file.`,
+	Short: "List all scheduled AI tasks",
+	Long: `List all scheduled AI tasks from the configuration file.
+
+Displays each task with its schedule, AI model, prompt name, and processor.
+This helps you understand what the CronAI agent is configured to do.`,
+	Example: `  # List tasks from default config
+  cronai list
+
+  # List tasks from custom config  
+  cronai list --config=/etc/cronai/production.config`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get config file path
 		configPath := cfgFile

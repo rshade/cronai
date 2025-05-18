@@ -1,0 +1,49 @@
+title: "[FAQ] "
+labels: ["faq", "documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Frequently Asked Questions
+        
+        Have a question that might benefit others? Submit it here to be added to our FAQ!
+        
+        This helps build our knowledge base and reduces duplicate questions.
+  - type: textarea
+    attributes:
+      label: Question
+      description: What's your question?
+      placeholder: "How do I...?"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Answer
+      description: If you know the answer, please provide it
+      placeholder: Leave blank if you're looking for an answer
+    validations:
+      required: false
+  - type: dropdown
+    attributes:
+      label: Category
+      description: What category does this question fall under?
+      options:
+        - Installation & Setup
+        - Configuration
+        - Prompt Management
+        - Model Integration
+        - Response Processing
+        - Troubleshooting
+        - Best Practices
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: FAQ Status
+      options:
+        - label: I'm asking a question (need answer)
+        - label: I'm submitting Q&A (have answer)
+        - label: This should be added to official docs
+    validations:
+      required: true
