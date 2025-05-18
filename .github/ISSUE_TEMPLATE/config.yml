@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: CronAI Documentation
+    url: https://github.com/rshade/cronai/tree/main/docs
+    about: Please check the documentation first for answers to common questions.
+  - name: Feature Requests
+    url: https://github.com/rshade/cronai/issues/new?template=feature_request.md
+    about: Suggest a new feature for CronAI.
+  - name: Bug Reports
+    url: https://github.com/rshade/cronai/issues/new?template=bug_report.md
+    about: Report a bug in CronAI.
+  - name: Enhancements
+    url: https://github.com/rshade/cronai/issues/new?template=enhancement.md
+    about: Suggest an enhancement to an existing feature.
