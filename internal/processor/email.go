@@ -13,11 +13,11 @@ import (
 
 // EmailProcessor handles email processing
 type EmailProcessor struct {
-	config ProcessorConfig
+	config Config
 }
 
 // NewEmailProcessor creates a new email processor
-func NewEmailProcessor(config ProcessorConfig) (Processor, error) {
+func NewEmailProcessor(config Config) (Processor, error) {
 	return &EmailProcessor{
 		config: config,
 	}, nil
@@ -26,7 +26,7 @@ func NewEmailProcessor(config ProcessorConfig) (Processor, error) {
 // Process handles the model response with optional template
 func (e *EmailProcessor) Process(response *models.ModelResponse, templateName string) error {
 	// Create template data
-	tmplData := template.TemplateData{
+	tmplData := template.Data{
 		Content:     response.Content,
 		Model:       response.Model,
 		Timestamp:   response.Timestamp,
@@ -74,12 +74,12 @@ func (e *EmailProcessor) GetType() string {
 }
 
 // GetConfig returns the processor configuration
-func (e *EmailProcessor) GetConfig() ProcessorConfig {
+func (e *EmailProcessor) GetConfig() Config {
 	return e.config
 }
 
 // processEmailWithTemplate with multipart support
-func (e *EmailProcessor) processEmailWithTemplate(email string, data template.TemplateData, templateName string) error {
+func (e *EmailProcessor) processEmailWithTemplate(email string, data template.Data, templateName string) error {
 	// Check for SMTP settings
 	smtpServer := os.Getenv(EnvSMTPServer)
 	if smtpServer == "" {

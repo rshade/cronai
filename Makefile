@@ -1,4 +1,4 @@
-.PHONY: all build test test-coverage coverage-report clean lint format run changelog
+.PHONY: all build test test-coverage coverage-report clean lint lint-fix format run changelog
 
 # Default target
 all: build
@@ -23,22 +23,42 @@ clean:
 coverage-report: test-coverage
 	go tool cover -html=coverage.out
 
-# Run linter
+# Run linter (strict mode for CI)
 lint:
-	@echo "Running gofmt..."
-	@gofmt -w . || (echo "Error running gofmt"; exit 1)
+	@echo "Running gofmt check..."
+	@! gofmt -d . 2>&1 | grep -q '^' || (echo "Code not formatted. Run 'make lint-fix' to fix."; exit 1)
 	@echo "Running go vet..."
 	go vet ./...
 	@echo "Running golangci-lint..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run --fix || golangci-lint run; \
+		golangci-lint run; \
 	else \
 		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
 		go vet ./...; \
 	fi
 	@echo "Running markdownlint..."
 	@if command -v markdownlint >/dev/null 2>&1; then \
-		markdownlint . --ignore node_modules --fix || markdownlint . --ignore node_modules; \
+		markdownlint . --ignore node_modules; \
+	else \
+		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
+	fi
+
+# Run linter with automatic fixes (for local development)
+lint-fix:
+	@echo "Running gofmt with fix..."
+	@gofmt -w .
+	@echo "Running go vet..."
+	go vet ./...
+	@echo "Running golangci-lint with fix..."
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run --fix; \
+	else \
+		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
+		go vet ./...; \
+	fi
+	@echo "Running markdownlint with fix..."
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint . --ignore node_modules --fix; \
 	else \
 		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
 	fi

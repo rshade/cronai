@@ -38,10 +38,10 @@ Templates should follow these naming conventions:
 
 To use a template, specify its name (without the `.tmpl` extension) in your cronai configuration:
 
-```
+```text
 # Format: timestamp model prompt response_processor [template] [variables]
 0 9 1 * * claude report_template email-team@company.com monthly_report reportType=Monthly,date={{CURRENT_DATE}}
-```
+```text
 
 You can also validate templates using the `validate` command:
 
@@ -51,13 +51,13 @@ You can also validate templates using the `validate` command:
 
 # Validate all templates in a directory
 ./cronai validate --dir templates/
-```
+```text
 
 ## Template Inheritance and Composition
 
 CronAI supports advanced template inheritance and composition patterns:
 
-```
+```text
 # Template inheritance
 {{extends "base_template"}}
 {{block "section" .}}Override content{{end}}
@@ -67,7 +67,7 @@ CronAI supports advanced template inheritance and composition patterns:
 
 # Template embedding
 {{template "partial_template" .}}
-```
+```text
 
 For complete documentation on these features, see [Template Inheritance and Composition](../docs/template-inheritance.md).
 

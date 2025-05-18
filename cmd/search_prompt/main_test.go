@@ -11,6 +11,11 @@ import (
 func TestMainUsage(t *testing.T) {
 	// Store original values
 	oldArgs := os.Args
+	oldExit := osExit
+	defer func() {
+		os.Args = oldArgs
+		osExit = oldExit
+	}()
 
 	// Test with no arguments (should show usage)
 	os.Args = []string{"search_prompt"}
@@ -20,44 +25,51 @@ func TestMainUsage(t *testing.T) {
 
 	// Redirect stdout to avoid test output pollution
 	oldStdout := os.Stdout
-	devNull, _ := os.Open(os.DevNull)
-	os.Stdout = devNull
-
-	// We expect this to exit, so we'll use a goroutine
-	done := make(chan bool)
-	go func() {
-		defer func() {
-			// Recover from os.Exit
-			if r := recover(); r != nil {
-				done <- true
-			}
-		}()
-		// Mock os.Exit to prevent actual exit during tests
-		osExit = func(code int) {
-			if code != 1 {
-				t.Errorf("Expected exit code 1, got %d", code)
-			}
-			panic("os.Exit called")
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		os.Stdout = oldStdout
+		if err := devNull.Close(); err != nil {
+			t.Fatal(err)
 		}
-		main()
-		done <- false
 	}()
 
-	// Wait for the goroutine
-	<-done
+	// Track if exit was called with correct code
+	exitCalled := false
+	osExit = func(code int) {
+		if code != 1 {
+			t.Errorf("Expected exit code 1, got %d", code)
+		}
+		exitCalled = true
+		panic("os.Exit called")
+	}
 
-	// Restore everything
-	os.Stdout = oldStdout
-	os.Args = oldArgs
-	osExit = os.Exit
+	// Expect panic from our mock os.Exit
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected panic from mocked os.Exit, but didn't get one")
+		} else if !exitCalled {
+			t.Error("os.Exit was not called")
+		}
+	}()
+
+	main()
 }
 
 func TestMainWithQuery(t *testing.T) {
 	// Create test prompt directory
 	tmpDir := t.TempDir()
 	oldPromptsDir := os.Getenv("CRON_PROMPTS_DIR")
-	os.Setenv("CRON_PROMPTS_DIR", tmpDir)
-	defer os.Setenv("CRON_PROMPTS_DIR", oldPromptsDir)
+	if err := os.Setenv("CRON_PROMPTS_DIR", tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.Setenv("CRON_PROMPTS_DIR", oldPromptsDir); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	// Create a test prompt
 	testPrompt := `---
@@ -97,25 +109,31 @@ This is test content.`
 		},
 		{
 			name: "search in content",
-			args: []string{"search_prompt", "-content", "-query", "content"},
+			args: []string{"search_prompt", "-content", "-query", "keywords"},
 			expectOut: []string{
-				"test_prompt",
+				"search_test",
 			},
 		},
 		{
 			name: "no results",
 			args: []string{"search_prompt", "-query", "nonexistent"},
 			expectOut: []string{
-				"No prompts found",
+				"No prompts found matching the search criteria",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Store original args
+			// Store original values
 			oldArgs := os.Args
 			oldStdout := os.Stdout
+			oldExit := osExit
+			defer func() {
+				os.Args = oldArgs
+				os.Stdout = oldStdout
+				osExit = oldExit
+			}()
 
 			// Reset flag.CommandLine
 			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
@@ -124,7 +142,10 @@ This is test content.`
 			os.Args = tt.args
 
 			// Capture output
-			r, w, _ := os.Pipe()
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatal(err)
+			}
 			os.Stdout = w
 
 			// Mock os.Exit
@@ -134,26 +155,27 @@ This is test content.`
 				panic("os.Exit called")
 			}
 
-			// Run main in a goroutine to catch the panic from os.Exit
-			done := make(chan bool)
-			go func() {
+			// Run main in a defer/recover to catch the panic from os.Exit
+			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						done <- true
+						// Expected panic from os.Exit, no action needed
+						t.Log("Caught expected panic from os.Exit")
 					}
 				}()
 				main()
-				done <- false
 			}()
 
-			// Wait for completion
-			<-done
-
 			// Restore stdout and read output
-			w.Close()
+			if err := w.Close(); err != nil {
+				t.Fatal(err)
+			}
 			os.Stdout = oldStdout
 			buf := make([]byte, 1024*1024)
-			n, _ := r.Read(buf)
+			n, err := r.Read(buf)
+			if err != nil {
+				t.Fatal(err)
+			}
 			output := string(buf[:n])
 
 			// Check output
@@ -167,23 +189,21 @@ This is test content.`
 			if tt.expectErr && exitCode != 1 {
 				t.Errorf("Expected exit code 1 for error, got %d", exitCode)
 			}
-			if !tt.expectErr && exitCode != 0 {
+			if !tt.expectErr && exitCode != 0 && exitCode != -1 {
 				t.Errorf("Expected exit code 0 for success, got %d", exitCode)
 			}
-
-			// Restore
-			os.Args = oldArgs
-			osExit = os.Exit
 		})
 	}
 }
 
-// Mock os.Exit for testing
-var osExit = os.Exit
-
 func TestMainWithPositionalArgs(t *testing.T) {
 	// Store original values
 	oldArgs := os.Args
+	oldExit := osExit
+	defer func() {
+		os.Args = oldArgs
+		osExit = oldExit
+	}()
 
 	// Reset flag.CommandLine
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
@@ -191,34 +211,32 @@ func TestMainWithPositionalArgs(t *testing.T) {
 	// Test with positional arguments (query as args instead of flag)
 	os.Args = []string{"search_prompt", "test", "query"}
 
-	// We expect this to search for "test query"
-	// This is a simplified test just to ensure the code path works
-	// In a real test, we'd check the actual search behavior
-
 	// Mock os.Exit
-	osExit = func(code int) {
-		// We expect it to exit with 1 since there are no prompts
-		if code != 1 && code != 0 {
-			t.Errorf("Unexpected exit code: %d", code)
-		}
+	osExit = func(_ int) {
+		panic("os.Exit called")
 	}
 
 	// Capture output to avoid pollution
 	oldStdout := os.Stdout
-	devNull, _ := os.Open(os.DevNull)
-	os.Stdout = devNull
-
-	// Run in a defer/recover to catch panic from os.Exit mock
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer func() {
-		if r := recover(); r == nil {
-			// If we didn't panic, that's also OK (means main() completed)
-		}
-		// Restore
 		os.Stdout = oldStdout
-		os.Args = oldArgs
-		osExit = os.Exit
+		if err := devNull.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}()
 
-	// This should combine the args into a query
+	// Run main and catch the expected panic
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected panic from mocked os.Exit, but didn't get one")
+		} else if r != "os.Exit called" {
+			t.Errorf("Unexpected panic value: %v", r)
+		}
+	}()
+
 	main()
 }

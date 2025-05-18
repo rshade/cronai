@@ -1,17 +1,59 @@
 # CronAI Configuration Example
 # Format: timestamp model prompt response_processor [template] [variables]
 
-# Basic configuration without template
-0 8 * * * claude product_manager slack-pm-channel
+# ============================================================================
+# MVP PROCESSORS (Available Now)
+# ============================================================================
 
-# Configuration with template
-0 9 * * * claude system_health slack-alerts system_alert
+# File Output Examples
+# --------------------
+# Basic file output (logs to specified file)
+0 12 * * * gemini weekly_report file-/var/log/cronai/weekly_report.log
 
-# Configuration with template and variables
-0 9 1 * * claude report_template email-team@company.com monthly_report reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
+# File output with variables
+0 9 1 * * claude report_template file-/var/log/cronai/monthly_report.log reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
 
-# Configuration for webhook with custom template
-0 */2 * * * openai monitoring_check webhook-monitoring monitoring_alert
+# Console Output Examples
+# ----------------------
+# Output to console (useful for testing)
+*/15 * * * * openai system_health console
 
-# Configuration for file output with template
-0 12 * * * gemini weekly_report log-to-file weekly_report_file
+# Console output with variables  
+0 10 * * * claude daily_summary console team=engineering,date={{CURRENT_DATE}}
+
+# GitHub Processor Examples
+# ------------------------
+# GitHub processor supports the following operations:
+# - issue: Create a new issue (format: github-issue:owner/repo)
+# - comment: Add a comment to an existing issue (format: github-comment:owner/repo#issue_number)
+# - pr: Create a pull request (format: github-pr:owner/repo) - Note: Implementation logged in MVP
+
+# Create a GitHub issue
+0 8 * * 1 claude weekly_report github-issue:myorg/myrepo
+
+# Add comment to existing issue #42
+*/30 * * * * claude issue_review github-comment:myorg/myrepo#42
+
+# Create issue with variables (these become template variables)
+0 9 * * * openai bug_analysis github-issue:myorg/myrepo severity=high,component=backend
+
+# The GitHub processor uses JSON templates. Default templates include:
+# - Issue: Creates issue with title "[PromptName] - [Date]" and formatted body
+# - Comment: Adds formatted comment with model info and content
+# - PR: Creates PR with title and body (requires head_branch variable)
+
+# ============================================================================
+# POST-MVP PROCESSORS (Coming Soon)
+# ============================================================================
+
+# PLANNED: Slack integration
+# 0 8 * * * claude product_manager slack-pm-channel
+
+# PLANNED: Email integration
+# 0 9 1 * * claude report_template email-team@company.com reportType=Monthly
+
+# PLANNED: Webhook integration
+# 0 */2 * * * openai monitoring_check webhook-https://api.example.com/alerts
+
+# PLANNED: GitHub PR creation with variables
+# 0 0 * * 5 claude code_gen github-pr:myorg/myrepo head_branch=auto-update-{{CURRENT_DATE}}

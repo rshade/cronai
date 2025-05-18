@@ -1,7 +1,6 @@
 package models
 
 import (
-	"errors"
 	"os"
 	"testing"
 
@@ -20,7 +19,9 @@ func TestNewClaudeClient(t *testing.T) {
 		{
 			name: "missing API key",
 			setupEnv: func() {
-				os.Unsetenv("ANTHROPIC_API_KEY")
+				if err := os.Unsetenv("ANTHROPIC_API_KEY"); err != nil {
+					t.Fatal(err)
+				}
 			},
 			config:  &config.ModelConfig{},
 			wantErr: true,
@@ -29,7 +30,9 @@ func TestNewClaudeClient(t *testing.T) {
 		{
 			name: "valid API key",
 			setupEnv: func() {
-				os.Setenv("ANTHROPIC_API_KEY", "test-key")
+				if err := os.Setenv("ANTHROPIC_API_KEY", "test-key"); err != nil {
+					t.Fatal(err)
+				}
 			},
 			config:  &config.ModelConfig{},
 			wantErr: false,
@@ -37,8 +40,12 @@ func TestNewClaudeClient(t *testing.T) {
 		{
 			name: "with base URL",
 			setupEnv: func() {
-				os.Setenv("ANTHROPIC_API_KEY", "test-key")
-				os.Setenv("ANTHROPIC_BASE_URL", "https://custom.anthropic.com")
+				if err := os.Setenv("ANTHROPIC_API_KEY", "test-key"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Setenv("ANTHROPIC_BASE_URL", "https://custom.anthropic.com"); err != nil {
+					t.Fatal(err)
+				}
 			},
 			config:  &config.ModelConfig{},
 			wantErr: false,
@@ -51,8 +58,12 @@ func TestNewClaudeClient(t *testing.T) {
 			oldKey := os.Getenv("ANTHROPIC_API_KEY")
 			oldURL := os.Getenv("ANTHROPIC_BASE_URL")
 			defer func() {
-				os.Setenv("ANTHROPIC_API_KEY", oldKey)
-				os.Setenv("ANTHROPIC_BASE_URL", oldURL)
+				if err := os.Setenv("ANTHROPIC_API_KEY", oldKey); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Setenv("ANTHROPIC_BASE_URL", oldURL); err != nil {
+					t.Fatal(err)
+				}
 			}()
 
 			tt.setupEnv()

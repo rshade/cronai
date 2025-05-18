@@ -16,11 +16,11 @@ type Processor interface {
 	GetType() string
 
 	// GetConfig returns the processor configuration
-	GetConfig() ProcessorConfig
+	GetConfig() Config
 }
 
-// ProcessorConfig represents standardized configuration for processors
-type ProcessorConfig struct {
+// Config represents standardized configuration for processors
+type Config struct {
 	// Type identifies the processor type (email, slack, webhook, file, etc.)
 	Type string `json:"type"`
 
@@ -37,5 +37,5 @@ type ProcessorConfig struct {
 	Environment map[string]string `json:"environment,omitempty"`
 }
 
-// ProcessorFactory is a function that creates a new processor instance
-type ProcessorFactory func(config ProcessorConfig) (Processor, error)
+// Factory is a function type that creates a new processor
+type Factory func(config Config) (Processor, error)

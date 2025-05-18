@@ -30,6 +30,9 @@ const (
 	// File processor environment variables
 	EnvLogsDirectory = "LOGS_DIRECTORY"
 
+	// GitHub processor environment variables
+	EnvGitHubToken = "GITHUB_TOKEN"
+
 	// Default values
 	DefaultSMTPPort      = "587"
 	DefaultWebhookMethod = "POST"

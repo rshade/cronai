@@ -1,3 +1,4 @@
+// Package cron provides functionality for scheduling and executing AI tasks.
 package cron
 
 import (
@@ -41,11 +42,12 @@ type ScheduledTask struct {
 	Processor   string
 	Variables   map[string]string
 	ModelParams string
+	Template    string
 	Task        Task
 }
 
-// CronEntryMetadata stores metadata about a cron entry
-type CronEntryMetadata struct {
+// EntryMetadata contains metadata about a scheduled task.
+type EntryMetadata struct {
 	Model     string
 	Prompt    string
 	Processor string
@@ -53,11 +55,11 @@ type CronEntryMetadata struct {
 	Variables map[string]string
 }
 
-// CronService represents the cron scheduling service
-type CronService struct {
+// Service manages the scheduling and execution of AI tasks.
+type Service struct {
 	configFile string
 	scheduler  *cron.Cron
-	entries    map[string]CronEntryMetadata
+	entries    map[string]EntryMetadata
 	mu         sync.Mutex
 }
 
@@ -69,16 +71,22 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
+// Initialize the prompt manager
+func init() {
+	// Ensure the prompt manager is initialized
+	_ = prompt.GetPromptManager()
+}
+
 // NewCronService creates a new cron service
-func NewCronService(configFile string) *CronService {
-	return &CronService{
+func NewCronService(configFile string) *Service {
+	return &Service{
 		configFile: configFile,
-		entries:    make(map[string]CronEntryMetadata),
+		entries:    make(map[string]EntryMetadata),
 	}
 }
 
 // StartService starts the CronAI service
-func (s *CronService) StartService(ctx context.Context) error {
+func (s *Service) StartService(ctx context.Context) error {
 	log.Info("Starting CronAI service", logger.Fields{"config_path": s.configFile})
 
 	// Parse config file
@@ -148,7 +156,7 @@ func (s *CronService) StartService(ctx context.Context) error {
 }
 
 // scheduleTask adds a task to the scheduler
-func (s *CronService) scheduleTask(task *ScheduledTask) error {
+func (s *Service) scheduleTask(task *ScheduledTask) error {
 	if s.scheduler == nil {
 		return fmt.Errorf("scheduler not initialized")
 	}
@@ -162,7 +170,7 @@ func (s *CronService) scheduleTask(task *ScheduledTask) error {
 
 	// Store metadata
 	s.mu.Lock()
-	s.entries[fmt.Sprintf("%d", entryID)] = CronEntryMetadata{
+	s.entries[fmt.Sprintf("%d", entryID)] = EntryMetadata{
 		Model:     task.Model,
 		Prompt:    task.Prompt,
 		Processor: task.Processor,
@@ -175,7 +183,7 @@ func (s *CronService) scheduleTask(task *ScheduledTask) error {
 }
 
 // ListTasks returns a list of scheduled tasks
-func (s *CronService) ListTasks() []ScheduledTask {
+func (s *Service) ListTasks() []ScheduledTask {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -199,7 +207,7 @@ func (s *CronService) ListTasks() []ScheduledTask {
 }
 
 // executeTask executes a single task
-func (s *CronService) executeTask(task Task) {
+func (s *Service) executeTask(task Task) {
 	startTime := time.Now()
 	log.Info("Executing task", logger.Fields{
 		"time":      startTime.Format(time.RFC3339),
@@ -212,12 +220,15 @@ func (s *CronService) executeTask(task Task) {
 	var promptContent string
 	var err error
 
+	// Get the prompt manager
+	promptManager := prompt.GetPromptManager()
+
 	if len(task.Variables) > 0 {
 		log.Debug("Loading prompt with variables", logger.Fields{"prompt": task.Prompt, "var_count": len(task.Variables)})
-		promptContent, err = prompt.PM.LoadPromptWithVariables(task.Prompt, task.Variables)
+		promptContent, err = promptManager.LoadPromptWithVariables(task.Prompt, task.Variables)
 	} else {
 		log.Debug("Loading prompt without variables", logger.Fields{"prompt": task.Prompt})
-		promptContent, err = prompt.PM.LoadPrompt(task.Prompt)
+		promptContent, err = promptManager.LoadPrompt(task.Prompt)
 	}
 
 	if err != nil {
@@ -243,19 +254,38 @@ func (s *CronService) executeTask(task Task) {
 	log.Debug("Processing response", logger.Fields{"processor": task.Processor})
 
 	// Create processor config
-	procConfig := &processor.ProcessorConfig{
-		Name: task.Processor,
+	procConfig := processor.Config{
+		Type:   "unknown", // Will be set by ParseProcessor
+		Target: "",        // Will be set by ParseProcessor
 	}
 
-	proc, err := processor.GetProcessor(procConfig)
+	// Parse processor name to determine type and target
+	procType, target := parseProcessor(task.Processor)
+	procConfig.Type = procType
+	procConfig.Target = target
+
+	// Get the registry
+	registry := processor.GetRegistry()
+
+	// Create the processor
+	proc, err := registry.CreateProcessor(procType, procConfig)
 	if err != nil {
-		log.Error("Error getting processor", logger.Fields{"processor": task.Processor, "error": err.Error()})
+		log.Error("Error getting processor", logger.Fields{"error": err.Error()})
 		return
 	}
 
-	err = proc.Process(response)
+	// Create a models.ModelResponse
+	modelResponse := &models.ModelResponse{
+		Model:       task.Model,
+		PromptName:  task.Prompt,
+		Content:     response.Content,
+		Timestamp:   time.Now(),
+		ExecutionID: fmt.Sprintf("%d", time.Now().UnixNano()),
+	}
+
+	err = proc.Process(modelResponse, "")
 	if err != nil {
-		log.Error("Error processing response", logger.Fields{"processor": task.Processor, "error": err.Error()})
+		log.Error("Error processing response", logger.Fields{"error": err.Error()})
 		return
 	}
 
@@ -271,15 +301,18 @@ func (s *CronService) executeTask(task Task) {
 }
 
 // RunTask executes a single task immediately
-func (s *CronService) RunTask(task Task) error {
+func (s *Service) RunTask(task Task) error {
 	// Load the prompt content
 	var promptContent string
 	var err error
 
+	// Get the prompt manager
+	promptManager := prompt.GetPromptManager()
+
 	if len(task.Variables) > 0 {
-		promptContent, err = prompt.PM.LoadPromptWithVariables(task.Prompt, task.Variables)
+		promptContent, err = promptManager.LoadPromptWithVariables(task.Prompt, task.Variables)
 	} else {
-		promptContent, err = prompt.PM.LoadPrompt(task.Prompt)
+		promptContent, err = promptManager.LoadPrompt(task.Prompt)
 	}
 
 	if err != nil {
@@ -293,16 +326,35 @@ func (s *CronService) RunTask(task Task) error {
 	}
 
 	// Process the response
-	procConfig := &processor.ProcessorConfig{
-		Name: task.Processor,
+	procConfig := processor.Config{
+		Type:   "unknown", // Will be set by ParseProcessor
+		Target: "",        // Will be set by ParseProcessor
 	}
 
-	proc, err := processor.GetProcessor(procConfig)
+	// Parse processor name to determine type and target
+	procType, target := parseProcessor(task.Processor)
+	procConfig.Type = procType
+	procConfig.Target = target
+
+	// Get the registry
+	registry := processor.GetRegistry()
+
+	// Create the processor
+	proc, err := registry.CreateProcessor(procType, procConfig)
 	if err != nil {
 		return fmt.Errorf("error getting processor: %w", err)
 	}
 
-	err = proc.Process(response)
+	// Create a models.ModelResponse
+	modelResponse := &models.ModelResponse{
+		Model:       task.Model,
+		PromptName:  task.Prompt,
+		Content:     response.Content,
+		Timestamp:   time.Now(),
+		ExecutionID: fmt.Sprintf("%d", time.Now().UnixNano()),
+	}
+
+	err = proc.Process(modelResponse, "")
 	if err != nil {
 		return fmt.Errorf("error processing response: %w", err)
 	}
@@ -311,7 +363,7 @@ func (s *CronService) RunTask(task Task) error {
 }
 
 // Stop stops the cron service
-func (s *CronService) Stop() error {
+func (s *Service) Stop() error {
 	if s.scheduler == nil {
 		return fmt.Errorf("scheduler not initialized")
 	}
@@ -370,15 +422,21 @@ func parseConfigFile(configPath string) (tasks []Task, err error) {
 		line := scanner.Text()
 
 		task, err := parseConfigLine(line)
+		// Handle empty or comment lines
+		if task == nil && err == nil {
+			continue
+		}
+		// Handle parse errors
 		if err != nil {
-			if err.Error() == "empty line" || err.Error() == "comment line" {
-				continue
-			}
-			parseErrors = multierror.Append(parseErrors, err)
+			parseErrors = multierror.Append(parseErrors, fmt.Errorf("line %d: %v", lineNum, err))
 			continue
 		}
 
 		if task != nil {
+			// Validate the task
+			if validateErr := validateTask(task.Task, lineNum); validateErr != nil {
+				parseErrors = multierror.Append(parseErrors, validateErr)
+			}
 			tasks = append(tasks, task.Task)
 		}
 	}
@@ -407,10 +465,10 @@ func parseConfigLine(line string) (*ScheduledTask, error) {
 	// Skip empty lines and comments
 	line = strings.TrimSpace(line)
 	if line == "" {
-		return nil, fmt.Errorf("empty line")
+		return nil, nil // Skip empty lines
 	}
 	if strings.HasPrefix(line, "#") {
-		return nil, fmt.Errorf("comment line")
+		return nil, nil // Skip comment lines
 	}
 
 	// Parse the line
@@ -423,9 +481,23 @@ func parseConfigLine(line string) (*ScheduledTask, error) {
 	schedule := strings.Join(parts[0:5], " ")
 
 	// Extract model, prompt, and processor
-	model := parts[5]
+	modelPart := parts[5]
 	prompt := parts[6]
 	processor := parts[7]
+
+	// Parse model and model parameters
+	var model string
+	var modelParams string
+	if strings.Contains(modelPart, ":") {
+		// Split on first colon to separate model from parameters
+		modelParts := strings.SplitN(modelPart, ":", 2)
+		model = modelParts[0]
+		if len(modelParts) > 1 {
+			modelParams = modelParts[1]
+		}
+	} else {
+		model = modelPart
+	}
 
 	// Validate model
 	if !isValidModel(model) {
@@ -439,6 +511,7 @@ func parseConfigLine(line string) (*ScheduledTask, error) {
 
 	// Parse optional variables
 	var variables map[string]string
+	var template string
 	if len(parts) > 8 {
 		// Check for variables
 		varString := strings.Join(parts[8:], " ")
@@ -457,6 +530,11 @@ func parseConfigLine(line string) (*ScheduledTask, error) {
 					}
 				}
 			}
+
+			// Extract template from variables if present
+			if templateVar, ok := variables["template"]; ok {
+				template = templateVar
+			}
 		} else {
 			// If there's a part without '=' and it's not a valid format, it's an error
 			return nil, fmt.Errorf("invalid variable format '%s'", varString)
@@ -465,16 +543,20 @@ func parseConfigLine(line string) (*ScheduledTask, error) {
 
 	// Create the task
 	task := &ScheduledTask{
-		Schedule:  schedule,
-		Model:     model,
-		Prompt:    prompt,
-		Processor: processor,
-		Variables: variables,
+		Schedule:    schedule,
+		Model:       model,
+		Prompt:      prompt,
+		Processor:   processor,
+		Variables:   variables,
+		ModelParams: modelParams,
+		Template:    template,
 		Task: Task{
-			Model:     model,
-			Prompt:    prompt,
-			Processor: processor,
-			Variables: variables,
+			Model:       model,
+			Prompt:      prompt,
+			Processor:   processor,
+			Variables:   variables,
+			ModelParams: modelParams,
+			Template:    template,
 		},
 	}
 
@@ -534,13 +616,36 @@ func isValidProcessor(processor string) bool {
 	}
 
 	// Check if processor starts with known prefixes
-	validPrefixes := []string{"slack-", "email-", "webhook-", "file-", "log-"}
+	validPrefixes := []string{"slack-", "email-", "webhook-", "file-", "log-", "github-"}
 	for _, prefix := range validPrefixes {
 		if strings.HasPrefix(processor, prefix) {
 			return true
 		}
 	}
 	return false
+}
+
+// parseProcessor parses the processor name to determine type and target
+func parseProcessor(processorName string) (string, string) {
+	// Handle special processor formats
+	if strings.HasPrefix(processorName, "slack-") {
+		return "slack", strings.TrimPrefix(processorName, "slack-")
+	} else if strings.HasPrefix(processorName, "email-") {
+		return "email", strings.TrimPrefix(processorName, "email-")
+	} else if strings.HasPrefix(processorName, "webhook-") {
+		return "webhook", strings.TrimPrefix(processorName, "webhook-")
+	} else if strings.HasPrefix(processorName, "github-") {
+		return "github", strings.TrimPrefix(processorName, "github-")
+	} else if strings.HasPrefix(processorName, "file-") {
+		return "file", strings.TrimPrefix(processorName, "file-")
+	} else if processorName == "log-to-file" {
+		return "file", "to-file"
+	} else if processorName == "console" {
+		return "console", ""
+	}
+
+	// Default case
+	return "console", ""
 }
 
 // validateTask validates a task configuration
@@ -597,12 +702,30 @@ func validateTask(task Task, lineNum int) error {
 	// Validate model parameters if specified
 	if task.ModelParams != "" {
 		modelConfig := config.NewModelConfig()
-		err := modelConfig.ParseParameters(task.ModelParams)
+		params, err := config.ParseModelParams(task.ModelParams)
 		if err != nil {
+			validateErrors = multierror.Append(validateErrors,
+				fmt.Errorf("line %d: invalid model parameters: %w", lineNum, err))
+		} else if err := modelConfig.UpdateFromParams(params); err != nil {
 			validateErrors = multierror.Append(validateErrors,
 				fmt.Errorf("line %d: invalid model parameters: %w", lineNum, err))
 		}
 	}
 
 	return validateErrors.ErrorOrNil()
+}
+
+// ProcessResponse processes a model response using the specified processor
+func (s *Service) ProcessResponse(processor processor.Processor, response *models.ModelResponse, templateName string) error {
+	return processor.Process(response, templateName)
+}
+
+// CreateProcessor creates a new processor instance
+func (s *Service) CreateProcessor(processorType string, config processor.Config) (processor.Processor, error) {
+	return processor.CreateProcessor(processorType, config)
+}
+
+// GetProcessor creates a new processor instance
+func (s *Service) GetProcessor(processorType string, config processor.Config) (processor.Processor, error) {
+	return processor.CreateProcessor(processorType, config)
 }

@@ -1,6 +1,7 @@
 package prompt
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,11 +16,11 @@ func TestPromptManager(t *testing.T) {
 	// PM is no longer used in the prompt package
 	// Test the singleton instance
 	/*
-	t.Run("singleton instance", func(t *testing.T) {
-		manager1 := PM
-		manager2 := PM
-		assert.Same(t, manager1, manager2, "PM should be the same instance")
-	})
+		t.Run("singleton instance", func(t *testing.T) {
+			manager1 := PM
+			manager2 := PM
+			assert.Same(t, manager1, manager2, "PM should be the same instance")
+		})
 	*/
 
 	// Test LoadPrompt through the manager
@@ -35,12 +36,19 @@ func TestPromptManager(t *testing.T) {
 		require.NoError(t, os.WriteFile(testPrompt, []byte(testContent), 0644))
 
 		// Change working directory for the test
-		oldWd, _ := os.Getwd()
-		os.Chdir(tempDir)
-		defer os.Chdir(oldWd)
+		oldWd, err := os.Getwd()
+		require.NoError(t, err)
+		err = os.Chdir(tempDir)
+		require.NoError(t, err)
+		defer func() {
+			err := os.Chdir(oldWd)
+			if err != nil {
+				t.Logf("Failed to restore working directory: %v", err)
+			}
+		}()
 
-		// Load prompt through manager
-		content, err := PM.LoadPrompt("test")
+		// Load prompt through top-level function
+		content, err := LoadPrompt("test")
 		assert.NoError(t, err)
 		assert.Equal(t, testContent, content)
 	})
@@ -58,16 +66,23 @@ func TestPromptManager(t *testing.T) {
 		require.NoError(t, os.WriteFile(testPrompt, []byte(testContent), 0644))
 
 		// Change working directory for the test
-		oldWd, _ := os.Getwd()
-		os.Chdir(tempDir)
-		defer os.Chdir(oldWd)
+		oldWd, err := os.Getwd()
+		require.NoError(t, err)
+		err = os.Chdir(tempDir)
+		require.NoError(t, err)
+		defer func() {
+			err := os.Chdir(oldWd)
+			if err != nil {
+				t.Logf("Failed to restore working directory: %v", err)
+			}
+		}()
 
 		// Load prompt with variables
 		variables := map[string]string{
 			"name":  "John",
 			"place": "New York",
 		}
-		content, err := PM.LoadPromptWithVariables("template", variables)
+		content, err := LoadPromptWithVariables("template", variables)
 		assert.NoError(t, err)
 		assert.Equal(t, "Hello John, welcome to New York!", content)
 	})
@@ -89,9 +104,16 @@ func TestPromptManagerConcurrency(t *testing.T) {
 	}
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err := os.Chdir(oldWd)
+		if err != nil {
+			t.Logf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Test concurrent access
 	var wg sync.WaitGroup
@@ -104,7 +126,7 @@ func TestPromptManagerConcurrency(t *testing.T) {
 
 			// Load random prompts
 			promptName := fmt.Sprintf("prompt%d", id%numPrompts)
-			content, err := PM.LoadPrompt(promptName)
+			content, err := LoadPrompt(promptName)
 
 			assert.NoError(t, err)
 			assert.Contains(t, content, fmt.Sprintf("Prompt %d", id%numPrompts))
@@ -113,7 +135,7 @@ func TestPromptManagerConcurrency(t *testing.T) {
 			variables := map[string]string{
 				"id": fmt.Sprintf("%d", id),
 			}
-			contentWithVars, err := PM.LoadPromptWithVariables(promptName, variables)
+			contentWithVars, err := LoadPromptWithVariables(promptName, variables)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, contentWithVars)
 		}(i)
@@ -130,20 +152,27 @@ func TestPromptManagerErrorHandling(t *testing.T) {
 	require.NoError(t, os.MkdirAll(promptsDir, 0755))
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err := os.Chdir(oldWd)
+		if err != nil {
+			t.Logf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Test loading non-existent prompt
 	t.Run("non-existent prompt", func(t *testing.T) {
-		_, err := PM.LoadPrompt("non_existent")
+		_, err := LoadPrompt("non_existent")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "prompt file not found")
 	})
 
 	// Test loading prompt with invalid path
 	t.Run("invalid path", func(t *testing.T) {
-		_, err := PM.LoadPrompt("../../../etc/passwd")
+		_, err := LoadPrompt("../../../etc/passwd")
 		assert.Error(t, err)
 	})
 }
@@ -184,9 +213,16 @@ category: system
 	}
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err := os.Chdir(oldWd)
+		if err != nil {
+			t.Logf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Test GetPromptPath
 	t.Run("GetPromptPath", func(t *testing.T) {
@@ -198,17 +234,17 @@ category: system
 			{
 				name:     "root prompt",
 				prompt:   "test",
-				expected: filepath.Join(promptsDir, "test.md"),
+				expected: "cron_prompts/test.md",
 			},
 			{
 				name:     "category prompt",
 				prompt:   "system/check",
-				expected: filepath.Join(systemDir, "check.md"),
+				expected: "cron_prompts/system/check.md",
 			},
 			{
 				name:     "with extension",
 				prompt:   "test.md",
-				expected: filepath.Join(promptsDir, "test.md"),
+				expected: "cron_prompts/test.md",
 			},
 		}
 
@@ -251,12 +287,33 @@ category: system
 	})
 }
 
-// TestPromptManagerInitialization tests that the manager initializes properly
-func TestPromptManagerInitialization(t *testing.T) {
-	// The PM variable should be initialized
-	assert.NotNil(t, PM, "PM should be initialized")
+// TestPromptManagerFunctionsWork tests that the prompt functions work correctly
+func TestPromptManagerFunctionsWork(t *testing.T) {
+	// Test that prompt functions are available
+	// Create temp directory structure for testing
+	tempDir := t.TempDir()
+	promptsDir := filepath.Join(tempDir, "cron_prompts")
+	require.NoError(t, os.MkdirAll(promptsDir, 0755))
 
-	// Should be of type *PromptManager
-	_, ok := PM.(*PromptManager)
-	assert.True(t, ok, "PM should be of type *PromptManager")
+	// Create a test prompt
+	testPrompt := filepath.Join(promptsDir, "test.md")
+	testContent := "# Test Prompt\nThis is a test."
+	require.NoError(t, os.WriteFile(testPrompt, []byte(testContent), 0644))
+
+	// Change working directory for the test
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err := os.Chdir(oldWd)
+		if err != nil {
+			t.Logf("Failed to restore working directory: %v", err)
+		}
+	}()
+
+	// Test that functions work
+	content, err := LoadPrompt("test")
+	assert.NoError(t, err)
+	assert.Equal(t, testContent, content)
 }

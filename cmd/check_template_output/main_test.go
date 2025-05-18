@@ -10,16 +10,24 @@ import (
 func TestMain(t *testing.T) {
 	// Capture output
 	old := os.Stdout
-	r, w, _ := os.Pipe()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create pipe: %v", err)
+	}
 	os.Stdout = w
 
 	// Run main function
 	main()
 
 	// Restore stdout and read output
-	w.Close()
+	if err := w.Close(); err != nil {
+		t.Fatalf("Failed to close writer: %v", err)
+	}
 	os.Stdout = old
-	out, _ := io.ReadAll(r)
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("Failed to read from pipe: %v", err)
+	}
 	output := string(out)
 
 	// Check for expected output

@@ -3,17 +3,42 @@
 # Variables format: key1=value1,key2=value2,...
 # Model parameters format: model_params:temperature=0.7,max_tokens=2048,model=gpt-4
 
-# Run daily at 8 AM using Claude with custom temperature and model
-0 8 * * * claude product_manager slack-pm-channel model_params:temperature=0.8,model=claude-3-opus-20240229
+# ============================================================================
+# MVP PROCESSORS - Examples with Model Parameters
+# ============================================================================
 
-# Run weekly with OpenAI using custom parameters and variables
-0 9 * * 1 openai report_template email-team@company.com reportType=Weekly,date={{CURRENT_DATE}} model_params:temperature=0.5,max_tokens=4000,model=gpt-4
+# Run daily at 8 AM using Claude with custom temperature and model, save to file
+0 8 * * * claude product_manager file-/var/log/cronai/product_update.log model_params:temperature=0.8,model=claude-3-opus-20240229
 
-# Run system health check with very precise (low temperature) settings
-*/15 * * * * claude system_health webhook-monitoring cluster=Primary model_params:temperature=0.1,max_tokens=1000
+# Run weekly with OpenAI using custom parameters and variables, save to file
+0 9 * * 1 openai report_template file-/var/log/cronai/weekly_report.log reportType=Weekly,date={{CURRENT_DATE}} model_params:temperature=0.5,max_tokens=4000,model=gpt-4
 
-# Run with Gemini using default parameters but variables
-0 9-17 * * 1-5 gemini monitoring_check log-to-file service=CronAI,environment=Production
+# Run system health check with very precise (low temperature) settings, output to console
+*/15 * * * * claude system_health console cluster=Primary model_params:temperature=0.1,max_tokens=1000
 
-# Run daily at 10 PM using Claude with custom system message
-0 22 * * * claude test_prompt slack-dev-channel model_params:temperature=0.7,system_message=You are a systems analyst providing clear, actionable insights.
+# Run with Gemini using default parameters but variables, save to file
+0 9-17 * * 1-5 gemini monitoring_check file-/var/log/cronai/monitoring.log service=CronAI,environment=Production
+
+# Run daily at 10 PM using Claude with specific model, create GitHub issue
+# Issue will use default template with title "[test_analysis] - [date]"
+0 22 * * * claude test_analysis github-issue:myorg/myrepo model_params:temperature=0.7,model=claude-3-sonnet-20240229
+
+# Run with OpenAI using specific model version for GitHub comments
+# Comment will include model info and formatted response
+0 10 * * * openai issue_review github-comment:myorg/myrepo#42 model_params:model=gpt-4,temperature=0.6
+
+# Create PR with required head_branch variable (PR creation is logged in MVP)
+0 16 * * 5 claude code_update github-pr:myorg/myrepo head_branch=feature/auto-update model_params:temperature=0.5
+
+# ============================================================================
+# POST-MVP PROCESSORS (Coming Soon) 
+# ============================================================================
+
+# PLANNED: Slack integration with custom model settings
+# 0 8 * * * claude product_manager slack-pm-channel model_params:temperature=0.8,model=claude-3-opus-20240229
+
+# PLANNED: Email integration with parameters
+# 0 9 * * 1 openai report_template email-team@company.com model_params:temperature=0.5,max_tokens=4000
+
+# PLANNED: System message customization (post-MVP)
+# 0 22 * * * claude test_prompt webhook-alerts model_params:temperature=0.7,system_message=You are a systems analyst.

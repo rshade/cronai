@@ -1,3 +1,4 @@
+// Package main provides a command-line tool for checking template output.
 package main
 
 import (
@@ -35,7 +36,7 @@ Report generated on {{.Variables.date}}.`
 	}
 
 	// Create data
-	data := template.TemplateData{
+	data := template.Data{
 		Variables: map[string]string{
 			"project":     "CronAI",
 			"environment": "production",

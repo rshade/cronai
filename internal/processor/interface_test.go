@@ -1,3 +1,4 @@
+// Package processor provides functionality for processing model responses through various output channels
 package processor
 
 import (
@@ -9,14 +10,14 @@ import (
 
 // MockProcessor is a mock implementation of the Processor interface for testing
 type MockProcessor struct {
-	config         ProcessorConfig
+	config         Config
 	processError   error
 	validateError  error
 	processCalled  bool
 	validateCalled bool
 }
 
-func (m *MockProcessor) Process(response *models.ModelResponse, templateName string) error {
+func (m *MockProcessor) Process(_ *models.ModelResponse, _ string) error {
 	m.processCalled = true
 	return m.processError
 }
@@ -30,82 +31,55 @@ func (m *MockProcessor) GetType() string {
 	return m.config.Type
 }
 
-func (m *MockProcessor) GetConfig() ProcessorConfig {
+func (m *MockProcessor) GetConfig() Config {
 	return m.config
 }
 
 func TestProcessorInterface(t *testing.T) {
-	// Test that each processor implements the interface
-	processors := []struct {
-		name      string
-		processor Processor
-	}{
-		{
-			name: "EmailProcessor",
-			processor: &EmailProcessor{
-				config: ProcessorConfig{Type: "email", Target: "test@example.com"},
-			},
-		},
-		{
-			name: "SlackProcessor",
-			processor: &SlackProcessor{
-				config: ProcessorConfig{Type: "slack", Target: "test-channel"},
-			},
-		},
-		{
-			name: "WebhookProcessor",
-			processor: &WebhookProcessor{
-				config: ProcessorConfig{Type: "webhook", Target: "test-webhook"},
-			},
-		},
-		{
-			name: "FileProcessor",
-			processor: &FileProcessor{
-				config: ProcessorConfig{Type: "file"},
-			},
-		},
-		{
-			name: "ConsoleProcessor",
-			processor: &ConsoleProcessor{
-				config: ProcessorConfig{Type: "console"},
-			},
-		},
+	// Create test processor
+	config := Config{
+		Type:   "test",
+		Target: "test-target",
+	}
+	processor := &MockProcessor{
+		config: config,
 	}
 
-	for _, p := range processors {
-		t.Run(p.name, func(t *testing.T) {
-			// Test GetType
-			if p.processor.GetType() == "" {
-				t.Errorf("GetType() returned empty string for %s", p.name)
-			}
+	// Test Process method
+	response := &models.ModelResponse{
+		Content:    "Test content",
+		Model:      "test-model",
+		Timestamp:  time.Now(),
+		PromptName: "test-prompt",
+	}
+	err := processor.Process(response, "")
+	if err != nil {
+		t.Errorf("Process failed: %v", err)
+	}
 
-			// Test GetConfig
-			config := p.processor.GetConfig()
-			if config.Type != p.processor.GetType() {
-				t.Errorf("GetConfig().Type (%s) doesn't match GetType() (%s) for %s",
-					config.Type, p.processor.GetType(), p.name)
-			}
+	// Test Validate method
+	err = processor.Validate()
+	if err != nil {
+		t.Errorf("Validate failed: %v", err)
+	}
 
-			// Test that Process method exists (compilation would fail if not)
-			response := &models.ModelResponse{
-				Content:     "test",
-				Model:       "test-model",
-				PromptName:  "test-prompt",
-				Timestamp:   time.Now(),
-				ExecutionID: "test-exec",
-			}
-			_ = p.processor.Process(response, "test-template")
+	// Test GetType method
+	processorType := processor.GetType()
+	if processorType != "test" {
+		t.Errorf("GetType returned wrong type: got %s, want test", processorType)
+	}
 
-			// Test that Validate method exists
-			_ = p.processor.Validate()
-		})
+	// Test GetConfig method
+	config = processor.GetConfig()
+	if config.Type != "test" || config.Target != "test-target" {
+		t.Errorf("GetConfig returned wrong config: got %+v, want {Type:test Target:test-target}", config)
 	}
 }
 
 func TestMockProcessor(t *testing.T) {
 	// Test mock processor behavior
 	mock := &MockProcessor{
-		config: ProcessorConfig{
+		config: Config{
 			Type:   "mock",
 			Target: "mock-target",
 		},

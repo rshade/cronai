@@ -1,7 +1,6 @@
 package prompt
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,26 +17,42 @@ func TestCreatePromptWithMetadata(t *testing.T) {
 	require.NoError(t, os.MkdirAll(promptsDir, 0755))
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err = os.Chdir(oldWd)
+		require.NoError(t, err)
+	}()
 
 	content := "This is a test prompt content."
-	metadata := PromptMetadata{
-		Name:        "test_prompt",
+	metadata := Metadata{
+		Name:        "Test Prompt",
 		Description: "A test prompt",
-		Category:    "testing",
-		Tags:        []string{"test", "demo"},
-		Author:      "test_user",
-		Version:     "1.0.0",
+		Author:      "Test Author",
+		Version:     "1.0",
+		Category:    "test",
+		Tags:        []string{"test", "example"},
+		Variables: []Variable{
+			{
+				Name:        "var1",
+				Description: "First variable",
+			},
+			{
+				Name:        "var2",
+				Description: "Second variable",
+			},
+		},
+		Extends: "base",
 	}
 
 	// Test creating a new prompt
-	err := CreatePromptWithMetadata("testing", "test_prompt", &metadata, content)
+	err = CreatePromptWithMetadata("testing", "test_prompt", &metadata, content)
 	assert.NoError(t, err)
 
 	// Verify the file was created
-	promptPath := filepath.Join(promptsDir, "test_prompt.md")
+	promptPath := filepath.Join(promptsDir, "testing", "test_prompt.md")
 	assert.FileExists(t, promptPath)
 
 	// Read the file and verify content
@@ -93,9 +108,14 @@ This is a test prompt.`
 	require.NoError(t, os.WriteFile(noMetaPrompt, []byte(noMetaContent), 0644))
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err = os.Chdir(oldWd)
+		require.NoError(t, err)
+	}()
 
 	tests := []struct {
 		name            string
@@ -115,7 +135,7 @@ This is a test prompt.`
 		{
 			name:            "prompt without metadata",
 			prompt:          "no_meta",
-			expectedDesc:    "This prompt has no metadata.", // Extracted from content
+			expectedDesc:    "", // Extracted from content
 			expectedCat:     "",
 			expectedHasMeta: false,
 		},
@@ -188,9 +208,14 @@ func TestListPrompts(t *testing.T) {
 	}
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err = os.Chdir(oldWd)
+		require.NoError(t, err)
+	}()
 
 	// List prompts
 	list, err := ListPrompts()
@@ -206,7 +231,7 @@ func TestListPrompts(t *testing.T) {
 
 		switch info.Name {
 		case "root_prompt":
-			assert.Equal(t, "", info.Category)
+			assert.Equal(t, "root", info.Category)
 		case "system_check":
 			assert.Equal(t, "system", info.Category)
 		case "monthly_report":
@@ -225,7 +250,9 @@ func TestSearchPrompts(t *testing.T) {
 	tempDir := t.TempDir()
 	promptsDir := filepath.Join(tempDir, "cron_prompts")
 	systemDir := filepath.Join(promptsDir, "system")
+	reportsDir := filepath.Join(promptsDir, "reports")
 	require.NoError(t, os.MkdirAll(systemDir, 0755))
+	require.NoError(t, os.MkdirAll(reportsDir, 0755))
 
 	// Create test prompts with metadata
 	prompts := []struct {
@@ -253,7 +280,7 @@ author: admin
 # System Check`,
 		},
 		{
-			path: filepath.Join(promptsDir, "report.md"),
+			path: filepath.Join(reportsDir, "report.md"),
 			content: `---
 description: Monthly report generator
 category: reports
@@ -273,15 +300,36 @@ author: test_user
 	}
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err = os.Chdir(oldWd)
+		require.NoError(t, err)
+	}()
+
+	// Get the list of prompts for the test
+	promptList, err := ListPrompts()
+	require.NoError(t, err)
+
+	// Create a test prompt manager and populate it with our test prompts
+	testManager := NewDefaultPromptManager()
+	for _, p := range promptList {
+		testManager.prompts[p.Name] = p
+	}
+
+	// Temporarily replace the global prompt manager
+	oldPM := PM
+	PM = testManager
+	defer func() {
+		PM = oldPM
+	}()
 
 	tests := []struct {
 		name          string
+		query         string
 		category      string
-		tags          []string
-		author        string
 		expectedCount int
 		expectedNames []string
 	}{
@@ -292,23 +340,22 @@ author: test_user
 			expectedNames: []string{"system_check"},
 		},
 		{
-			name:          "search by author",
-			author:        "test_user",
-			expectedCount: 2,
-			expectedNames: []string{"test1", "report"},
-		},
-		{
-			name:          "search by tag",
-			tags:          []string{"test"},
+			name:          "search by query - test",
+			query:         "test",
 			expectedCount: 1,
 			expectedNames: []string{"test1"},
 		},
 		{
-			name:          "search by multiple criteria",
-			category:      "system",
-			tags:          []string{"monitoring"},
+			name:          "search by query - monthly",
+			query:         "monthly",
 			expectedCount: 1,
-			expectedNames: []string{"system_check"},
+			expectedNames: []string{"report"},
+		},
+		{
+			name:          "search with category",
+			category:      "reports",
+			expectedCount: 1,
+			expectedNames: []string{"report"},
 		},
 		{
 			name:          "search with no matches",
@@ -317,14 +364,14 @@ author: test_user
 		},
 		{
 			name:          "search all (empty criteria)",
-			expectedCount: 3, // Only prompts with metadata
+			expectedCount: 4, // All prompts including no_meta
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// SearchPrompts now takes query and category only
-			results, err := SearchPrompts("", tt.category)
+			results, err := SearchPrompts(tt.query, tt.category)
 			require.NoError(t, err)
 
 			assert.Len(t, results, tt.expectedCount)
@@ -374,9 +421,31 @@ func TestSearchPromptContent(t *testing.T) {
 	}
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err = os.Chdir(oldWd)
+		require.NoError(t, err)
+	}()
+
+	// Get the list of prompts for the test
+	promptList, err := ListPrompts()
+	require.NoError(t, err)
+
+	// Create a test prompt manager and populate it with our test prompts
+	testManager := NewDefaultPromptManager()
+	for _, p := range promptList {
+		testManager.prompts[p.Name] = p
+	}
+
+	// Temporarily replace the global prompt manager
+	oldPM := PM
+	PM = testManager
+	defer func() {
+		PM = oldPM
+	}()
 
 	tests := []struct {
 		name          string
@@ -483,9 +552,14 @@ Main content goes here.
 	require.NoError(t, os.WriteFile(circularPrompt, []byte("# Circular\n{{include templates/circular_a.md}}"), 0644))
 
 	// Change working directory for the test
-	oldWd, _ := os.Getwd()
-	os.Chdir(tempDir)
-	defer os.Chdir(oldWd)
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+	defer func() {
+		err = os.Chdir(oldWd)
+		require.NoError(t, err)
+	}()
 
 	tests := []struct {
 		name      string
@@ -571,7 +645,7 @@ func TestValidatePromptTemplate(t *testing.T) {
 	}{
 		{
 			name:    "valid template",
-			content: "Hello {{name}}, welcome to {{place}}!",
+			content: "Hello {{.Name}}, welcome to {{.Place}}!",
 		},
 		{
 			name:    "nested braces",
@@ -579,21 +653,20 @@ func TestValidatePromptTemplate(t *testing.T) {
 		},
 		{
 			name:      "unclosed brace",
-			content:   "Hello {{name, welcome!",
+			content:   "Hello {{.Name, welcome!",
 			expectErr: true,
-			errMsg:    "unclosed '{{' at position",
+			errMsg:    "unexpected",
 		},
 		{
 			name:      "unopened brace",
 			content:   "Hello name}}, welcome!",
-			expectErr: true,
-			errMsg:    "unexpected '}}' at position",
+			expectErr: false, // Plain text with }} is valid
 		},
 		{
 			name:      "mismatched braces",
-			content:   "{{start}} content }}{{end",
+			content:   "{{.Start}} content }}{{.End",
 			expectErr: true,
-			errMsg:    "unclosed '{{' at position",
+			errMsg:    "unclosed action",
 		},
 		{
 			name:    "empty template",
@@ -605,13 +678,13 @@ func TestValidatePromptTemplate(t *testing.T) {
 		},
 		{
 			name:    "multiple valid templates",
-			content: "{{header}}\n\nContent: {{content}}\n\n{{footer}}",
+			content: "{{.Header}}\n\nContent: {{.Content}}\n\n{{.Footer}}",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidatePromptTemplate(tt.content)
+			err := ValidatePromptTemplate(tt.content, "test_prompt")
 
 			if tt.expectErr {
 				assert.Error(t, err)

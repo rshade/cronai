@@ -20,7 +20,9 @@ func TestNewGeminiClient(t *testing.T) {
 		{
 			name: "missing API key",
 			setupEnv: func() {
-				os.Unsetenv("GOOGLE_API_KEY")
+				if err := os.Unsetenv("GOOGLE_API_KEY"); err != nil {
+					t.Fatal(err)
+				}
 			},
 			config:  &config.ModelConfig{},
 			wantErr: true,
@@ -29,7 +31,9 @@ func TestNewGeminiClient(t *testing.T) {
 		{
 			name: "valid API key",
 			setupEnv: func() {
-				os.Setenv("GOOGLE_API_KEY", "test-key")
+				if err := os.Setenv("GOOGLE_API_KEY", "test-key"); err != nil {
+					t.Fatal(err)
+				}
 			},
 			config:  &config.ModelConfig{},
 			wantErr: false,
@@ -40,7 +44,11 @@ func TestNewGeminiClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Save and restore environment
 			oldKey := os.Getenv("GOOGLE_API_KEY")
-			defer os.Setenv("GOOGLE_API_KEY", oldKey)
+			defer func() {
+				if err := os.Setenv("GOOGLE_API_KEY", oldKey); err != nil {
+					t.Fatal(err)
+				}
+			}()
 
 			tt.setupEnv()
 

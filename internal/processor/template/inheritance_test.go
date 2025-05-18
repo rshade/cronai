@@ -84,7 +84,7 @@ Parent end
 	}
 
 	// Create template data
-	data := TemplateData{
+	data := Data{
 		Model:     "TestModel",
 		Content:   "Test content",
 		Timestamp: time.Now(),
@@ -177,7 +177,7 @@ Middle Section End
 	}
 
 	// Create template data
-	data := TemplateData{
+	data := Data{
 		Model:     "TestModel",
 		Content:   "Test content",
 		Timestamp: time.Now(),
@@ -250,7 +250,7 @@ Content: {{.Content}}
 
 	// Create template data
 	now := time.Now()
-	data := TemplateData{
+	data := Data{
 		Model:     "TestModel",
 		Content:   "Test content",
 		Timestamp: now,

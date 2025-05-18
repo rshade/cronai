@@ -100,8 +100,8 @@ func TestLoggerJSON(t *testing.T) {
 	if meta["key1"] != "value1" {
 		t.Errorf("expected metadata.key1 to be 'value1', got %v", meta["key1"])
 	}
-	if meta["key2"].(float64) != 123 {
-		t.Errorf("expected metadata.key2 to be 123, got %v", meta["key2"])
+	if val, ok := meta["key2"].(float64); !ok || val != 123 {
+		t.Error("Expected key2 to be 123")
 	}
 }
 

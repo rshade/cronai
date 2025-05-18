@@ -31,21 +31,21 @@ variables:
 # Main Prompt Content
 
 The actual prompt content starts here...
-```
+```text
 
 ## Usage
 
 Prompts can be referenced in your cronai configuration using the relative path from this directory:
 
-```
+```text
 0 8 * * * claude monitoring/monitoring_check slack-alerts
-```
+```text
 
 or for templates with variables:
 
-```
+```text
 0 9 * * * claude templates/report_template email-team@example.com reportType=Weekly,date={{CURRENT_DATE}}
-```
+```text
 
 ## Includes and Composition
 
@@ -57,4 +57,4 @@ Prompts can include content from other prompt files using the include syntax:
 Your prompt content here...
 
 {{include "templates/common_footer.md"}}
-```
+```text

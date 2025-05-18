@@ -1,3 +1,4 @@
+// Package cmd implements the command line interface for CronAI.
 package cmd
 
 import (
@@ -19,7 +20,7 @@ This helps you understand what the CronAI agent is configured to do.`,
 
   # List tasks from custom config  
   cronai list --config=/etc/cronai/production.config`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Get config file path
 		configPath := cfgFile
 		if configPath == "" {

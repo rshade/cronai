@@ -3,14 +3,11 @@ package processor
 import (
 	"fmt"
 	"sync"
-
-	"github.com/rshade/cronai/internal/errors"
-	"github.com/rshade/cronai/internal/logger"
 )
 
 // Registry manages available processors
 type Registry struct {
-	factories map[string]ProcessorFactory
+	factories map[string]Factory
 	mu        sync.RWMutex
 }
 
@@ -20,63 +17,53 @@ var (
 	once     sync.Once
 )
 
-// GetRegistry returns the global processor registry
+// GetRegistry returns the singleton registry instance
 func GetRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{
-			factories: make(map[string]ProcessorFactory),
+			factories: make(map[string]Factory),
 		}
 		// Register default processors
-		registry.RegisterDefaults()
+		registry.RegisterFactory("console", NewConsoleProcessor)
+		registry.RegisterFactory("file", NewFileProcessor)
+		registry.RegisterFactory("email", NewEmailProcessor)
+		registry.RegisterFactory("slack", NewSlackProcessor)
+		registry.RegisterFactory("webhook", NewWebhookProcessor)
+		registry.RegisterFactory("github", NewGitHubProcessor)
 	})
 	return registry
 }
 
-// RegisterProcessor registers a new processor factory
-func (r *Registry) RegisterProcessor(processorType string, factory ProcessorFactory) error {
+// RegisterFactory registers a new processor factory
+func (r *Registry) RegisterFactory(processorType string, factory Factory) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-
-	if processorType == "" {
-		return errors.Wrap(errors.CategoryValidation, fmt.Errorf("processor type cannot be empty"),
-			"invalid processor registration")
-	}
-
-	if factory == nil {
-		return errors.Wrap(errors.CategoryValidation, fmt.Errorf("processor factory cannot be nil"),
-			"invalid processor registration")
-	}
-
 	r.factories[processorType] = factory
-	log.Debug("Registered processor", logger.Fields{
-		"type": processorType,
-	})
-	return nil
 }
 
-// CreateProcessor creates a new processor instance from configuration
-func (r *Registry) CreateProcessor(config ProcessorConfig) (Processor, error) {
+// RegisterProcessor registers a new processor factory
+func (r *Registry) RegisterProcessor(processorType string, factory Factory) {
+	r.factories[processorType] = factory
+}
+
+// CreateProcessor creates a new processor instance
+func (r *Registry) CreateProcessor(processorType string, config Config) (Processor, error) {
 	r.mu.RLock()
-	factory, exists := r.factories[config.Type]
+	factory, exists := r.factories[processorType]
 	r.mu.RUnlock()
 
 	if !exists {
-		return nil, errors.Wrap(errors.CategoryConfiguration,
-			fmt.Errorf("unknown processor type: %s", config.Type),
-			"processor not registered")
+		return nil, fmt.Errorf("unknown processor type: %s", processorType)
 	}
 
 	processor, err := factory(config)
 	if err != nil {
-		return nil, errors.Wrap(errors.CategoryApplication,
-			fmt.Errorf("failed to create processor: %w", err),
-			"processor creation failed")
+		return nil, err
 	}
 
-	// Validate the processor before returning
+	// Validate the processor
 	if err := processor.Validate(); err != nil {
-		return nil, errors.Wrap(errors.CategoryValidation, err,
-			"processor validation failed")
+		return nil, fmt.Errorf("processor validation failed: %w", err)
 	}
 
 	return processor, nil
@@ -97,27 +84,37 @@ func (r *Registry) GetProcessorTypes() []string {
 // RegisterDefaults registers all default processors
 func (r *Registry) RegisterDefaults() {
 	// Register email processor
-	_ = r.RegisterProcessor("email", func(config ProcessorConfig) (Processor, error) {
-		return NewEmailProcessor(config)
-	})
+	r.RegisterFactory("email", NewEmailProcessor)
 
 	// Register slack processor
-	_ = r.RegisterProcessor("slack", func(config ProcessorConfig) (Processor, error) {
-		return NewSlackProcessor(config)
-	})
+	r.RegisterFactory("slack", NewSlackProcessor)
 
 	// Register webhook processor
-	_ = r.RegisterProcessor("webhook", func(config ProcessorConfig) (Processor, error) {
-		return NewWebhookProcessor(config)
-	})
+	r.RegisterFactory("webhook", NewWebhookProcessor)
 
 	// Register file processor
-	_ = r.RegisterProcessor("file", func(config ProcessorConfig) (Processor, error) {
-		return NewFileProcessor(config)
-	})
+	r.RegisterFactory("file", NewFileProcessor)
 
 	// Register console processor
-	_ = r.RegisterProcessor("console", func(config ProcessorConfig) (Processor, error) {
-		return NewConsoleProcessor(config)
-	})
+	r.RegisterFactory("console", NewConsoleProcessor)
+
+	// Register github processor
+	r.RegisterFactory("github", NewGitHubProcessor)
+}
+
+// GetProcessorFunc returns a function that creates a processor
+func GetProcessorFunc(config Config) func() (Processor, error) {
+	return func() (Processor, error) {
+		return CreateProcessor(config.Type, config)
+	}
+}
+
+// GetProcessor creates a processor from the given config
+func GetProcessor(config Config) (Processor, error) {
+	return CreateProcessor(config.Type, config)
+}
+
+// CreateProcessor creates a new processor using the global registry
+func CreateProcessor(processorType string, config Config) (Processor, error) {
+	return GetRegistry().CreateProcessor(processorType, config)
 }

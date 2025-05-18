@@ -1,3 +1,4 @@
+// Package template provides template processing functionality with inheritance and conditional support
 package template
 
 import (
@@ -11,13 +12,13 @@ func TestConditionalTemplates(t *testing.T) {
 	tests := []struct {
 		name     string
 		template string
-		data     TemplateData
+		data     Data
 		expected string
 	}{
 		{
 			name:     "basic if condition - true case",
 			template: "{{if eq .Model \"TestModel\"}}Correct model{{else}}Wrong model{{end}}",
-			data: TemplateData{
+			data: Data{
 				Model: "TestModel",
 			},
 			expected: "Correct model",
@@ -25,7 +26,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "basic if condition - false case",
 			template: "{{if eq .Model \"OtherModel\"}}Wrong model{{else}}Not the expected model{{end}}",
-			data: TemplateData{
+			data: Data{
 				Model: "TestModel",
 			},
 			expected: "Not the expected model",
@@ -33,7 +34,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "variable existence check",
 			template: "{{if hasVar .Variables \"feature\"}}Feature exists{{else}}Feature not found{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"feature": "enabled",
 				},
@@ -43,7 +44,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "variable existence check - missing variable",
 			template: "{{if hasVar .Variables \"missing\"}}Variable exists{{else}}Variable not found{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"feature": "enabled",
 				},
@@ -53,7 +54,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "get variable with default",
 			template: "Status: {{getVar .Variables \"status\" \"unknown\"}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"feature": "enabled",
 				},
@@ -63,7 +64,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "get variable with default - variable exists",
 			template: "Status: {{getVar .Variables \"status\" \"unknown\"}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"status": "active",
 				},
@@ -73,7 +74,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "string comparison - equals",
 			template: "{{if eq (getVar .Variables \"status\" \"\") \"active\"}}System active{{else}}System inactive{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"status": "active",
 				},
@@ -83,7 +84,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "string comparison - not equals",
 			template: "{{if ne (getVar .Variables \"status\" \"\") \"active\"}}System inactive{{else}}System active{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"status": "inactive",
 				},
@@ -93,7 +94,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "string contains",
 			template: "{{if contains (getVar .Variables \"message\" \"\") \"error\"}}Error detected{{else}}No errors{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"message": "system error occurred",
 				},
@@ -103,7 +104,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "numeric comparison - less than",
 			template: "{{if lt (getVar .Variables \"count\" \"0\") \"10\"}}Count is small{{else}}Count is large{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"count": "5",
 				},
@@ -113,7 +114,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "numeric comparison - greater than",
 			template: "{{if gt (getVar .Variables \"count\" \"0\") \"10\"}}Count is large{{else}}Count is small{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"count": "15",
 				},
@@ -123,7 +124,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "logical AND",
 			template: "{{if and (hasVar .Variables \"feature\") (eq (getVar .Variables \"feature\" \"\") \"enabled\")}}Feature is enabled{{else}}Feature is not enabled{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"feature": "enabled",
 				},
@@ -133,7 +134,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "logical OR",
 			template: "{{if or (eq (getVar .Variables \"status\" \"\") \"active\") (eq (getVar .Variables \"mode\" \"\") \"testing\")}}System is running{{else}}System is stopped{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"status": "inactive",
 					"mode":   "testing",
@@ -144,7 +145,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "logical NOT",
 			template: "{{if not (hasVar .Variables \"error\")}}No errors{{else}}Errors detected{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"status": "active",
 				},
@@ -154,7 +155,7 @@ func TestConditionalTemplates(t *testing.T) {
 		{
 			name:     "nested conditionals",
 			template: "{{if hasVar .Variables \"status\"}}{{if eq .Variables.status \"active\"}}Active system{{else}}Inactive system{{end}}{{else}}Unknown status{{end}}",
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"status": "active",
 				},
@@ -176,7 +177,7 @@ func TestConditionalTemplates(t *testing.T) {
 {{else}}
   Environment not specified
 {{end}}`,
-			data: TemplateData{
+			data: Data{
 				Variables: map[string]string{
 					"environment": "production",
 					"status":      "healthy",
@@ -272,7 +273,7 @@ Report generated on {{.Variables.date}}.`
 	}
 
 	// Create test data
-	data := TemplateData{
+	data := Data{
 		Variables: map[string]string{
 			"project":     "CronAI",
 			"environment": "production",

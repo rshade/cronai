@@ -15,11 +15,11 @@ import (
 
 // FileProcessor handles file output
 type FileProcessor struct {
-	config ProcessorConfig
+	config Config
 }
 
 // NewFileProcessor creates a new file processor
-func NewFileProcessor(config ProcessorConfig) (Processor, error) {
+func NewFileProcessor(config Config) (Processor, error) {
 	return &FileProcessor{
 		config: config,
 	}, nil
@@ -28,7 +28,7 @@ func NewFileProcessor(config ProcessorConfig) (Processor, error) {
 // Process handles the model response with optional template
 func (f *FileProcessor) Process(response *models.ModelResponse, templateName string) error {
 	// Create template data
-	tmplData := template.TemplateData{
+	tmplData := template.Data{
 		Content:     response.Content,
 		Model:       response.Model,
 		Timestamp:   response.Timestamp,
@@ -64,12 +64,12 @@ func (f *FileProcessor) GetType() string {
 }
 
 // GetConfig returns the processor configuration
-func (f *FileProcessor) GetConfig() ProcessorConfig {
+func (f *FileProcessor) GetConfig() Config {
 	return f.config
 }
 
 // processFileWithTemplate saves response to file using template
-func (f *FileProcessor) processFileWithTemplate(data template.TemplateData, templateName string) error {
+func (f *FileProcessor) processFileWithTemplate(data template.Data, templateName string) error {
 	// Create logs directory if it doesn't exist
 	logsDir := GetEnvWithDefault(EnvLogsDirectory, DefaultLogsDirectory)
 

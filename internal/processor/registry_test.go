@@ -10,48 +10,35 @@ import (
 func TestRegistry(t *testing.T) {
 	// Create a new registry for testing
 	registry := &Registry{
-		factories: make(map[string]ProcessorFactory),
+		factories: make(map[string]Factory),
 	}
 
-	// Test RegisterProcessor
-	t.Run("RegisterProcessor", func(t *testing.T) {
+	// Test RegisterFactory
+	t.Run("RegisterFactory", func(t *testing.T) {
 		// Test with valid processor
-		err := registry.RegisterProcessor("test", func(config ProcessorConfig) (Processor, error) {
+		registry.RegisterFactory("test", func(config Config) (Processor, error) {
 			return &MockProcessor{config: config}, nil
 		})
-		if err != nil {
-			t.Errorf("RegisterProcessor failed: %v", err)
-		}
 
-		// Test with empty type
-		err = registry.RegisterProcessor("", nil)
-		if err == nil {
-			t.Error("Expected error for empty processor type")
-		}
-
-		// Test with nil factory
-		err = registry.RegisterProcessor("nil-factory", nil)
-		if err == nil {
-			t.Error("Expected error for nil factory")
+		// Verify the factory was registered
+		if _, exists := registry.factories["test"]; !exists {
+			t.Error("Factory was not registered")
 		}
 	})
 
 	// Test CreateProcessor
 	t.Run("CreateProcessor", func(t *testing.T) {
 		// Register a test processor
-		err := registry.RegisterProcessor("test", func(config ProcessorConfig) (Processor, error) {
+		registry.RegisterFactory("test", func(config Config) (Processor, error) {
 			return &MockProcessor{config: config}, nil
 		})
-		if err != nil {
-			t.Fatalf("Failed to register test processor: %v", err)
-		}
 
 		// Test creating registered processor
-		config := ProcessorConfig{
+		config := Config{
 			Type:   "test",
 			Target: "test-target",
 		}
-		processor, err := registry.CreateProcessor(config)
+		processor, err := registry.CreateProcessor("test", config)
 		if err != nil {
 			t.Errorf("CreateProcessor failed: %v", err)
 		}
@@ -61,36 +48,30 @@ func TestRegistry(t *testing.T) {
 
 		// Test creating unregistered processor
 		config.Type = "unregistered"
-		_, err = registry.CreateProcessor(config)
+		_, err = registry.CreateProcessor("unregistered", config)
 		if err == nil {
 			t.Error("Expected error for unregistered processor type")
 		}
 
 		// Test processor that fails creation
-		err = registry.RegisterProcessor("failing", func(config ProcessorConfig) (Processor, error) {
+		registry.RegisterFactory("failing", func(_ Config) (Processor, error) {
 			return nil, fmt.Errorf("creation failed")
 		})
-		if err != nil {
-			t.Fatalf("Failed to register failing processor: %v", err)
-		}
 		config.Type = "failing"
-		_, err = registry.CreateProcessor(config)
+		_, err = registry.CreateProcessor("failing", config)
 		if err == nil {
 			t.Error("Expected error for failing processor creation")
 		}
 
 		// Test processor that fails validation
-		err = registry.RegisterProcessor("invalid", func(config ProcessorConfig) (Processor, error) {
+		registry.RegisterFactory("invalid", func(config Config) (Processor, error) {
 			return &MockProcessor{
 				config:        config,
 				validateError: fmt.Errorf("validation failed"),
 			}, nil
 		})
-		if err != nil {
-			t.Fatalf("Failed to register invalid processor: %v", err)
-		}
 		config.Type = "invalid"
-		_, err = registry.CreateProcessor(config)
+		_, err = registry.CreateProcessor("invalid", config)
 		if err == nil {
 			t.Error("Expected error for processor validation failure")
 		}
@@ -128,7 +109,7 @@ func TestGlobalRegistry(t *testing.T) {
 
 	// Test that default processors are registered
 	types := registry1.GetProcessorTypes()
-	expectedTypes := []string{"email", "slack", "webhook", "file", "console"}
+	expectedTypes := []string{"email", "slack", "webhook", "file", "console", "github"}
 
 	for _, expected := range expectedTypes {
 		found := false
@@ -146,23 +127,20 @@ func TestGlobalRegistry(t *testing.T) {
 
 func TestRegistryWithMockProcessors(t *testing.T) {
 	registry := &Registry{
-		factories: make(map[string]ProcessorFactory),
+		factories: make(map[string]Factory),
 	}
 
 	// Register a mock processor factory
-	mockFactory := func(config ProcessorConfig) (Processor, error) {
+	mockFactory := func(config Config) (Processor, error) {
 		return &MockProcessor{
 			config: config,
 		}, nil
 	}
 
-	err := registry.RegisterProcessor("mock", mockFactory)
-	if err != nil {
-		t.Fatalf("Failed to register mock processor: %v", err)
-	}
+	registry.RegisterFactory("mock", mockFactory)
 
 	// Create a processor using the factory
-	config := ProcessorConfig{
+	config := Config{
 		Type:   "mock",
 		Target: "test-target",
 		Options: map[string]interface{}{
@@ -170,7 +148,7 @@ func TestRegistryWithMockProcessors(t *testing.T) {
 		},
 	}
 
-	processor, err := registry.CreateProcessor(config)
+	processor, err := registry.CreateProcessor("mock", config)
 	if err != nil {
 		t.Fatalf("Failed to create processor: %v", err)
 	}

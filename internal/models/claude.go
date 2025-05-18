@@ -1,3 +1,4 @@
+// Package models provides implementations for different AI model clients
 package models
 
 import (

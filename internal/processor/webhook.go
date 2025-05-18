@@ -14,11 +14,11 @@ import (
 
 // WebhookProcessor handles webhook requests
 type WebhookProcessor struct {
-	config ProcessorConfig
+	config Config
 }
 
 // NewWebhookProcessor creates a new webhook processor
-func NewWebhookProcessor(config ProcessorConfig) (Processor, error) {
+func NewWebhookProcessor(config Config) (Processor, error) {
 	return &WebhookProcessor{
 		config: config,
 	}, nil
@@ -27,7 +27,7 @@ func NewWebhookProcessor(config ProcessorConfig) (Processor, error) {
 // Process handles the model response with optional template
 func (w *WebhookProcessor) Process(response *models.ModelResponse, templateName string) error {
 	// Create template data
-	tmplData := template.TemplateData{
+	tmplData := template.Data{
 		Content:     response.Content,
 		Model:       response.Model,
 		Timestamp:   response.Timestamp,
@@ -75,12 +75,12 @@ func (w *WebhookProcessor) GetType() string {
 }
 
 // GetConfig returns the processor configuration
-func (w *WebhookProcessor) GetConfig() ProcessorConfig {
+func (w *WebhookProcessor) GetConfig() Config {
 	return w.config
 }
 
 // processWebhookWithTemplate sends webhook payload using template
-func (w *WebhookProcessor) processWebhookWithTemplate(webhookType string, data template.TemplateData, templateName string) error {
+func (w *WebhookProcessor) processWebhookWithTemplate(webhookType string, data template.Data, templateName string) error {
 	// Check for webhook URL
 	webhookURL := GetWebhookURL(webhookType)
 	if webhookURL == "" {

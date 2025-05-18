@@ -169,8 +169,12 @@ func executeWithFallback(primaryModel string, promptContent string, variables ma
 	return result
 }
 
-// createModelClient creates a client for the specified model
-func createModelClient(modelName string, modelConfig *config.ModelConfig) (ModelClient, error) {
+// createModelClient is a variable function that creates a client for the specified model
+// This is a variable to allow for testing
+var createModelClient = defaultCreateModelClient
+
+// defaultCreateModelClient is the default implementation of createModelClient
+func defaultCreateModelClient(modelName string, modelConfig *config.ModelConfig) (ModelClient, error) {
 	switch modelName {
 	case "openai":
 		return NewOpenAIClient(modelConfig)

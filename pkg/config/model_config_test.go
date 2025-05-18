@@ -64,13 +64,25 @@ func TestLoadFromEnvironment(t *testing.T) {
 
 	// Restore environment variables after test
 	defer func() {
-		// Ignoring errors in defer as there's not much we can do about them
-		_ = os.Setenv("MODEL_TEMPERATURE", origTemperature)
-		_ = os.Setenv("MODEL_MAX_TOKENS", origMaxTokens)
-		_ = os.Setenv("OPENAI_MODEL", origOpenAIModel)
-		_ = os.Setenv("CLAUDE_MODEL", origClaudeModel)
-		_ = os.Setenv("GEMINI_MODEL", origGeminiModel)
-		_ = os.Setenv("GEMINI_SAFETY_SETTINGS", origSafetySettings)
+		// Use t.Logf for errors in cleanup functions
+		if err := os.Setenv("MODEL_TEMPERATURE", origTemperature); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("MODEL_MAX_TOKENS", origMaxTokens); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("OPENAI_MODEL", origOpenAIModel); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("CLAUDE_MODEL", origClaudeModel); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("GEMINI_MODEL", origGeminiModel); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("GEMINI_SAFETY_SETTINGS", origSafetySettings); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
 	}()
 
 	// Create and load config from environment
@@ -118,8 +130,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "invalid",
 			setupFunc: func() func() {
 				orig := os.Getenv("MODEL_TEMPERATURE")
-				_ = os.Setenv("MODEL_TEMPERATURE", "invalid")
-				return func() { _ = os.Setenv("MODEL_TEMPERATURE", orig) }
+				if err := os.Setenv("MODEL_TEMPERATURE", "invalid"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_TEMPERATURE", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -128,8 +146,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "not_a_number",
 			setupFunc: func() func() {
 				orig := os.Getenv("MODEL_MAX_TOKENS")
-				_ = os.Setenv("MODEL_MAX_TOKENS", "not_a_number")
-				return func() { _ = os.Setenv("MODEL_MAX_TOKENS", orig) }
+				if err := os.Setenv("MODEL_MAX_TOKENS", "not_a_number"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_MAX_TOKENS", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -138,8 +162,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "abc",
 			setupFunc: func() func() {
 				orig := os.Getenv("MODEL_TOP_P")
-				_ = os.Setenv("MODEL_TOP_P", "abc")
-				return func() { _ = os.Setenv("MODEL_TOP_P", orig) }
+				if err := os.Setenv("MODEL_TOP_P", "abc"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_TOP_P", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -148,8 +178,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "invalid",
 			setupFunc: func() func() {
 				orig := os.Getenv("MODEL_FREQUENCY_PENALTY")
-				_ = os.Setenv("MODEL_FREQUENCY_PENALTY", "invalid")
-				return func() { _ = os.Setenv("MODEL_FREQUENCY_PENALTY", orig) }
+				if err := os.Setenv("MODEL_FREQUENCY_PENALTY", "invalid"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_FREQUENCY_PENALTY", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -158,8 +194,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "invalid",
 			setupFunc: func() func() {
 				orig := os.Getenv("MODEL_PRESENCE_PENALTY")
-				_ = os.Setenv("MODEL_PRESENCE_PENALTY", "invalid")
-				return func() { _ = os.Setenv("MODEL_PRESENCE_PENALTY", orig) }
+				if err := os.Setenv("MODEL_PRESENCE_PENALTY", "invalid"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_PRESENCE_PENALTY", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -168,8 +210,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "invalid",
 			setupFunc: func() func() {
 				orig := os.Getenv("MODEL_MAX_RETRIES")
-				_ = os.Setenv("MODEL_MAX_RETRIES", "invalid")
-				return func() { _ = os.Setenv("MODEL_MAX_RETRIES", orig) }
+				if err := os.Setenv("MODEL_MAX_RETRIES", "invalid"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_MAX_RETRIES", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -178,8 +226,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "claude|openai|gemini",
 			setupFunc: func() func() {
 				orig := os.Getenv("MODEL_FALLBACK_MODELS")
-				_ = os.Setenv("MODEL_FALLBACK_MODELS", "claude|openai|gemini")
-				return func() { _ = os.Setenv("MODEL_FALLBACK_MODELS", orig) }
+				if err := os.Setenv("MODEL_FALLBACK_MODELS", "claude|openai|gemini"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_FALLBACK_MODELS", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -188,8 +242,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "OpenAI system message",
 			setupFunc: func() func() {
 				orig := os.Getenv("OPENAI_SYSTEM_MESSAGE")
-				_ = os.Setenv("OPENAI_SYSTEM_MESSAGE", "OpenAI system message")
-				return func() { _ = os.Setenv("OPENAI_SYSTEM_MESSAGE", orig) }
+				if err := os.Setenv("OPENAI_SYSTEM_MESSAGE", "OpenAI system message"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("OPENAI_SYSTEM_MESSAGE", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -198,8 +258,14 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 			value:  "Claude system message",
 			setupFunc: func() func() {
 				orig := os.Getenv("CLAUDE_SYSTEM_MESSAGE")
-				_ = os.Setenv("CLAUDE_SYSTEM_MESSAGE", "Claude system message")
-				return func() { _ = os.Setenv("CLAUDE_SYSTEM_MESSAGE", orig) }
+				if err := os.Setenv("CLAUDE_SYSTEM_MESSAGE", "Claude system message"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("CLAUDE_SYSTEM_MESSAGE", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
 			},
 		},
 		{
@@ -216,14 +282,24 @@ func TestLoadFromEnvironmentWithErrors(t *testing.T) {
 				}
 
 				// Set new values
-				_ = os.Setenv("MODEL_TOP_P", "0.9")
-				_ = os.Setenv("MODEL_FREQUENCY_PENALTY", "0.5")
-				_ = os.Setenv("MODEL_PRESENCE_PENALTY", "0.5")
-				_ = os.Setenv("MODEL_MAX_RETRIES", "3")
+				if err := os.Setenv("MODEL_TOP_P", "0.9"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				if err := os.Setenv("MODEL_FREQUENCY_PENALTY", "0.5"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				if err := os.Setenv("MODEL_PRESENCE_PENALTY", "0.5"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				if err := os.Setenv("MODEL_MAX_RETRIES", "3"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
 
 				return func() {
 					for k, v := range originals {
-						_ = os.Setenv(k, v)
+						if err := os.Setenv(k, v); err != nil {
+							t.Logf("Failed to restore environment variable: %v", err)
+						}
 					}
 				}
 			},
@@ -753,7 +829,7 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			name:      "valid config",
-			configure: func(c *ModelConfig) {},
+			configure: func(_ *ModelConfig) {},
 			wantErr:   false,
 		},
 		{

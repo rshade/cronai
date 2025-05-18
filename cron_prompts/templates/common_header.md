@@ -8,6 +8,7 @@ tags: header, template, common
 ---
 
 # CRONAI PROMPT
+
 Date: {{CURRENT_DATE}}
 Time: {{CURRENT_TIME}}
 

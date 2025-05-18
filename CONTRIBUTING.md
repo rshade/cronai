@@ -17,18 +17,23 @@ Thank you for your interest in contributing to CronAI! This document provides gu
 
 1. Fork the repository on GitHub
 2. Clone your fork locally
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/cronai.git
    cd cronai
-   ```
+   ```text
+
 3. Add the original repository as an upstream remote
+
    ```bash
    git remote add upstream https://github.com/rshade/cronai.git
-   ```
+   ```text
+
 4. Create a new branch for your feature or bug fix
+
    ```bash
    git checkout -b feature/your-feature-name
-   ```
+   ```text
 
 ## Development Setup
 
@@ -54,27 +59,44 @@ npm install
 
 # Run tests to verify setup
 make test
-```
+```text
 
 ### Development Workflow
 
 1. **Write code** following the project's conventions
 2. **Write tests** for your changes
 3. **Run linter** to ensure code quality
+
    ```bash
+   # For CI and pull requests (strict mode - no automatic fixes)
    make lint
-   ```
+   
+   # For local development (automatically fixes issues)
+   make lint-fix
+   ```text
+
 4. **Run tests** to ensure everything works
+
    ```bash
    make test
-   ```
+   ```text
+
 5. **Update documentation** if needed (README.md, docs/, etc.)
+
+## Developer Documentation
+
+Before contributing to CronAI, please review these key documentation resources:
+
+- [Architecture Overview](docs/architecture.md) - Understand the system design, component relationships, and data flow
+- [Extension Points](docs/extension-points.md) - Learn how to extend CronAI with new features
+- [API Documentation](docs/api.md) - API endpoints (planned for future versions)
+- [Limitations and Improvements](docs/limitations-and-improvements.md) - Current limitations and future roadmap
 
 ## Contribution Guidelines
 
 ### Code Quality
 
-- **Always run `make lint` before committing**
+- **Always run `make lint` before committing** (or `make lint-fix` for automatic fixes)
 - Fix all linting issues reported by `golangci-lint`
 - Follow Go idiomatic patterns
 - Use meaningful variable and function names
@@ -93,9 +115,10 @@ import "github.com/rshade/cronai/internal/errors"
 if err != nil {
     return errors.Wrap(errors.CategoryConfiguration, err, "failed to load config")
 }
-```
+```text
 
 Error categories:
+
 - `CategoryConfiguration`: Configuration-related errors
 - `CategoryValidation`: Input validation errors
 - `CategoryApplication`: General application errors
@@ -122,7 +145,7 @@ log.Info("Processing response", logger.Fields{
 log.Error("Failed to process", logger.Fields{
     "error": err.Error(),
 })
-```
+```text
 
 ## Adding Processors
 
@@ -210,7 +233,7 @@ func (y *YourProcessor) processWithTemplate(data template.TemplateData, template
     // Implement your processor logic here
     return nil
 }
-```
+```text
 
 ### 2. Define Environment Variables
 
@@ -225,15 +248,16 @@ const (
     // Default values
     DefaultYourEndpoint = "https://api.example.com"
 )
-```
+```text
 
 For dynamic environment variables (supporting multiple configurations):
+
 ```go
 const (
     // Dynamic environment variables for different types
     EnvYourKeyPrefix = "YOUR_KEY_"  // e.g., YOUR_KEY_PRODUCTION, YOUR_KEY_STAGING
 )
-```
+```text
 
 ### 3. Register the Processor
 
@@ -246,22 +270,24 @@ func init() {
     // Register YourProcessor
     registry.RegisterProcessor("yourprocessor", NewYourProcessor)
 }
-```
+```text
 
 ### 4. Update Documentation
 
 1. Add environment variables to `.env.example`:
-   ```
+
+   ```text
    # YourProcessor Configuration
    YOUR_API_KEY=your-api-key
    YOUR_ENDPOINT=https://api.example.com
-   ```
+   ```text
 
 2. Update README.md with processor usage:
-   ```
+
+   ```text
    # Using YourProcessor
    0 9 * * * claude daily_report yourprocessor-target
-   ```
+   ```text
 
 ### Message Format
 
@@ -276,7 +302,7 @@ type ModelResponse struct {
     Timestamp   time.Time         // When the response was generated
     ExecutionID string            // Unique execution identifier
 }
-```
+```text
 
 The `TemplateData` structure available in templates:
 
@@ -291,9 +317,10 @@ type TemplateData struct {
     Metadata    map[string]string // Additional metadata
     Parent      interface{}       // Parent template data for inheritance
 }
-```
+```text
 
 Common metadata fields automatically populated:
+
 - `timestamp`: RFC3339 formatted timestamp
 - `date`: Date in YYYY-MM-DD format
 - `time`: Time in HH:MM:SS format
@@ -313,13 +340,14 @@ CronAI uses consistent patterns for environment variables:
    - Allows different configurations for different use cases
 
 3. **Helper functions**: Use the provided helper functions for dynamic variables:
+
    ```go
    // Get webhook URL for a specific type
    url := GetWebhookURL("monitoring")  // Checks WEBHOOK_URL_MONITORING first, then WEBHOOK_URL
    
    // Get environment variable with default
    port := GetEnvWithDefault(EnvSMTPPort, DefaultSMTPPort)
-   ```
+   ```text
 
 ## Testing
 
@@ -331,6 +359,7 @@ CronAI uses consistent patterns for environment variables:
 - Follow existing test patterns in the codebase
 
 Example test structure:
+
 ```go
 func TestYourProcessor_Process(t *testing.T) {
     tests := []struct {
@@ -367,7 +396,7 @@ func TestYourProcessor_Process(t *testing.T) {
         })
     }
 }
-```
+```text
 
 ### Running Tests
 
@@ -383,7 +412,7 @@ go test ./internal/processor/...
 
 # Run a specific test
 go test -run TestYourProcessor ./internal/processor
-```
+```text
 
 ## Code Style
 
@@ -411,13 +440,13 @@ CronAI uses [Conventional Commits](https://www.conventionalcommits.org/) for all
 
 ### Format
 
-```
+```text
 <type>(<scope>): <description>
 
 [optional body]
 
 [optional footer(s)]
-```
+```text
 
 ### Types
 
@@ -444,38 +473,41 @@ CronAI uses [Conventional Commits](https://www.conventionalcommits.org/) for all
 
 ### Examples
 
-```
+```text
 feat(processor): add Discord notification processor
 fix(cron): resolve timing issue with overlapping tasks
 docs: update processor development guide
 refactor(models): improve error handling in Claude client
 test(processor): add unit tests for webhook processor
-```
+```text
 
 ### Validation
 
 Before committing, validate your message:
+
 ```bash
 # Validate the last commit message
 npx commitlint --from HEAD~1
 
 # Validate a commit message file
 npx commitlint --from PR_MESSAGE.md
-```
+```text
 
 ## Pull Request Process
 
 1. **Update your branch** with the latest upstream changes:
+
    ```bash
    git fetch upstream
    git rebase upstream/main
-   ```
+   ```text
 
 2. **Ensure all tests pass and linting is clean**:
+
    ```bash
    make lint
    make test
-   ```
+   ```text
 
 3. **Update documentation** if your changes affect user-facing functionality
 
@@ -492,6 +524,7 @@ npx commitlint --from PR_MESSAGE.md
    - Respond to review feedback promptly
 
 6. **Update PR_MESSAGE.md** with your commit message for review:
+
    ```markdown
    feat(processor): add Discord notification processor
    
@@ -500,11 +533,12 @@ npx commitlint --from PR_MESSAGE.md
    customizable templates.
    
    Closes #123
-   ```
+   ```text
 
 ### PR Review Checklist
 
 Before requesting review, ensure:
+
 - [ ] Code follows project conventions
 - [ ] All tests pass
 - [ ] Linting is clean

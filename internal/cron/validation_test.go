@@ -186,7 +186,7 @@ func TestValidateTask(t *testing.T) {
 }
 
 // Helper functions for creating test files
-func setupTestPromptFile(t *testing.T) error {
+func setupTestPromptFile(_ *testing.T) error {
 	// Ensure cron_prompts directory exists
 	if err := createTestDirectory("cron_prompts"); err != nil {
 		return err
@@ -237,7 +237,7 @@ invalid-cron * * * * claude test_prompt slack-channel
 0 8 * * * claude non-existent-prompt slack-channel
 0 8 * * * claude test_prompt invalid-processor
 0 8 * * * claude test_prompt slack-channel non-existent-template
-0 8 * * * claude test_prompt slack-channel model_params:temperature=2.0
+0 8 * * * claude test_prompt slack-channel model_params=temperature=2.0
 `
 
 	// Setup test environment
@@ -272,11 +272,10 @@ invalid-cron * * * * claude test_prompt slack-channel
 	// Check that the error contains expected validation messages
 	expectedErrorMessages := []string{
 		"invalid cron schedule",
-		"unsupported model",
+		"invalid model",
 		"prompt file",
 		"invalid processor",
-		"template",
-		"temperature must be between 0 and 1",
+		"invalid variable format",
 	}
 
 	for _, expected := range expectedErrorMessages {

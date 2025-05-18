@@ -1,27 +1,12 @@
 package models
 
 import (
-	"errors"
 	"os"
 	"testing"
 
 	"github.com/rshade/cronai/pkg/config"
-	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-// Mock OpenAI client for testing
-type mockOpenAIClient struct {
-	createChatCompletionFunc func(ctx interface{}, req openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error)
-}
-
-func (m *mockOpenAIClient) CreateChatCompletion(ctx interface{}, req openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {
-	if m.createChatCompletionFunc != nil {
-		return m.createChatCompletionFunc(ctx, req)
-	}
-	return openai.ChatCompletionResponse{}, errors.New("not implemented")
-}
 
 func TestNewOpenAIClient(t *testing.T) {
 	tests := []struct {
@@ -34,7 +19,9 @@ func TestNewOpenAIClient(t *testing.T) {
 		{
 			name: "missing API key",
 			setupEnv: func() {
-				os.Unsetenv("OPENAI_API_KEY")
+				if err := os.Unsetenv("OPENAI_API_KEY"); err != nil {
+					t.Fatal(err)
+				}
 			},
 			config:  &config.ModelConfig{},
 			wantErr: true,
@@ -43,7 +30,9 @@ func TestNewOpenAIClient(t *testing.T) {
 		{
 			name: "valid API key",
 			setupEnv: func() {
-				os.Setenv("OPENAI_API_KEY", "test-key")
+				if err := os.Setenv("OPENAI_API_KEY", "test-key"); err != nil {
+					t.Fatal(err)
+				}
 			},
 			config:  &config.ModelConfig{},
 			wantErr: false,
@@ -51,8 +40,12 @@ func TestNewOpenAIClient(t *testing.T) {
 		{
 			name: "with base URL",
 			setupEnv: func() {
-				os.Setenv("OPENAI_API_KEY", "test-key")
-				os.Setenv("OPENAI_BASE_URL", "https://custom.openai.com")
+				if err := os.Setenv("OPENAI_API_KEY", "test-key"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Setenv("OPENAI_BASE_URL", "https://custom.openai.com"); err != nil {
+					t.Fatal(err)
+				}
 			},
 			config:  &config.ModelConfig{},
 			wantErr: false,
@@ -65,8 +58,12 @@ func TestNewOpenAIClient(t *testing.T) {
 			oldKey := os.Getenv("OPENAI_API_KEY")
 			oldURL := os.Getenv("OPENAI_BASE_URL")
 			defer func() {
-				os.Setenv("OPENAI_API_KEY", oldKey)
-				os.Setenv("OPENAI_BASE_URL", oldURL)
+				if err := os.Setenv("OPENAI_API_KEY", oldKey); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Setenv("OPENAI_BASE_URL", oldURL); err != nil {
+					t.Fatal(err)
+				}
 			}()
 
 			tt.setupEnv()
@@ -87,94 +84,51 @@ func TestNewOpenAIClient(t *testing.T) {
 	}
 }
 
-func TestOpenAIClient_Execute(t *testing.T) {
+func TestOpenAIClient_HelperMethods(t *testing.T) {
 	tests := []struct {
-		name         string
-		prompt       string
-		config       *config.ModelConfig
-		mockResponse func() (openai.ChatCompletionResponse, error)
-		wantErr      bool
-		errMsg       string
-		wantContent  string
+		name              string
+		config            *config.ModelConfig
+		expectedModel     string
+		expectedSystemMsg string
 	}{
 		{
-			name:   "successful response",
-			prompt: "Test prompt",
+			name:              "default values",
+			config:            &config.ModelConfig{},
+			expectedModel:     "gpt-3.5-turbo",
+			expectedSystemMsg: "You are a helpful assistant.",
+		},
+		{
+			name: "custom values",
 			config: &config.ModelConfig{
-				Temperature: 0.7,
-				MaxTokens:   100,
-				TopP:        0.9,
+				OpenAIConfig: &config.OpenAIConfig{
+					Model:         "gpt-4",
+					SystemMessage: "You are a code assistant.",
+				},
 			},
-			mockResponse: func() (openai.ChatCompletionResponse, error) {
-				return openai.ChatCompletionResponse{
-					Model: "gpt-3.5-turbo",
-					Choices: []openai.ChatCompletionChoice{
-						{
-							Message: openai.ChatCompletionMessage{
-								Content: "Test response",
-							},
-						},
-					},
-				}, nil
-			},
-			wantContent: "Test response",
+			expectedModel:     "gpt-4",
+			expectedSystemMsg: "You are a code assistant.",
 		},
 		{
-			name:   "API error",
-			prompt: "Test prompt",
-			config: &config.ModelConfig{},
-			mockResponse: func() (openai.ChatCompletionResponse, error) {
-				return openai.ChatCompletionResponse{}, errors.New("API error")
-			},
-			wantErr: true,
-			errMsg:  "openai API error",
-		},
-		{
-			name:   "no response choices",
-			prompt: "Test prompt",
-			config: &config.ModelConfig{},
-			mockResponse: func() (openai.ChatCompletionResponse, error) {
-				return openai.ChatCompletionResponse{
-					Model:   "gpt-3.5-turbo",
-					Choices: []openai.ChatCompletionChoice{},
-				}, nil
-			},
-			wantErr: true,
-			errMsg:  "no response from OpenAI",
+			name:              "nil config",
+			config:            nil,
+			expectedModel:     "gpt-3.5-turbo",
+			expectedSystemMsg: "You are a helpful assistant.",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create client with mock
 			client := &OpenAIClient{
 				config: tt.config,
-				// Note: In a real test, we would inject a mock client
-				// For this example, we're demonstrating the test structure
 			}
 
-			// This is where we would inject the mock behavior
-			// In practice, you might use dependency injection or interfaces
-			// to make the client testable
+			// Test getModelName
+			modelName := client.getModelName()
+			assert.Equal(t, tt.expectedModel, modelName)
 
-			// For demonstration purposes, let's test the helper methods
-			if tt.config != nil {
-				// Test getModelName
-				modelName := client.getModelName()
-				if tt.config.OpenAIConfig != nil && tt.config.OpenAIConfig.Model != "" {
-					assert.Equal(t, tt.config.OpenAIConfig.Model, modelName)
-				} else {
-					assert.Equal(t, "gpt-3.5-turbo", modelName)
-				}
-
-				// Test getSystemMessage
-				systemMsg := client.getSystemMessage()
-				if tt.config.OpenAIConfig != nil && tt.config.OpenAIConfig.SystemMessage != "" {
-					assert.Equal(t, tt.config.OpenAIConfig.SystemMessage, systemMsg)
-				} else {
-					assert.Equal(t, "You are a helpful assistant.", systemMsg)
-				}
-			}
+			// Test getSystemMessage
+			systemMsg := client.getSystemMessage()
+			assert.Equal(t, tt.expectedSystemMsg, systemMsg)
 		})
 	}
 }
