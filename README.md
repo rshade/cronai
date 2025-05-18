@@ -33,13 +33,14 @@ Create a configuration file called `cronai.config` with your scheduled tasks.
 ### Format
 
 ```
-timestamp model prompt response_processor [variables] [model_params:...]
+timestamp model prompt response_processor [template] [variables] [model_params:...]
 ```
 
 - **timestamp**: Standard cron format (minute hour day-of-month month day-of-week)
 - **model**: AI model to use (openai, claude, gemini)
 - **prompt**: Name of prompt file in cron_prompts directory (with or without .md extension)
 - **response_processor**: How to process the response (email, slack, webhook, file)
+- **template** (optional): Name of template to use for formatting the response
 - **variables** (optional): Variables to replace in the prompt file, in the format `key1=value1,key2=value2,...`
 - **model_params** (optional): Model-specific parameters in the format `model_params:param1=value1,param2=value2,...`
 
@@ -52,8 +53,8 @@ timestamp model prompt response_processor [variables] [model_params:...]
 # Run every Monday at 9 AM using OpenAI, sending to email
 0 9 * * 1 openai weekly_report email-team@company.com
 
-# Run monthly report with variables on the 1st of each month
-0 9 1 * * claude report_template email-execs@company.com reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
+# Run monthly report with custom template and variables on the 1st of each month
+0 9 1 * * claude report_template email-execs@company.com monthly_report reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
 
 # Run with custom model parameters (temperature and specific model version)
 0 9 * * 1 openai weekly_report email-team@company.com model_params:temperature=0.5,model=gpt-4
@@ -254,7 +255,27 @@ CronAI supports various response processors:
 - **Slack**: `slack-channelname` - Send the response to a Slack channel
 - **Email**: `email-address@example.com` - Send the response via email
 - **Webhook**: `webhook-monitoring` - Send the response to a webhook
-- **File**: `log-to-file` - Save the response to a file in the logs directory
+- **File**: `log-to-file` or `file` - Save the response to a file in the logs directory
+
+### Response Templating
+
+CronAI includes a powerful templating system for formatting responses. This allows you to:
+
+- Apply consistent formatting across different output channels
+- Create custom templates for different response types
+- Include model metadata and execution context in the output
+- Use conditional logic to customize output format based on content
+
+The template system uses Go's `text/template` syntax and supports different template formats for each processor type. You can specify a template in your configuration:
+
+```
+# Format: timestamp model prompt response_processor [template] [variables]
+0 9 1 * * claude report_template email-team@company.com monthly_report reportType=Monthly
+```
+
+In this example, `monthly_report` is the template name, which will look for the appropriate template files based on the processor type (e.g., `monthly_report_subject.tmpl`, `monthly_report_html.tmpl`, etc. for email).
+
+For full details on the templating system, see [docs/response-templating.md](docs/response-templating.md).
 
 ## Environment Variables
 
@@ -286,8 +307,8 @@ cronai start --config /path/to/config
 # Run a single task immediately
 cronai run --model claude --prompt product_manager --processor slack-pm-channel
 
-# Run a task with variables
-cronai run --model claude --prompt report_template --processor email-execs@company.com --vars "reportType=Weekly,date=2025-05-11,project=CronAI"
+# Run a task with template and variables
+cronai run --model claude --prompt report_template --processor email-execs@company.com --template monthly_report --vars "reportType=Weekly,date=2025-05-11,project=CronAI"
 
 # List all scheduled tasks
 cronai list

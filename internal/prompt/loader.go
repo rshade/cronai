@@ -358,7 +358,6 @@ func LoadPromptWithIncludes(promptName string) (string, error) {
 
 	return processedContent, nil
 }
-
 // ProcessPromptWithInheritance processes a prompt with template inheritance
 func ProcessPromptWithInheritance(path, content string, variables map[string]string) (map[string]string, string, error) {
 	// Extract metadata to check for 'extends' property
