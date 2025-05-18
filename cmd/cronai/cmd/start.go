@@ -9,7 +9,7 @@ import (
 
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start the CronAI agent service",
+	Short: "Start the CronAI service",
 	Long: `Start the CronAI agent service with scheduled AI tasks.
 
 The agent will read your configuration file and continuously execute AI prompts
