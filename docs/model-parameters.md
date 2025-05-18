@@ -17,6 +17,8 @@ The following parameters are supported across all models:
 | presence_penalty   | float  | -2.0 - 2.0  | Penalize new tokens based on presence              |
 | model              | string | -           | Specific model version to use                      |
 | system_message     | string | -           | System message for the model                       |
+| fallback_models    | string | -           | Models to try if the primary model fails (comma-separated in environment variables, pipe-separated in configuration files) |
+| max_retries        | int    | > 0         | Maximum number of retry attempts per model (default: 1) |
 
 ### Model-Specific Parameters
 
@@ -146,6 +148,8 @@ MODEL_MAX_TOKENS=2048
 MODEL_TOP_P=0.9
 MODEL_FREQUENCY_PENALTY=0.0
 MODEL_PRESENCE_PENALTY=0.0
+MODEL_FALLBACK_MODELS="claude,gemini"  # Comma-separated list of fallback models
+MODEL_MAX_RETRIES=3                   # Maximum retry attempts per model
 
 # Model-specific parameters
 OPENAI_MODEL=gpt-4
@@ -244,3 +248,62 @@ CronAI implements robust error handling for all model clients:
 - Safety filter blocks are identified and reported
 
 When an error occurs during model execution, CronAI will log detailed information while ensuring that sensitive data like prompt contents are not leaked in logs.
+
+## Model Fallback Mechanism
+
+CronAI includes a robust fallback mechanism that automatically attempts alternative models when the primary model fails. This ensures greater reliability and resilience for your scheduled tasks.
+
+### How Fallbacks Work
+
+1. When the primary model fails (due to API errors, rate limits, etc.), CronAI will try fallback models in sequence
+2. Each model (primary and fallbacks) can be retried multiple times based on the `max_retries` setting
+3. Detailed error information is preserved and logged for each attempt
+4. If any model succeeds, its response is returned and execution continues normally
+5. If all models fail, a comprehensive error message with details of all attempts is returned
+
+### Configuring Fallbacks
+
+You can configure the fallback behavior using the following parameters:
+
+1. **fallback_models**: A comma-separated list (or pipe-separated in config files) of model names to try in sequence if the primary model fails
+2. **max_retries**: The maximum number of retry attempts for each model (primary and fallbacks)
+
+#### Default Fallback Sequences
+
+If not explicitly configured, CronAI uses the following default fallback sequences:
+
+- **openai**: Falls back to `claude`, then `gemini`
+- **claude**: Falls back to `openai`, then `gemini`
+- **gemini**: Falls back to `openai`, then `claude`
+
+#### Configuration Examples
+
+**In cronai.config file:**
+```
+# Use OpenAI with Claude fallback and 2 retries per model
+0 9 * * * openai report_template email-team@company.com model_params:fallback_models=claude,max_retries=2
+
+# Use Claude with custom fallback sequence
+0 8 * * * claude system_health webhook-monitoring model_params:fallback_models=gemini|openai,max_retries=3
+```
+
+**Using environment variables:**
+```bash
+# Global fallback configuration
+MODEL_FALLBACK_MODELS="claude,gemini"
+MODEL_MAX_RETRIES=3
+```
+
+**Using command line:**
+```bash
+cronai run --model openai --prompt system_health --processor webhook-monitoring --model-params "fallback_models=claude|gemini,max_retries=2"
+```
+
+### Fallback Behavior
+
+- Fallbacks are logged with detailed information about each attempt
+- The model that ultimately succeeds is recorded in the response metadata
+- When all models fail, a clear error message lists each failed attempt
+- The original errors from each model are preserved for debugging
+
+This fallback mechanism significantly improves the reliability of CronAI, ensuring that temporary API issues or model-specific problems don't interrupt your scheduled tasks.
