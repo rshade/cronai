@@ -1,0 +1,75 @@
+title: "[Help] "
+labels: ["help", "question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Help & Support
+        
+        Need help with CronAI? You're in the right place!
+        
+        Before posting, please:
+        - Check the [documentation](../docs/)
+        - Search existing discussions
+        - Review closed issues
+  - type: textarea
+    attributes:
+      label: Problem Description
+      description: What are you trying to accomplish?
+      placeholder: Describe what you're trying to do
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What I've Tried
+      description: What steps have you already taken?
+      placeholder: |
+        - Step 1: ...
+        - Step 2: ...
+        - Result: ...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Configuration
+      description: Share your relevant configuration (remove sensitive data)
+      placeholder: |
+        ```
+        # Your cronai.config or relevant settings
+        ```
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Error Messages
+      description: Any error messages you're seeing?
+      placeholder: |
+        ```
+        Error output here
+        ```
+      render: shell
+    validations:
+      required: false
+  - type: dropdown
+    attributes:
+      label: CronAI Version
+      description: What version are you using?
+      options:
+        - Latest (main branch)
+        - v0.1.0
+        - Other (specify in description)
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Environment
+      description: Where are you running CronAI?
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Docker
+        - Other
+    validations:
+      required: true

@@ -133,7 +133,10 @@ cronai/
 │       ├── root.go        # Root command
 │       ├── start.go       # Start the service
 │       ├── run.go         # Run a single task
-│       └── list.go        # List scheduled tasks
+│       ├── list.go        # List scheduled tasks
+│       ├── help.go        # Enhanced help system
+│       ├── prompt.go      # Prompt management
+│       └── validate.go    # Template validation
 ├── internal/              # Private application code
 │   ├── cron/              # Cron scheduling functionality
 │   │   ├── service.go     # Core scheduling service

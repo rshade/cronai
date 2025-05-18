@@ -22,15 +22,37 @@ var (
 
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "Run a single task immediately",
-	Long: `Run a single task immediately without scheduling.
+	Short: "Execute a single AI task immediately",
+	Long: `Execute a single AI task immediately for testing or one-off operations.
 
-Prompt files can now use conditional template logic with variables. For example:
-- {{if eq .Variables.environment "production"}} Production content {{end}}
-- {{if hasVar .Variables "feature"}} Feature exists {{end}}
-- {{if gt .Variables.count "5"}} Count is more than 5 {{end}}
+This command allows you to run any prompt with your chosen AI model and processor
+without scheduling. Perfect for testing new prompts or running ad-hoc tasks.
 
-See the docs/conditional-templates.md file for detailed syntax and examples.`,
+Features:
+  • Variable substitution in prompts
+  • Conditional logic with Go templates
+  • Special variables like {{CURRENT_DATE}}
+  • Model parameter customization
+  • Response templating
+
+Prompt Template Syntax:
+  {{.Variables.name}}              - Variable substitution
+  {{if eq .condition "value"}}...{{end}} - Conditional logic
+  {{include "header.md"}}          - Include other files`,
+	Example: `  # Basic execution
+  cronai run --model=openai --prompt=daily_summary --processor=file
+
+  # With variables
+  cronai run --model=claude --prompt=report --processor=email \
+    --vars="department=Sales,period=Q1"
+
+  # With model parameters
+  cronai run --model=gemini --prompt=creative --processor=file \
+    --model-params="temperature=0.9,max_tokens=2000"
+
+  # With special variables and template
+  cronai run --model=openai --prompt=status --processor=slack \
+    --vars="date={{CURRENT_DATE}}" --template=alert`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Parse variables if provided
 		variables := make(map[string]string)

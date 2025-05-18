@@ -1,10 +1,10 @@
 # cronai
 
-A command-line utility to run AI model prompts on a cron-type schedule.
+AI agent for scheduled prompt execution - Your automated AI assistant.
 
 ## Overview
 
-CronAI allows you to schedule AI prompts to run at specified intervals and process the responses automatically. It supports multiple AI models and response processors.
+CronAI is an intelligent agent that schedules and executes AI model prompts automatically. It acts as your personal AI automation system, running tasks on schedule and delivering results through your preferred channels.
 
 ## Features
 
@@ -296,6 +296,26 @@ WEBHOOK_URL=https://example.com/webhook
 ```
 
 ## Usage
+
+### Getting Help
+
+CronAI includes comprehensive help documentation built into the CLI:
+
+```bash
+# Show general help and available commands
+cronai help
+
+# Get detailed help for any command
+cronai help start
+cronai help run
+cronai help prompt
+
+# Quick command help
+cronai run --help
+cronai prompt list --help
+```
+
+### Common Commands
 
 ```bash
 # Start the service with default config file
