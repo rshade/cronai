@@ -157,6 +157,10 @@ func getTemplateFuncMap() template.FuncMap {
 			// Sort keys for consistent behavior
 			sort.Strings(keys)
 
+			// Check if the keys slice is empty
+			if len(keys) == 0 {
+				return false
+			}
 			// Check if this is the last key
 			return key == keys[len(keys)-1]
 		},
