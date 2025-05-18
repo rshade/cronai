@@ -16,6 +16,10 @@ type ModelConfig struct {
 	FrequencyPenalty float64 // Penalize frequent tokens (-2.0 to 2.0)
 	PresencePenalty  float64 // Penalize new tokens based on presence (-2.0 to 2.0)
 
+	// Fallback configuration
+	FallbackModels []string // Models to fallback to if primary fails
+	MaxRetries     int      // Maximum retry attempts for each model
+
 	// Model-specific configurations
 	OpenAIConfig *OpenAIConfig
 	ClaudeConfig *ClaudeConfig
@@ -48,6 +52,8 @@ func DefaultModelConfig() *ModelConfig {
 		TopP:             1.0,
 		FrequencyPenalty: 0.0,
 		PresencePenalty:  0.0,
+		FallbackModels:   []string{},
+		MaxRetries:       1,
 		OpenAIConfig: &OpenAIConfig{
 			Model:         "gpt-3.5-turbo",
 			SystemMessage: "You are a helpful assistant.",
@@ -80,6 +86,14 @@ func (mc *ModelConfig) LoadFromEnvironment() {
 	}
 	if presP, err := strconv.ParseFloat(os.Getenv("MODEL_PRESENCE_PENALTY"), 64); err == nil {
 		mc.PresencePenalty = presP
+	}
+
+	// Fallback configuration
+	if fallbackModels := os.Getenv("MODEL_FALLBACK_MODELS"); fallbackModels != "" {
+		mc.FallbackModels = strings.Split(fallbackModels, ",")
+	}
+	if maxRetries, err := strconv.Atoi(os.Getenv("MODEL_MAX_RETRIES")); err == nil && maxRetries > 0 {
+		mc.MaxRetries = maxRetries
 	}
 
 	// OpenAI specific
@@ -214,6 +228,19 @@ func (mc *ModelConfig) UpdateFromParams(params map[string]string) error {
 				return fmt.Errorf("presence_penalty must be between -2.0 and 2.0, got: %f", presP)
 			}
 			mc.PresencePenalty = presP
+
+		case "fallback_models", "fallbackmodels":
+			mc.FallbackModels = strings.Split(value, "|")
+
+		case "max_retries", "maxretries":
+			retries, err := strconv.Atoi(value)
+			if err != nil {
+				return fmt.Errorf("invalid max_retries value: %s", value)
+			}
+			if retries <= 0 {
+				return fmt.Errorf("max_retries must be positive, got: %d", retries)
+			}
+			mc.MaxRetries = retries
 
 		case "model":
 			// Apply model to all model configs to handle the generic case
@@ -366,6 +393,24 @@ func (mc *ModelConfig) Validate() error {
 
 	if mc.PresencePenalty < -2.0 || mc.PresencePenalty > 2.0 {
 		return fmt.Errorf("presence_penalty must be between -2.0 and 2.0, got: %f", mc.PresencePenalty)
+	}
+
+	// Validate fallback configuration
+	if mc.MaxRetries < 1 {
+		return fmt.Errorf("max_retries must be at least 1, got: %d", mc.MaxRetries)
+	}
+
+	// Validate fallback models are supported
+	validModels := map[string]bool{
+		"openai": true,
+		"claude": true,
+		"gemini": true,
+	}
+
+	for _, fallbackModel := range mc.FallbackModels {
+		if !validModels[fallbackModel] {
+			return fmt.Errorf("unsupported fallback model: %s", fallbackModel)
+		}
 	}
 
 	return nil

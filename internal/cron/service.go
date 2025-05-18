@@ -203,6 +203,12 @@ func executeTask(task Task) {
 		return
 	}
 
+	// Add the prompt name to the variables map for tracking execution
+	if task.Variables == nil {
+		task.Variables = make(map[string]string)
+	}
+	task.Variables["promptName"] = task.Prompt
+
 	// Execute the model with model parameters
 	response, err := models.ExecuteModel(task.Model, promptContent, task.Variables, task.ModelParams)
 	if err != nil {
