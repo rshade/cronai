@@ -24,6 +24,20 @@ The templating system follows these patterns:
 - SafeExecute method with fallback mechanism for templates
 - Naming conventions for templates based on processor type and purpose
 
+### Processor System
+
+The processor system follows these patterns:
+- **Standardized API**: All processors implement the `Processor` interface
+- **Registry Pattern**: Global registry for processor factories
+- **Factory Pattern**: Processors are created via factory functions
+- **Configuration Management**: Processors use `ProcessorConfig` for standardized configuration
+- **Environment Variable Naming**: Consistent naming scheme for environment variables
+  - Base variables: `PROCESSOR_OPTION` (e.g., `SLACK_TOKEN`, `SMTP_SERVER`)
+  - Type-specific variables: `PROCESSOR_OPTION_TYPE` (e.g., `WEBHOOK_URL_MONITORING`)
+- **Validation**: All processors implement a `Validate()` method to check configuration
+- **Template Integration**: Processors integrate with the templating system for output formatting
+- **Error Handling**: Consistent error wrapping using the internal errors package
+
 ## Coding Standards and Robustness
 
 ### Error Handling

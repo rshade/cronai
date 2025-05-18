@@ -23,6 +23,10 @@ func TestProcessResponse(t *testing.T) {
 		}
 	}()
 
+	// Ensure default processors are registered
+	registry := GetRegistry()
+	registry.RegisterDefaults()
+
 	// Setup test cases
 	testCases := []struct {
 		name          string
@@ -91,9 +95,11 @@ func TestProcessResponse(t *testing.T) {
 			name:      "Slack Processor Without Token",
 			processor: "slack-test-channel",
 			response: &models.ModelResponse{
-				Content:    "Test content",
-				Model:      "test-model",
-				PromptName: "test-prompt",
+				Content:     "Test content",
+				Model:       "test-model",
+				PromptName:  "test-prompt",
+				Timestamp:   time.Now(),
+				ExecutionID: "test-execution",
 			},
 			templateName:  "",
 			expectedError: true,
@@ -110,9 +116,11 @@ func TestProcessResponse(t *testing.T) {
 			name:      "Email Processor Without SMTP",
 			processor: "email-test@example.com",
 			response: &models.ModelResponse{
-				Content:    "Test content",
-				Model:      "test-model",
-				PromptName: "test-prompt",
+				Content:     "Test content",
+				Model:       "test-model",
+				PromptName:  "test-prompt",
+				Timestamp:   time.Now(),
+				ExecutionID: "test-execution",
 			},
 			templateName:  "",
 			expectedError: true,
@@ -129,9 +137,11 @@ func TestProcessResponse(t *testing.T) {
 			name:      "Webhook Processor Without URL",
 			processor: "webhook-monitoring",
 			response: &models.ModelResponse{
-				Content:    "Test content",
-				Model:      "test-model",
-				PromptName: "test-prompt",
+				Content:     "Test content",
+				Model:       "test-model",
+				PromptName:  "test-prompt",
+				Timestamp:   time.Now(),
+				ExecutionID: "test-execution",
 			},
 			templateName:  "",
 			expectedError: true,

@@ -348,6 +348,104 @@ The application can be run as a systemd service for automatic startup and manage
 
 CronAI is designed to be extended with additional models and processors. See the [CLAUDE.md](CLAUDE.md) file for development information.
 
+### Processor API
+
+CronAI provides a standardized API for response processors to enable consistent development of both built-in and custom processors. This API includes:
+
+#### Processor Interface
+
+All processors implement the following interface:
+
+```go
+type Processor interface {
+    // Process handles the model response with optional template
+    Process(response *models.ModelResponse, templateName string) error
+    
+    // Validate checks if the processor is properly configured
+    Validate() error
+    
+    // GetType returns the processor type identifier
+    GetType() string
+    
+    // GetConfig returns the processor configuration
+    GetConfig() ProcessorConfig
+}
+```
+
+#### Creating Custom Processors
+
+To create a custom processor:
+
+1. Implement the `Processor` interface
+2. Register your processor with the global registry
+3. Configure any required environment variables
+
+Example:
+
+```go
+type CustomProcessor struct {
+    config ProcessorConfig
+}
+
+func NewCustomProcessor(config ProcessorConfig) (Processor, error) {
+    return &CustomProcessor{config: config}, nil
+}
+
+func (c *CustomProcessor) Process(response *models.ModelResponse, templateName string) error {
+    // Implement your processing logic here
+    return nil
+}
+
+func (c *CustomProcessor) Validate() error {
+    // Validate configuration
+    return nil
+}
+
+func (c *CustomProcessor) GetType() string {
+    return "custom"
+}
+
+func (c *CustomProcessor) GetConfig() ProcessorConfig {
+    return c.config
+}
+
+// Register the processor
+func init() {
+    registry := processor.GetRegistry()
+    registry.RegisterProcessor("custom", NewCustomProcessor)
+}
+```
+
+#### Environment Variables
+
+All processors use a consistent environment variable naming scheme:
+
+```bash
+# Slack processor
+SLACK_TOKEN=xoxb-your-slack-token
+
+# Email processor
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=user@example.com
+SMTP_PASSWORD=your-password
+SMTP_FROM=noreply@example.com
+
+# Webhook processor
+WEBHOOK_URL=https://api.example.com/webhook
+WEBHOOK_METHOD=POST
+WEBHOOK_HEADERS=Authorization:Bearer token,Content-Type:application/json
+
+# File processor
+LOGS_DIRECTORY=/var/log/cronai
+
+# Type-specific webhook configuration
+WEBHOOK_URL_MONITORING=https://monitoring.example.com/webhook
+WEBHOOK_METHOD_MONITORING=PUT
+```
+
+For more detailed information about the processor architecture, see [CLAUDE.md](CLAUDE.md).
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
