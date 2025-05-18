@@ -41,3 +41,4 @@ PR_MESSAGE.md
 *.log
 
 **/.claude/settings.local.json
+cron_prompts/queue_prompt.md

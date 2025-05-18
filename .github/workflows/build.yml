@@ -24,6 +24,14 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Run tests with coverage
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Build
         run: go build -v -o cronai ./cmd/cronai
 

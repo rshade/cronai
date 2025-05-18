@@ -1,4 +1,4 @@
-.PHONY: all build test clean lint run changelog
+.PHONY: all build test test-coverage coverage-report clean lint run changelog
 
 # Default target
 all: build
@@ -11,9 +11,17 @@ build:
 test:
 	go test ./...
 
+# Run tests with coverage
+test-coverage:
+	go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
 # Clean build artifacts
 clean:
-	rm -f cronai
+	rm -f cronai coverage.out
+
+# View coverage report in browser (for local development)
+coverage-report: test-coverage
+	go tool cover -html=coverage.out
 
 # Run linter
 lint:

@@ -40,7 +40,7 @@ invalid line
 			t.Logf("Warning: Failed to remove cron_prompts directory: %v", err)
 		}
 	}()
-	
+
 	// Create test prompt files
 	prompts := []string{"product_manager", "weekly_report", "monitoring_check", "report_template"}
 	for _, p := range prompts {
