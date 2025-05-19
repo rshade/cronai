@@ -1,4 +1,4 @@
-.PHONY: all build test test-coverage coverage-report clean lint run changelog
+.PHONY: all build test test-coverage coverage-report clean lint format run changelog
 
 # Default target
 all: build
@@ -25,17 +25,28 @@ coverage-report: test-coverage
 
 # Run linter
 lint:
-	@echo "Running gofmt check..."
-	@test -z "$$(gofmt -l .)" || (echo "The following files need formatting with gofmt:"; gofmt -l . && exit 1)
+	@echo "Running gofmt..."
+	@gofmt -w . || (echo "Error running gofmt"; exit 1)
 	@echo "Running go vet..."
 	go vet ./...
 	@echo "Running golangci-lint..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run; \
+		golangci-lint run --fix || golangci-lint run; \
 	else \
 		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
 		go vet ./...; \
 	fi
+	@echo "Running markdownlint..."
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint . --ignore node_modules --fix || markdownlint . --ignore node_modules; \
+	else \
+		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
+	fi
+
+# Format all Go files
+format:
+	@echo "Formatting all Go files..."
+	go fmt ./...
 
 # Run the application
 run:
@@ -71,3 +82,5 @@ setup:
 		cp .env.example .env; \
 		echo "Created .env file. Please edit it with your API keys."; \
 	fi
+	@echo "Installing markdownlint..."
+	@npm install -g markdownlint-cli || echo "Warning: Failed to install markdownlint-cli. Make sure npm is installed."

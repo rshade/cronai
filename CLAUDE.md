@@ -96,7 +96,7 @@ The processor system follows these patterns:
     - Keep body lines under 100 characters to avoid `body-max-line-length` errors
     - Use line breaks to split long descriptions into multiple shorter lines
     - If using multi-paragraph bodies, ensure proper line breaks and formatting
-    - Run `npx commitlint --from PR_MESSAGE.md` to validate before committing
+    - Run `cat PR_MESSAGE.md | npx commitlint` to validate before committing
     - Fix any commitlint errors before proceeding with the commit
 - Make PR titles follow the same conventional commit format
 - Keep PR sizes manageable (ideally under 300 lines of changes)
@@ -364,3 +364,21 @@ The application uses Cobra for CLI commands:
   - `--processor`: Response processor to use
   - `--vars`: Variables for the prompt in format "key1=value1,key2=value2"
 - `cronai list` - List all scheduled tasks
+
+## Documentation Maintenance
+
+When working on CronAI, ensure all documentation stays up to date:
+
+- **README.md**: Keep the main documentation updated with new features and changes
+- **CONTRIBUTING.md**: Update the contributing guide when:
+  - New development tools or processes are added
+  - Processor development process changes
+  - New environment variables or configuration patterns are introduced
+  - Testing requirements or linting rules change
+  - CI/CD processes are modified
+- **Other documentation files**:
+  - `docs/` directory files should be updated when their respective features change
+  - `.env.example` should include all new environment variables
+  - Example config files should demonstrate new features
+
+Always ensure documentation reflects the current state of the code and provides accurate guidance for users and contributors.

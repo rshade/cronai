@@ -446,6 +446,18 @@ WEBHOOK_METHOD_MONITORING=PUT
 
 For more detailed information about the processor architecture, see [CLAUDE.md](CLAUDE.md).
 
+## Contributing
+
+We welcome contributions to CronAI! Whether you're fixing bugs, adding features, improving documentation, or creating new processors, your help is appreciated.
+
+Please see our [Contributing Guide](CONTRIBUTING.md) for:
+- Development setup and tools
+- Code style and conventions
+- How to add new processors
+- Testing requirements
+- Commit message guidelines
+- Pull request process
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
