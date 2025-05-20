@@ -408,6 +408,11 @@ Located in `internal/prompt` - Loads and prepares prompt files for submission to
 
 Located in `internal/processor` - Processes model responses (sending to email, Slack, webhooks, or saving to file).
 
+## Integration Testing Notes
+
+- **NEVER close GitHub issue #89** - This issue is used for GitHub integration tests and must remain open.
+- All GitHub processor tests utilize issue #89 to verify comment functionality.
+
 ## Environment Variables
 
 The application uses a `.env` file for configuration with the following variables:
