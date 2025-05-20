@@ -6,17 +6,17 @@ CronAI supports conditional logic in prompt templates, allowing for dynamic cont
 
 ### If-Else Statements
 
-```
+```text
 {{if <condition>}}
    Content when condition is true
 {{else}}
    Content when condition is false
 {{end}}
-```
+```text
 
 ### If-ElseIf-Else Statements
 
-```
+```text
 {{if <condition1>}}
    Content when condition1 is true
 {{else if <condition2>}}
@@ -24,25 +24,25 @@ CronAI supports conditional logic in prompt templates, allowing for dynamic cont
 {{else}}
    Content when no conditions are true
 {{end}}
-```
+```text
 
 ## Variable Functions
 
 ### Check if Variable Exists
 
-```
+```text
 {{if hasVar .Variables "variableName"}}
    Variable exists
 {{else}}
    Variable does not exist
 {{end}}
-```
+```text
 
 ### Get Variable with Default Value
 
-```
+```text
 {{getVar .Variables "variableName" "defaultValue"}}
-```
+```text
 
 ## Comparison Operators
 
@@ -67,33 +67,33 @@ These operators attempt to convert strings to numbers before comparison:
 
 ### AND Operator
 
-```
+```text
 {{if and (condition1) (condition2)}}
    Both conditions are true
 {{end}}
-```
+```text
 
 ### OR Operator
 
-```
+```text
 {{if or (condition1) (condition2)}}
    At least one condition is true
 {{end}}
-```
+```text
 
 ### NOT Operator
 
-```
+```text
 {{if not (condition)}}
    Condition is false
 {{end}}
-```
+```text
 
 ## Nested Conditionals
 
 You can nest conditional blocks for more complex logic:
 
-```
+```text
 {{if condition1}}
   {{if condition2}}
     Both condition1 and condition2 are true
@@ -103,7 +103,7 @@ You can nest conditional blocks for more complex logic:
 {{else}}
   condition1 is false
 {{end}}
-```
+```text
 
 ## Examples
 
@@ -122,7 +122,7 @@ This is a staging system. You can suggest changes.
 ## Development Environment
 This is a development system. Feel free to experiment.
 {{end}}
-```
+```text
 
 ### Optional Sections
 
@@ -141,7 +141,7 @@ This section only appears if includePerformance variable exists.
 ## Security Analysis
 This section only appears if includeSecurityScan variable exists.
 {{end}}
-```
+```text
 
 ### Complex Conditions
 
@@ -158,15 +158,15 @@ This section only appears if includeSecurityScan variable exists.
   ## Standard System Report
   Regular monitoring protocol.
 {{end}}
-```
+```text
 
 ## Configuration Example
 
 To use conditional logic in your cronai configuration:
 
-```
+```text
 # Run a prompt with variables that affect the conditional logic
 0 9 * * * claude conditional_example email-team@company.com environment=production,systemType=database,errorCount=3,userQuestion=How can we optimize database performance?
-```
+```text
 
 See the `cron_prompts/conditional_example.md` file for a complete example of using conditionals in prompts.

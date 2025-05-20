@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Model Configuration System
 
 The model configuration system follows these patterns:
+
 - Provides consistent configuration across multiple AI models (OpenAI, Claude, Gemini)
 - Offers common parameters (temperature, max_tokens) applicable to all models
 - Supports model-specific parameters through dot notation (e.g., `openai.system_message`, `gemini.safety_setting`)
@@ -18,6 +19,7 @@ The model configuration system follows these patterns:
 ### Templating System
 
 The templating system follows these patterns:
+
 - Uses Go's built-in `text/template` package
 - Singleton pattern for the template manager
 - Default templates are registered at initialization
@@ -27,16 +29,18 @@ The templating system follows these patterns:
 ### Processor System
 
 The processor system follows these patterns:
+
 - **Standardized API**: All processors implement the `Processor` interface
 - **Registry Pattern**: Global registry for processor factories
 - **Factory Pattern**: Processors are created via factory functions
 - **Configuration Management**: Processors use `ProcessorConfig` for standardized configuration
 - **Environment Variable Naming**: Consistent naming scheme for environment variables
-  - Base variables: `PROCESSOR_OPTION` (e.g., `SLACK_TOKEN`, `SMTP_SERVER`)
+  - Base variables: `PROCESSOR_OPTION` (e.g., `SLACK_TOKEN`, `SMTP_SERVER`, `GITHUB_TOKEN`)
   - Type-specific variables: `PROCESSOR_OPTION_TYPE` (e.g., `WEBHOOK_URL_MONITORING`)
 - **Validation**: All processors implement a `Validate()` method to check configuration
 - **Template Integration**: Processors integrate with the templating system for output formatting
 - **Error Handling**: Consistent error wrapping using the internal errors package
+- **GitHub Integration**: The GitHub processor uses the google/go-github library for API calls
 
 ## Coding Standards and Robustness
 
@@ -53,17 +57,58 @@ The processor system follows these patterns:
 
 ### Code Quality and Linting
 
-- **ALWAYS run `make lint` before committing any code changes**
-- **ALWAYS run `make lint` after every code change to ensure compliance with coding standards**
+- **For CI/PR checks: run `make lint` (strict mode, no automatic fixes)**
+- **For local development: run `make lint-fix` to automatically fix issues**
 - Fix all linting issues before submitting pull requests
 - The linting process checks:
   - Code formatting with `gofmt`
   - Static analysis with `go vet`
   - Comprehensive linting with `golangci-lint`
+  - Markdown linting with `markdownlint`
+  - Revive linter with the following rules:
+    - `atomic`: Avoid shadowing variables
+    - `blank-imports`: Avoid blank imports
+    - `context-as-argument`: Pass context as first parameter
+    - `context-keys-type`: Use value types in context keys
+    - `dot-imports`: Avoid dot imports
+    - `empty-block`: Avoid empty blocks
+    - `error-return`: Return values on error
+    - `error-strings`: Error strings should not be capitalized
+    - `error-naming`: Error variables should be prefixed with "err" or "Err"
+    - `exported`: Exported function/variable comments
+    - `if-return`: Avoid redundant if-then-return statements
+    - `increment-decrement`: Use i++ and i-- instead of i += 1 and i -= 1
+    - `var-naming`: Variable naming conventions
+    - `var-declaration`: Reduce variable scope
+    - `package-comments`: All packages should have comments
+    - `range`: Simplify range expressions
+    - `receiver-naming`: Receiver names should be consistent
+    - `time-naming`: Avoid using time.Now in variable names
+    - `unexported-return`: Unexported return values
+    - `indent-error-flow`: Error handling indent
+    - `errorf`: Use errors.New() instead of fmt.Errorf() when appropriate
+    - `empty-lines`: Control empty lines between declarations
+    - `superfluous-else`: Avoid superfluous else statements
+    - `unreachable-code`: Check for unreachable code
+    - `redefines-builtin-id`: Don't redefine built-in identifiers
+    - `waitgroup-by-value`: Don't pass sync.WaitGroup by value
 - Adhere to Go idiomatic patterns
 - Use named return values where it improves readability
 - Use switch statements instead of long if-else chains
 - Follow strict function signature requirements
+
+### Go Package Documentation
+
+- **ALWAYS add package comments to every Go file**:
+  - Every package should have at least one file with a package comment
+  - For consistency, add a package comment to every file
+  - Use the standard format: `// Package packagename provides ...`
+  - Example: `// Package cmd implements the command line interface for CronAI.`
+  - Package comments should be concise but descriptive of the package's purpose
+  - Package comments must appear directly before the package clause
+- Package comments are required to pass the `package-comments` linting rule
+- When creating new files, always start with an appropriate package comment
+- When modifying existing files without package comments, add them
 
 ### Testing Requirements
 
@@ -96,7 +141,7 @@ The processor system follows these patterns:
     - Keep body lines under 100 characters to avoid `body-max-line-length` errors
     - Use line breaks to split long descriptions into multiple shorter lines
     - If using multi-paragraph bodies, ensure proper line breaks and formatting
-    - Run `npx commitlint --from PR_MESSAGE.md` to validate before committing
+    - Run `cat PR_MESSAGE.md | npx commitlint` to validate before committing
     - Fix any commitlint errors before proceeding with the commit
 - Make PR titles follow the same conventional commit format
 - Keep PR sizes manageable (ideally under 300 lines of changes)
@@ -133,7 +178,7 @@ CronAI is a Go utility designed to run AI model prompts on a cron-type schedule.
 
 This project follows standard Go project structure:
 
-```
+```text
 cronai/
 ├── .github/               # GitHub configuration
 │   └── workflows/         # GitHub Actions workflows
@@ -180,16 +225,18 @@ cronai/
 ├── .env.example           # Example environment variables
 ├── Makefile               # Build and development commands
 └── CLAUDE.md              # This file
-```
+```text
 
 ## Configuration Format
 
 The configuration file uses the following format:
-```
+
+```text
 timestamp model prompt response_processor [variables]
-```
+```text
 
 Where:
+
 - **timestamp**: Standard cron format (minute hour day-of-month month day-of-week)
 - **model**: AI model to use (openai, claude, gemini)
 - **prompt**: Name of prompt file in cron_prompts directory (with or without .md extension)
@@ -197,17 +244,19 @@ Where:
 - **variables** (optional): Variables to replace in the prompt file, in the format `key1=value1,key2=value2,...`
 
 Examples:
-```
+
+```text
 # Basic configuration without variables
 0 8 * * * claude product_manager slack-pm-channel
 
 # Configuration with variables
 0 9 1 * * claude report_template email-team@company.com reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
-```
+```text
 
 ### Special Variables
 
 Special variables that are automatically populated:
+
 - `{{CURRENT_DATE}}`: Current date in YYYY-MM-DD format
 - `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
 - `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
@@ -235,7 +284,7 @@ go get github.com/robfig/cron/v3         # Cron scheduling
 
 # Tidy the go.mod file
 go mod tidy
-```
+```text
 
 ### Build and Run
 
@@ -254,7 +303,7 @@ make run
 make install
 # or
 go install ./cmd/cronai
-```
+```text
 
 ### Testing
 
@@ -272,7 +321,7 @@ go test ./internal/models
 
 # Run a specific test
 go test -run TestParseConfig ./internal/cron
-```
+```text
 
 ### Linting and Code Quality
 
@@ -282,13 +331,14 @@ make lint
 # or
 go vet ./...
 golangci-lint run
-```
+```text
 
 ## Roadmap Overview
 
 The project has a defined roadmap divided into four milestones:
 
 ### Q2 2025 - MVP Release
+
 - ✅ Basic variable support in prompts (#5)
 - Model-specific configuration support (#6)
 - Response processor templating (#7)
@@ -296,18 +346,21 @@ The project has a defined roadmap divided into four milestones:
 - Comprehensive logging and error handling (#9)
 
 ### Q3 2025 - Enhanced Usability
+
 - Basic web UI (#10)
 - Conditional logic in prompt templates (#11)
 - Prompt testing tool (#12)
 - Claude 3 model support (#13)
 
 ### Q4 2025 - Integration & Scale
+
 - External API for integration (#14)
 - Performance metrics and analytics (#15)
 - Distributed task execution (#16)
 - CI/CD platform integrations (#17)
 
 ### Q1 2026 - Enterprise Features
+
 - Role-based access control (#18)
 - Audit logging and compliance (#19)
 - Prompt library management (#20)
@@ -318,37 +371,47 @@ The project has a defined roadmap divided into four milestones:
 The development is organized around four major epics:
 
 ### Epic: Enhanced Templating System (#1)
+
 This epic covers the implementation of an advanced templating system for CronAI prompts, allowing for more dynamic and flexible prompts with variables, conditional logic, and template inheritance.
 
 ### Epic: Advanced Model Support (#2)
+
 This epic focuses on expanding the AI model support in CronAI, including additional models, model versioning capabilities, model fallbacks, and model-specific configurations.
 
 ### Epic: Web UI and Management Console (#3)
+
 This epic encompasses the development of a web-based user interface for CronAI, making it easier to configure, monitor, and manage scheduled tasks without editing configuration files manually.
 
 ### Epic: Enterprise Integration (#4)
+
 This epic focuses on features necessary for enterprise adoption, including advanced security, monitoring, integration with corporate systems, and scalability improvements.
 
 ## Key Components
 
 ### Cron Parser
+
 Located in `internal/cron` - Parses the configuration file and sets up the scheduled tasks.
 
 ### Model Adapters
+
 Located in `internal/models` - Implements adapters for different AI models (OpenAI, Claude, Gemini).
 
 ### Prompt Loader
+
 Located in `internal/prompt` - Loads and prepares prompt files for submission to models.
+
 - `LoadPrompt` - Loads a prompt file from the cron_prompts directory
 - `LoadPromptWithVariables` - Loads a prompt file and replaces variables with provided values
 - `ApplyVariables` - Replaces variable placeholders in format {{variable_name}} with their values
 
 ### Response Processors
+
 Located in `internal/processor` - Processes model responses (sending to email, Slack, webhooks, or saving to file).
 
 ## Environment Variables
 
 The application uses a `.env` file for configuration with the following variables:
+
 - `OPENAI_API_KEY` - OpenAI API key
 - `ANTHROPIC_API_KEY` - Claude API key
 - `GOOGLE_API_KEY` - Gemini API key
@@ -357,6 +420,7 @@ The application uses a `.env` file for configuration with the following variable
 ## CLI Commands
 
 The application uses Cobra for CLI commands:
+
 - `cronai start` - Start the service with the configuration file
 - `cronai run` - Run a single task immediately
   - `--model`: AI model to use
@@ -364,3 +428,21 @@ The application uses Cobra for CLI commands:
   - `--processor`: Response processor to use
   - `--vars`: Variables for the prompt in format "key1=value1,key2=value2"
 - `cronai list` - List all scheduled tasks
+
+## Documentation Maintenance
+
+When working on CronAI, ensure all documentation stays up to date:
+
+- **README.md**: Keep the main documentation updated with new features and changes
+- **CONTRIBUTING.md**: Update the contributing guide when:
+  - New development tools or processes are added
+  - Processor development process changes
+  - New environment variables or configuration patterns are introduced
+  - Testing requirements or linting rules change
+  - CI/CD processes are modified
+- **Other documentation files**:
+  - `docs/` directory files should be updated when their respective features change
+  - `.env.example` should include all new environment variables
+  - Example config files should demonstrate new features
+
+Always ensure documentation reflects the current state of the code and provides accurate guidance for users and contributors.

@@ -53,7 +53,7 @@ Prompt Template Syntax:
   # With special variables and template
   cronai run --model=openai --prompt=status --processor=slack \
     --vars="date={{CURRENT_DATE}}" --template=alert`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Parse variables if provided
 		variables := make(map[string]string)
 		if varsString != "" {

@@ -18,14 +18,14 @@ import (
 
 // Removed unused templateBlock struct
 
-// templateInheritance tracks parent-child relationships between templates
-type templateInheritance struct {
+// Inheritance tracks parent-child relationships between templates
+type Inheritance struct {
 	Parent string
 	Blocks map[string]string
 }
 
-// TemplateData contains data available to templates
-type TemplateData struct {
+// Data contains data available to templates
+type Data struct {
 	Content     string            // Model response content
 	Model       string            // Model name
 	Timestamp   time.Time         // Response timestamp
@@ -36,10 +36,79 @@ type TemplateData struct {
 	Parent      interface{}       // Parent template data for inheritance
 }
 
+// InheritanceResult represents the result of inheritance processing
+type InheritanceResult struct {
+	Parent string            // Parent template name
+	Blocks map[string]string // Blocks defined in the template
+}
+
+// ProcessInheritance processes template inheritance directives
+func ProcessInheritance(content string) (*InheritanceResult, error) {
+	// Extract extends directive if present
+	extendsRegex := regexp.MustCompile(`\{\{\s*extends\s+"([^"]+)"\s*\}\}`)
+	matches := extendsRegex.FindAllStringSubmatch(content, -1)
+
+	// Check if there are blocks in the content
+	hasBlocks := strings.Contains(content, "{{block") || strings.Contains(content, "{{ block")
+
+	// Check for multiple extends
+	if len(matches) > 1 {
+		return nil, fmt.Errorf("multiple extends directives are not allowed")
+	}
+
+	// Check if there's at least one extends directive
+	if len(matches) == 0 {
+		// Check if there are blocks without extends
+		if hasBlocks {
+			return nil, fmt.Errorf("block without extends")
+		}
+		// Return empty result if no extends directive found and no blocks
+		return &InheritanceResult{
+			Parent: "",
+			Blocks: make(map[string]string),
+		}, nil
+	}
+
+	parent := matches[0][1]
+	// Check for empty extends
+	if parent == "" {
+		return nil, fmt.Errorf("empty extends")
+	}
+
+	// Extract blocks - support both {{end}} and {{endblock}} syntax
+	blockRegex := regexp.MustCompile(`(?s)\{\{\s*block\s+"([^"]+)"\s*\}\}(.*?)\{\{\s*(end|endblock)\s*\}\}`)
+	blockMatches := blockRegex.FindAllStringSubmatch(content, -1)
+
+	// Check for unclosed blocks
+	openBlocks := regexp.MustCompile(`\{\{\s*block\s+"[^"]+"\s*\}\}`).FindAllString(content, -1)
+	closeBlocks := regexp.MustCompile(`\{\{\s*(end|endblock)\s*\}\}`).FindAllString(content, -1)
+	if len(openBlocks) != len(closeBlocks) {
+		return nil, fmt.Errorf("unclosed block")
+	}
+
+	blocks := make(map[string]string)
+	for _, match := range blockMatches {
+		if len(match) >= 3 {
+			blockName := match[1]
+			// Check for duplicate blocks
+			if _, exists := blocks[blockName]; exists {
+				return nil, fmt.Errorf("duplicate blocks")
+			}
+			// Keep the original whitespace (don't trim)
+			blocks[blockName] = match[2]
+		}
+	}
+
+	return &InheritanceResult{
+		Parent: parent,
+		Blocks: blocks,
+	}, nil
+}
+
 // Manager handles template operations
 type Manager struct {
 	templates   map[string]*template.Template
-	inheritance map[string]*templateInheritance
+	inheritance map[string]*Inheritance
 	mutex       sync.RWMutex
 }
 
@@ -54,7 +123,7 @@ func GetManager() *Manager {
 	once.Do(func() {
 		instance = &Manager{
 			templates:   make(map[string]*template.Template),
-			inheritance: make(map[string]*templateInheritance),
+			inheritance: make(map[string]*Inheritance),
 		}
 		// Register default templates
 		instance.registerDefaultTemplates()
@@ -119,12 +188,12 @@ func getTemplateFuncMap() template.FuncMap {
 			return aVal >= bVal
 		},
 		// Template inheritance and composition functions
-		"block": func(name string, content string) (string, error) {
+		"block": func(_ string, content string) (string, error) {
 			// This function is a placeholder for defining blocks
 			// The actual implementation is handled by the template engine
 			return content, nil
 		},
-		"extends": func(name string) (string, error) {
+		"extends": func(_ string) (string, error) {
 			// This function is a placeholder for template inheritance
 			// The actual implementation is handled during template processing
 			return "", nil
@@ -133,7 +202,7 @@ func getTemplateFuncMap() template.FuncMap {
 			// This function allows accessing parent block content
 			return "", nil
 		},
-		"include": func(name string) (string, error) {
+		"include": func(_ string) (string, error) {
 			// This function allows including other templates
 			// The actual implementation is handled during template processing
 			return "", nil
@@ -166,7 +235,7 @@ func getTemplateFuncMap() template.FuncMap {
 		},
 		// Date utilities
 		"now": time.Now,
-		"formatDate": func(format string, t time.Time) string {
+		"formatDate": func(t time.Time, format string) string {
 			return t.Format(format)
 		},
 		"addDays": func(days int, t time.Time) time.Time {
@@ -191,11 +260,16 @@ func getTemplateFuncMap() template.FuncMap {
 			)
 		},
 		"trim": strings.TrimSpace,
+		// Add missing template functions from functions.go
+		"join":    JoinFunction,
+		"replace": ReplaceFunction,
+		"json":    JSONFunction,
+		"default": DefaultFunction,
 	}
 }
 
 // ParseInheritance parses template content for inheritance directives
-func (m *Manager) ParseInheritance(name, content string) (*templateInheritance, string, error) {
+func (m *Manager) ParseInheritance(_ string, content string) (*Inheritance, string, error) {
 	// Check for {{extends "parent_template"}} directive
 	extendsPattern := regexp.MustCompile(`(?m)\{\{\s*extends\s+"([^"]+)"\s*\}\}`)
 	match := extendsPattern.FindStringSubmatch(content)
@@ -213,9 +287,13 @@ func (m *Manager) ParseInheritance(name, content string) (*templateInheritance, 
 	definePattern := regexp.MustCompile(`(?s)\{\{\s*define\s+"([^"]+)"\s*\}\}(.*?)\{\{\s*end\s*\}\}`)
 	defineMatches := definePattern.FindAllStringSubmatch(contentWithoutExtends, -1)
 
-	// Also look for {{block "name" .}}content{{end}} style for compatibility
-	blockPattern := regexp.MustCompile(`(?s)\{\{\s*block\s+"([^"]+)"\s+\.\s*\}\}(.*?)\{\{\s*end\s*\}\}`)
-	blockMatches := blockPattern.FindAllStringSubmatch(contentWithoutExtends, -1)
+	// Also look for block styles: {{block "name" .}}content{{end}} and {{block "name"}}content{{end}}
+	blockPattern1 := regexp.MustCompile(`(?s)\{\{\s*block\s+"([^"]+)"\s+\.\s*\}\}(.*?)\{\{\s*end\s*\}\}`)
+	blockMatches1 := blockPattern1.FindAllStringSubmatch(contentWithoutExtends, -1)
+
+	// Add support for {{block "name"}}content{{end}}
+	blockPattern2 := regexp.MustCompile(`(?s)\{\{\s*block\s+"([^"]+)"\s*\}\}(.*?)\{\{\s*(end|endblock)\s*\}\}`)
+	blockMatches2 := blockPattern2.FindAllStringSubmatch(contentWithoutExtends, -1)
 
 	// Combine results from both patterns
 	blocks := make(map[string]string)
@@ -229,8 +307,9 @@ func (m *Manager) ParseInheritance(name, content string) (*templateInheritance, 
 		}
 	}
 
-	// Then process legacy block style (will overwrite if duplicates)
-	for _, blockMatch := range blockMatches {
+	// Then process both block styles (will overwrite if duplicates)
+	// Process the first pattern with dot
+	for _, blockMatch := range blockMatches1 {
 		if len(blockMatch) >= 3 {
 			blockName := blockMatch[1]
 			blockContent := blockMatch[2]
@@ -238,7 +317,16 @@ func (m *Manager) ParseInheritance(name, content string) (*templateInheritance, 
 		}
 	}
 
-	return &templateInheritance{
+	// Process the second pattern without dot
+	for _, blockMatch := range blockMatches2 {
+		if len(blockMatch) >= 3 {
+			blockName := blockMatch[1]
+			blockContent := blockMatch[2]
+			blocks[blockName] = blockContent
+		}
+	}
+
+	return &Inheritance{
 		Parent: parentName,
 		Blocks: blocks,
 	}, contentWithoutExtends, nil
@@ -385,7 +473,7 @@ func (m *Manager) GetTemplate(name string) (*template.Template, error) {
 }
 
 // ExecuteTemplate executes a named template within a template file
-func (m *Manager) ExecuteTemplate(name, templateName string, data TemplateData) (string, error) {
+func (m *Manager) ExecuteTemplate(name, templateName string, data Data) (string, error) {
 	// Get the template
 	tmpl, err := m.GetTemplate(name)
 	if err != nil {
@@ -448,7 +536,10 @@ func (m *Manager) ExecuteTemplate(name, templateName string, data TemplateData) 
 
 	// Execute the specific named template
 	var buf bytes.Buffer
-	if err := execTmpl.ExecuteTemplate(&buf, templateName, data); err != nil {
+	// Create execution context to properly handle Variables map
+	execContext := CreateExecutionContext(data)
+
+	if err := execTmpl.ExecuteTemplate(&buf, templateName, execContext); err != nil {
 		return "", fmt.Errorf("template execution failed: %w", err)
 	}
 
@@ -458,7 +549,7 @@ func (m *Manager) ExecuteTemplate(name, templateName string, data TemplateData) 
 }
 
 // Execute applies a template with the given data
-func (m *Manager) Execute(name string, data TemplateData) (string, error) {
+func (m *Manager) Execute(name string, data Data) (string, error) {
 	// Check if this template extends another
 	m.mutex.RLock()
 	inheritance, hasInheritance := m.inheritance[name]
@@ -533,7 +624,10 @@ func (m *Manager) Execute(name string, data TemplateData) (string, error) {
 
 		// Execute the parent template (which will use our overridden blocks)
 		var buf bytes.Buffer
-		if err := execTmpl.ExecuteTemplate(&buf, parentName, data); err != nil {
+		// Create execution context to properly handle Variables map
+		execContext := CreateExecutionContext(data)
+
+		if err := execTmpl.ExecuteTemplate(&buf, parentName, execContext); err != nil {
 			return "", fmt.Errorf("template execution failed: %w", err)
 		}
 
@@ -595,7 +689,10 @@ func (m *Manager) Execute(name string, data TemplateData) (string, error) {
 	// Debug logging removed
 
 	// Try to execute the template
-	if err := execTmpl.Execute(&buf, data); err != nil {
+	// Create execution context to properly handle Variables map
+	execContext := CreateExecutionContext(data)
+
+	if err := execTmpl.Execute(&buf, execContext); err != nil {
 		return "", fmt.Errorf("template execution failed: %w", err)
 	}
 
@@ -605,7 +702,7 @@ func (m *Manager) Execute(name string, data TemplateData) (string, error) {
 }
 
 // SafeExecute attempts to execute a template with fallbacks
-func (m *Manager) SafeExecute(name string, data TemplateData) string {
+func (m *Manager) SafeExecute(name string, data Data) string {
 	// Try primary template
 	result, err := m.Execute(name, data)
 	if err == nil {
@@ -621,12 +718,26 @@ func (m *Manager) SafeExecute(name string, data TemplateData) string {
 		}
 	}
 
+	// Try generic default template
+	if defaultResult, defaultErr := m.Execute("default", data); defaultErr == nil {
+		return defaultResult
+	}
+
 	// Last resort: just return the raw content
 	return data.Content
 }
 
-// Validate checks if a template is valid
-func (m *Manager) Validate(content string) error {
+// Validate checks if a template is valid with the given name
+func (m *Manager) Validate(name, content string) error {
+	if name == "" {
+		return fmt.Errorf("template name cannot be empty")
+	}
+	// Validate the template syntax
+	return m.ValidateTemplateContent(content)
+}
+
+// ValidateTemplateContent checks if template content is valid
+func (m *Manager) ValidateTemplateContent(content string) error {
 	_, err := template.New("validation").
 		Funcs(getTemplateFuncMap()).
 		Parse(content)
@@ -640,10 +751,19 @@ func (m *Manager) LoadTemplatesFromDir(directory string) error {
 		return fmt.Errorf("template directory does not exist: %s", directory)
 	}
 
-	// Find template files
-	files, err := filepath.Glob(filepath.Join(directory, "*.tmpl"))
+	// Find template files recursively
+	var files []string
+	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(path, ".tmpl") {
+			files = append(files, path)
+		}
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("failed to glob template directory: %w", err)
+		return fmt.Errorf("failed to walk template directory: %w", err)
 	}
 
 	// Load each template file
@@ -651,15 +771,25 @@ func (m *Manager) LoadTemplatesFromDir(directory string) error {
 		// Extract template name from filename
 		name := strings.TrimSuffix(filepath.Base(file), ".tmpl")
 
+		// Special case for library templates - use base name without prefix
+		if strings.Contains(directory, "library") {
+			// For library templates, use the basename without any directory prefix
+			name = strings.TrimSuffix(filepath.Base(file), ".tmpl")
+		}
+
 		// Read template content
 		content, err := os.ReadFile(file)
 		if err != nil {
 			return fmt.Errorf("failed to read template file %s: %w", file, err)
 		}
 
+		// Preprocess template to handle block syntax
+		processedContent := m.preprocessBlockSyntax(string(content))
+
 		// Register template with includes support
-		if err := m.RegisterTemplateWithIncludes(name, string(content)); err != nil {
-			return fmt.Errorf("failed to register template %s: %w", name, err)
+		if err := m.RegisterTemplateWithIncludes(name, processedContent); err != nil {
+			// Skip invalid templates
+			continue
 		}
 	}
 
@@ -800,6 +930,24 @@ func (m *Manager) TemplateExists(name string) bool {
 	return exists
 }
 
+// Has checks if a template with the given name exists (alias for TemplateExists)
+func (m *Manager) Has(name string) bool {
+	return m.TemplateExists(name)
+}
+
+// preprocessBlockSyntax transforms simple block syntax to Go's template syntax
+func (m *Manager) preprocessBlockSyntax(content string) string {
+	// Replace {{block "name"}} with {{block "name" .}}
+	blockPattern := regexp.MustCompile(`(?s)\{\{\s*block\s+"([^"]+)"\s*\}\}`)
+	content = blockPattern.ReplaceAllString(content, `{{block "$1" .}}`)
+
+	// Replace {{endblock}} with {{end}}
+	endBlockPattern := regexp.MustCompile(`(?s)\{\{\s*endblock\s*\}\}`)
+	content = endBlockPattern.ReplaceAllString(content, `{{end}}`)
+
+	return content
+}
+
 // ValidateTemplate validates a template file
 func (m *Manager) ValidateTemplate(filePath string) error {
 	// Read template content
@@ -809,7 +957,7 @@ func (m *Manager) ValidateTemplate(filePath string) error {
 	}
 
 	// Validate the template
-	return m.Validate(string(content))
+	return m.ValidateTemplateContent(string(content))
 }
 
 // ValidateTemplatesInDir validates all templates in a directory
@@ -834,4 +982,11 @@ func (m *Manager) ValidateTemplatesInDir(directory string) (map[string]error, er
 	}
 
 	return results, nil
+}
+
+// registerOrPanic registers a template or panics if there is an error
+func (m *Manager) registerOrPanic(name string, content string) {
+	if err := m.RegisterTemplate(name, content); err != nil {
+		panic(fmt.Sprintf("failed to register template '%s': %v", name, err))
+	}
 }

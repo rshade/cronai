@@ -1,33 +1,41 @@
 ---
-name: Feature request
-about: Suggest a new feature for CronAI
+name: Feature Request
+about: Suggest a new feature or improvement for CronAI
 title: 'feat: '
 labels: 'type:feature'
 assignees: ''
 ---
 
-# Feature Request
+## Feature Request
 
-## Summary
+### Summary
+
 A clear and concise description of the feature you're requesting.
 
-## Problem Statement
-Describe the problem this feature would solve. For example: "I'm always frustrated when [...]"
+### Problem Statement
 
-## Proposed Solution
+Describe the problem this feature would solve. What need does it address?
+
+### Proposed Solution
+
 A clear and concise description of what you want to happen.
 
-## Alternative Solutions
+### Alternative Solutions
+
 A clear and concise description of any alternative solutions or features you've considered.
 
-## Implementation Details
+### Implementation Details
+
 If you have specific ideas about how this should be implemented, share them here.
 
-## Success Criteria
+### Success Criteria
+
 What specific criteria would indicate this feature is complete and working as expected?
 
-## Additional Context
+### Additional Context
+
 Add any other context, screenshots, or mockups about the feature request here.
 
-## Related Issues
+### Related Issues
+
 - List any related issues here

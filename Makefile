@@ -1,4 +1,4 @@
-.PHONY: all build test test-coverage coverage-report clean lint run changelog
+.PHONY: all build test test-coverage coverage-report clean lint lint-fix format run changelog
 
 # Default target
 all: build
@@ -23,10 +23,10 @@ clean:
 coverage-report: test-coverage
 	go tool cover -html=coverage.out
 
-# Run linter
+# Run linter (strict mode for CI)
 lint:
 	@echo "Running gofmt check..."
-	@test -z "$$(gofmt -l .)" || (echo "The following files need formatting with gofmt:"; gofmt -l . && exit 1)
+	@! gofmt -d . 2>&1 | grep -q '^' || (echo "Code not formatted. Run 'make lint-fix' to fix."; exit 1)
 	@echo "Running go vet..."
 	go vet ./...
 	@echo "Running golangci-lint..."
@@ -36,6 +36,37 @@ lint:
 		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
 		go vet ./...; \
 	fi
+	@echo "Running markdownlint..."
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint . --ignore node_modules; \
+	else \
+		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
+	fi
+
+# Run linter with automatic fixes (for local development)
+lint-fix:
+	@echo "Running gofmt with fix..."
+	@gofmt -w .
+	@echo "Running go vet..."
+	go vet ./...
+	@echo "Running golangci-lint with fix..."
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run --fix; \
+	else \
+		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
+		go vet ./...; \
+	fi
+	@echo "Running markdownlint with fix..."
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint . --ignore node_modules --fix; \
+	else \
+		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
+	fi
+
+# Format all Go files
+format:
+	@echo "Formatting all Go files..."
+	go fmt ./...
 
 # Run the application
 run:
@@ -71,3 +102,5 @@ setup:
 		cp .env.example .env; \
 		echo "Created .env file. Please edit it with your API keys."; \
 	fi
+	@echo "Installing markdownlint..."
+	@npm install -g markdownlint-cli || echo "Warning: Failed to install markdownlint-cli. Make sure npm is installed."

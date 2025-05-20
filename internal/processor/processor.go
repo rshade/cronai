@@ -1,3 +1,4 @@
+// Package processor provides functionality for processing model responses through various output channels
 package processor
 
 import (
@@ -18,8 +19,8 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
-// ProcessorOptions contains options for processors
-type ProcessorOptions struct {
+// Options contains options for processors
+type Options struct {
 	TemplateDir string // Directory containing custom templates
 }
 
@@ -48,6 +49,9 @@ func ProcessResponse(processorName string, response *models.ModelResponse, templ
 	} else if strings.HasPrefix(processorName, "webhook-") {
 		processorType = "webhook"
 		target = strings.TrimPrefix(processorName, "webhook-")
+	} else if strings.HasPrefix(processorName, "github-") {
+		processorType = "github"
+		target = strings.TrimPrefix(processorName, "github-")
 	} else {
 		// Handle standard processors
 		switch processorName {
@@ -65,7 +69,7 @@ func ProcessResponse(processorName string, response *models.ModelResponse, templ
 	}
 
 	// Create processor configuration
-	config := ProcessorConfig{
+	config := Config{
 		Type:         processorType,
 		Target:       target,
 		TemplateName: templateName,
@@ -73,7 +77,7 @@ func ProcessResponse(processorName string, response *models.ModelResponse, templ
 
 	// Create processor using registry
 	registry := GetRegistry()
-	processor, err := registry.CreateProcessor(config)
+	processor, err := registry.CreateProcessor(processorType, config)
 	if err != nil {
 		return errors.Wrap(errors.CategoryApplication, err, "failed to create processor")
 	}

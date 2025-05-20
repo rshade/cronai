@@ -1,14 +1,32 @@
 # CronAI Example Configuration
 # Format: timestamp model prompt.md response_processor
 
-# Run daily at 8 AM using Claude, sending to slack
-0 8 * * * claude product_manager slack-pm-channel
+# ============================================================================
+# MVP PROCESSORS - Available Now
+# ============================================================================
 
-# Run every Monday at 9 AM using OpenAI, sending to email
-0 9 * * 1 openai weekly_report email-team@company.com
+# Run daily at 8 AM using Claude, output to console
+0 8 * * * claude product_manager console
 
-# Run every hour during business hours using Gemini, sending to file
-0 9-17 * * 1-5 gemini monitoring_check log-to-file
+# Run every Monday at 9 AM using OpenAI, save to file
+0 9 * * 1 openai weekly_report file-/var/log/cronai/weekly_report.log
 
-# Run every 15 mins using Claude, sending output to webhook
-*/15 * * * * claude system_health webhook-monitoring
+# Run every hour during business hours using Gemini, save to file
+0 9-17 * * 1-5 gemini monitoring_check file-/var/log/cronai/monitoring.log
+
+# Run every 15 mins using Claude, create GitHub issue if needed
+# Format: github-[action]:[owner]/[repo] for issues, github-comment:[owner]/[repo]#[issue] for comments
+*/15 * * * * claude system_health github-issue:myorg/myrepo
+
+# ============================================================================
+# POST-MVP PROCESSORS - Coming Soon
+# ============================================================================
+
+# PLANNED: Slack integration
+# 0 8 * * * claude product_manager slack-pm-channel
+
+# PLANNED: Email integration
+# 0 9 * * 1 openai weekly_report email-team@company.com
+
+# PLANNED: Webhook integration
+# */15 * * * * claude system_health webhook-https://api.example.com/monitoring

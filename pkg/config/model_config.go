@@ -1,3 +1,5 @@
+// Package config provides configuration management for AI models, including OpenAI, Claude, and Gemini.
+// It handles model-specific settings, environment variable loading, and parameter validation.
 package config
 
 import (
@@ -67,6 +69,11 @@ func DefaultModelConfig() *ModelConfig {
 			SafetySettings: make(map[string]string),
 		},
 	}
+}
+
+// NewModelConfig creates a new model configuration with default values
+func NewModelConfig() *ModelConfig {
+	return DefaultModelConfig()
 }
 
 // LoadFromEnvironment loads model configuration from environment variables

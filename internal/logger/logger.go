@@ -139,20 +139,29 @@ func (l *Logger) log(level Level, msg string, metadata Fields) {
 			fileLine = fmt.Sprintf(" (%s:%d)", entry.File, entry.Line)
 		}
 
-		_, _ = fmt.Fprintf(l.config.Output, "%s[%s]%s %s", timestamp, entry.Level, fileLine, entry.Message)
-
-		if len(metadata) > 0 {
-			_, _ = fmt.Fprintf(l.config.Output, " | ")
+		if _, err := fmt.Fprintf(l.config.Output, "%s[%s]%s %s", timestamp, entry.Level, fileLine, entry.Message); err != nil {
+			return
+		}
+		if len(entry.Metadata) > 0 {
+			if _, err := fmt.Fprintf(l.config.Output, " | "); err != nil {
+				return
+			}
 			first := true
-			for k, v := range metadata {
+			for k, v := range entry.Metadata {
 				if !first {
-					_, _ = fmt.Fprintf(l.config.Output, ", ")
+					if _, err := fmt.Fprintf(l.config.Output, ", "); err != nil {
+						return
+					}
 				}
-				_, _ = fmt.Fprintf(l.config.Output, "%s=%v", k, v)
+				if _, err := fmt.Fprintf(l.config.Output, "%s=%v", k, v); err != nil {
+					return
+				}
 				first = false
 			}
 		}
-		_, _ = fmt.Fprintln(l.config.Output)
+		if _, err := fmt.Fprintln(l.config.Output); err != nil {
+			return
+		}
 	}
 
 	if level == FatalLevel {
@@ -206,7 +215,7 @@ func (l *Logger) Fatal(msg string, metadata ...Fields) {
 }
 
 // WithMetadata returns a function that logs with the provided metadata.
-func (l *Logger) WithMetadata(metadata Fields) *Logger {
+func (l *Logger) WithMetadata(_ Fields) *Logger {
 	return &Logger{
 		config: l.config,
 	}

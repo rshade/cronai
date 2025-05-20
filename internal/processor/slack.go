@@ -15,11 +15,11 @@ import (
 
 // SlackProcessor handles Slack messaging
 type SlackProcessor struct {
-	config ProcessorConfig
+	config Config
 }
 
 // NewSlackProcessor creates a new Slack processor
-func NewSlackProcessor(config ProcessorConfig) (Processor, error) {
+func NewSlackProcessor(config Config) (Processor, error) {
 	return &SlackProcessor{
 		config: config,
 	}, nil
@@ -28,7 +28,7 @@ func NewSlackProcessor(config ProcessorConfig) (Processor, error) {
 // Process handles the model response with optional template
 func (s *SlackProcessor) Process(response *models.ModelResponse, templateName string) error {
 	// Create template data
-	tmplData := template.TemplateData{
+	tmplData := template.Data{
 		Content:     response.Content,
 		Model:       response.Model,
 		Timestamp:   response.Timestamp,
@@ -76,12 +76,12 @@ func (s *SlackProcessor) GetType() string {
 }
 
 // GetConfig returns the processor configuration
-func (s *SlackProcessor) GetConfig() ProcessorConfig {
+func (s *SlackProcessor) GetConfig() Config {
 	return s.config
 }
 
 // processSlackWithTemplate sends formatted messages to Slack
-func (s *SlackProcessor) processSlackWithTemplate(channel string, data template.TemplateData, templateName string) error {
+func (s *SlackProcessor) processSlackWithTemplate(channel string, data template.Data, templateName string) error {
 	// Check for Slack token
 	slackToken := os.Getenv(EnvSlackToken)
 	if slackToken == "" {

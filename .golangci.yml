@@ -1,0 +1,28 @@
+version: "2"  # Configuration schema version 2 is required for golangci-lint v2.x&#8203;:contentReference[oaicite:0]{index=0}
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - revive
+    - staticcheck
+    - unused
+    - ineffassign
+    - asasalint
+  settings:
+    errcheck:
+      check-type-assertions: true  # Example errcheck settings (was under linters-settings in v1)&#8203;:contentReference[oaicite:1]{index=1}
+      check-blank: true           # Report ignoring errors in type assertions and blank assignments
+    # (Add other linter-specific settings here under their name, if needed)
+  exclusions:
+    generated: strict  # Exclude generated code files (uses "Code generated...DO NOT EDIT" header)&#8203;:contentReference[oaicite:2]{index=2}&#8203;:contentReference[oaicite:3]{index=3}
+    paths:
+      - gen/          # Exclude any files under the "gen" directory (generated code)&#8203;:contentReference[oaicite:4]{index=4}&#8203;:contentReference[oaicite:5]{index=5}
+      - bin/          # Exclude any files under the "bin" directory (built binaries)&#8203;:contentReference[oaicite:6]{index=6}&#8203;:contentReference[oaicite:7]{index=7}
+      - vendor/       # Exclude vendored dependencies (since default skip list is removed)&#8203;:contentReference[oaicite:8]{index=8}
+
+issues:
+  max-issues-per-linter: 0  # No limit per linter (0 disables the limit; default was 50)&#8203;:contentReference[oaicite:9]{index=9}
+  max-same-issues: 0        # No limit on identical issues (0 disables; default was 3)&#8203;:contentReference[oaicite:10]{index=10}
+  # (Optional: other issue settings like 'uniq-by-line' can be configured here)
+

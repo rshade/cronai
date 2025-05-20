@@ -1,3 +1,4 @@
+// Package processor provides implementations for different response processors
 package processor
 
 import (
@@ -11,11 +12,11 @@ import (
 
 // ConsoleProcessor handles console output
 type ConsoleProcessor struct {
-	config ProcessorConfig
+	config Config
 }
 
 // NewConsoleProcessor creates a new console processor
-func NewConsoleProcessor(config ProcessorConfig) (Processor, error) {
+func NewConsoleProcessor(config Config) (Processor, error) {
 	return &ConsoleProcessor{
 		config: config,
 	}, nil
@@ -24,7 +25,7 @@ func NewConsoleProcessor(config ProcessorConfig) (Processor, error) {
 // Process handles the model response with optional template
 func (c *ConsoleProcessor) Process(response *models.ModelResponse, templateName string) error {
 	// Create template data
-	tmplData := template.TemplateData{
+	tmplData := template.Data{
 		Content:     response.Content,
 		Model:       response.Model,
 		Timestamp:   response.Timestamp,
@@ -59,12 +60,12 @@ func (c *ConsoleProcessor) GetType() string {
 }
 
 // GetConfig returns the processor configuration
-func (c *ConsoleProcessor) GetConfig() ProcessorConfig {
+func (c *ConsoleProcessor) GetConfig() Config {
 	return c.config
 }
 
 // processConsoleOutput prints formatted response to console
-func (c *ConsoleProcessor) processConsoleOutput(data template.TemplateData, templateName string) error {
+func (c *ConsoleProcessor) processConsoleOutput(data template.Data, templateName string) error {
 	// Get template manager
 	manager := template.GetManager()
 

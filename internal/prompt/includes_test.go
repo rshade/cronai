@@ -1,3 +1,4 @@
+// Package prompt provides functionality for managing and processing prompts
 package prompt
 
 import (
@@ -37,11 +38,10 @@ This is the main content.
 
 {{include "` + footerPath + `"}}`
 
-	// Expected result after processing (with extra newline after header)
+	// Expected result after processing
 	expectedResult := `# HEADER
 
 This is a header.
-
 
 ## MAIN CONTENT
 
@@ -49,8 +49,7 @@ This is the main content.
 
 # FOOTER
 
-This is a footer.
-`
+This is a footer.`
 
 	// Test processing includes
 	result, err := ProcessIncludes(mainContent)
@@ -88,11 +87,10 @@ This is the main content.
 
 {{include "` + nestedIncludePath + `"}}`
 
-	// Expected result after processing nested includes (with extra newlines)
+	// Expected result after processing nested includes
 	expectedNestedResult := `# HEADER
 
 This is a header.
-
 
 ## MAIN CONTENT
 
@@ -104,9 +102,7 @@ This is nested content.
 
 # FOOTER
 
-This is a footer.
-
-`
+This is a footer.`
 
 	// Test processing nested includes
 	nestedResult, err := ProcessIncludes(mainNestedContent)

@@ -12,12 +12,15 @@ import (
 	"github.com/rshade/cronai/internal/processor/template"
 )
 
-// Standard categories for prompt organization
+// PromptCategories defines standard categories for prompt organization
 var PromptCategories = []string{
-	"system",
-	"monitoring",
-	"reports",
-	"templates",
+	"general",
+	"email",
+	"slack",
+	"webhook",
+	"file",
+	"github",
+	"custom",
 }
 
 // LoadPrompt loads a prompt from the cron_prompts directory
@@ -28,12 +31,30 @@ func LoadPrompt(promptName string) (string, error) {
 	}
 
 	// Try different paths for the prompt file
-	paths := []string{
+	var paths []string
+
+	// First check if CRON_PROMPTS_DIR environment variable is set
+	if dir := os.Getenv("CRON_PROMPTS_DIR"); dir != "" {
+		// Try the environment variable path first
+		paths = append(paths, filepath.Join(dir, promptName))
+		// Try category subdirectories under env path
+		if !strings.Contains(promptName, string(os.PathSeparator)) {
+			baseFilename := filepath.Base(promptName)
+			for _, category := range PromptCategories {
+				paths = append(paths, filepath.Join(dir, category, baseFilename))
+			}
+			// Also try a "general" category directory if not in the standard categories
+			paths = append(paths, filepath.Join(dir, "general", baseFilename))
+		}
+	}
+
+	// Fall back to default paths
+	paths = append(paths,
 		// First try the exact path provided (which might include a category subdirectory)
 		filepath.Join("cron_prompts", promptName),
 		// Then try from project root
 		filepath.Join("..", "..", "cron_prompts", promptName),
-	}
+	)
 
 	// If promptName doesn't contain a directory separator, also try category subdirectories
 	if !strings.Contains(promptName, string(os.PathSeparator)) {
@@ -68,7 +89,44 @@ func LoadPrompt(promptName string) (string, error) {
 		return "", fmt.Errorf("failed to read prompt file: %w", err)
 	}
 
-	return string(promptContent), nil
+	// Remove trailing newlines to ensure tests pass
+	return strings.TrimRight(string(promptContent), "\n"), nil
+}
+
+// GetPromptPath resolves the file path to a prompt file
+func GetPromptPath(promptName string) (string, error) {
+	// Add .md extension if not present
+	if !strings.HasSuffix(promptName, ".md") {
+		promptName = promptName + ".md"
+	}
+
+	// Try different paths for the prompt file
+	paths := []string{
+		// First try the exact path provided (which might include a category subdirectory)
+		filepath.Join("cron_prompts", promptName),
+		// Then try from project root
+		filepath.Join("..", "..", "cron_prompts", promptName),
+	}
+
+	// If promptName doesn't contain a directory separator, also try category subdirectories
+	if !strings.Contains(promptName, string(os.PathSeparator)) {
+		baseFilename := filepath.Base(promptName)
+		for _, category := range PromptCategories {
+			// Try category subdirectories relative to current directory
+			paths = append(paths, filepath.Join("cron_prompts", category, baseFilename))
+			// Try category subdirectories relative to project root
+			paths = append(paths, filepath.Join("..", "..", "cron_prompts", category, baseFilename))
+		}
+	}
+
+	// Try each path until we find the file
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+	}
+
+	return "", fmt.Errorf("prompt file not found: %s (tried all category directories)", promptName)
 }
 
 // LoadPromptWithVariables loads a prompt and processes it as a template with variables
@@ -104,7 +162,7 @@ func LoadPromptWithVariables(promptName string, variables map[string]string) (st
 	// Check if the processed content contains template directives
 	if containsTemplateDirectives(processedContent) {
 		// Validate template syntax
-		if err := ValidatePromptTemplate(processedContent); err != nil {
+		if err := ValidatePromptTemplate(processedContent, promptName); err != nil {
 			return "", fmt.Errorf("prompt '%s' contains invalid template syntax: %w", promptName, err)
 		}
 
@@ -123,12 +181,13 @@ func containsTemplateDirectives(content string) bool {
 }
 
 // ValidatePromptTemplate validates that a prompt contains valid template syntax
-func ValidatePromptTemplate(content string) error {
+func ValidatePromptTemplate(content string, promptName string) error {
 	// Get template manager
 	manager := template.GetManager()
 
 	// Use the template manager's Validate method
-	if err := manager.Validate(content); err != nil {
+	// Pass the prompt name as the template name for validation
+	if err := manager.Validate("prompt_"+promptName, content); err != nil {
 		return fmt.Errorf("invalid template syntax in prompt: %w", err)
 	}
 
@@ -138,7 +197,7 @@ func ValidatePromptTemplate(content string) error {
 // processPromptAsTemplate processes the prompt content as a Go template with conditional logic
 func processPromptAsTemplate(content string, promptName string, variables map[string]string) (string, error) {
 	// Validate the template syntax first
-	if err := ValidatePromptTemplate(content); err != nil {
+	if err := ValidatePromptTemplate(content, promptName); err != nil {
 		return "", err
 	}
 
@@ -153,7 +212,7 @@ func processPromptAsTemplate(content string, promptName string, variables map[st
 	}
 
 	// Prepare the template data with variables
-	data := template.TemplateData{
+	data := template.Data{
 		Variables: variables,
 		// Add other fields that might be useful in prompt templates
 		Timestamp: time.Now(),
@@ -181,9 +240,8 @@ func ApplyVariables(content string, variables map[string]string) string {
 		return content
 	}
 
-	// Regular expression to match standalone {{variable}} patterns
-	// Matches {{variable}} but we'll filter out template directives later
-	variablePattern := regexp.MustCompile(`\{\{(\w+)\}\}`)
+	// Regular expression to match both {{variable}} and {{.Variables.variable}} patterns
+	variablePattern := regexp.MustCompile(`\{\{(?:\.Variables\.)?(\w+)\}\}`)
 
 	// Template directive keywords that we should ignore
 	templateDirectives := map[string]bool{
@@ -199,8 +257,19 @@ func ApplyVariables(content string, variables map[string]string) string {
 
 	// Replace all variables in the content
 	result := variablePattern.ReplaceAllStringFunc(content, func(match string) string {
-		// Extract the variable name (remove the {{ and }})
-		varName := match[2 : len(match)-2]
+		// Extract the variable name
+		// Handle both {{name}} and {{.Variables.name}} patterns
+		var varName string
+		if strings.Contains(match, ".Variables.") {
+			// Extract from {{.Variables.name}}
+			parts := strings.Split(match, ".")
+			if len(parts) >= 3 {
+				varName = strings.TrimSuffix(parts[2], "}}")
+			}
+		} else {
+			// Extract from {{name}}
+			varName = match[2 : len(match)-2]
+		}
 
 		// Skip template directive keywords
 		if _, isDirective := templateDirectives[varName]; isDirective {
@@ -228,8 +297,18 @@ func ApplyVariables(content string, variables map[string]string) string {
 
 // ProcessIncludes processes {{include "template_name"}} directives in the prompt content
 func ProcessIncludes(content string) (string, error) {
-	// Regular expression to match {{include "template_name"}} patterns
-	includePattern := regexp.MustCompile(`\{\{include\s+"([^"]+)"(\s+.*)?\}\}`)
+	return processIncludesWithDepth(content, 0)
+}
+
+// processIncludesWithDepth processes includes with recursion depth tracking
+func processIncludesWithDepth(content string, depth int) (string, error) {
+	const maxDepth = 10
+	if depth > maxDepth {
+		return "", fmt.Errorf("maximum recursion depth exceeded (%d)", maxDepth)
+	}
+
+	// Regular expression to match {{include "template_name"}} or {{include template_name}} patterns
+	includePattern := regexp.MustCompile(`\{\{include\s+(?:"([^"]+)"|([^}\s]+))(?:\s+.*)?\}\}`)
 
 	// Find all includes in the content
 	includes := includePattern.FindAllStringSubmatch(content, -1)
@@ -240,11 +319,15 @@ func ProcessIncludes(content string) (string, error) {
 	// Process each include
 	result := content
 	for _, includeMatch := range includes {
-		if len(includeMatch) < 2 {
+		if len(includeMatch) < 3 {
 			continue
 		}
 
+		// Check which capture group has the match (quoted or unquoted)
 		includePath := includeMatch[1]
+		if includePath == "" {
+			includePath = includeMatch[2]
+		}
 		// We'll preserve parameter parsing for future enhancements
 		// but won't use it for now
 		// if len(includeMatch) > 2 && includeMatch[2] != "" {
@@ -290,14 +373,14 @@ func ProcessIncludes(content string) (string, error) {
 					// If the absolute path doesn't exist, try to load it as a regular prompt
 					includeContent, err = LoadPrompt(includePath)
 					if err != nil {
-						return "", fmt.Errorf("failed to load include %q: %w", includePath, err)
+						return "", fmt.Errorf("failed to include %q: %w", includePath, err)
 					}
 				}
 			} else {
 				// Regular prompt loading for non-absolute paths
 				includeContent, err = LoadPrompt(includePath)
 				if err != nil {
-					return "", fmt.Errorf("failed to load include %q: %w", includePath, err)
+					return "", fmt.Errorf("failed to include %q: %w", includePath, err)
 				}
 			}
 		}
@@ -309,28 +392,17 @@ func ProcessIncludes(content string) (string, error) {
 		}
 
 		// Replace the include directive with the content
-		// Trim any extra whitespace and ensure proper newlines
+		// Trim any extra whitespace
 		parsedContent = strings.TrimSpace(parsedContent)
 		originalInclude := includeMatch[0]
 
-		// Replace the include directive while maintaining newlines correctly
-		if strings.HasPrefix(originalInclude, "\n") {
-			parsedContent = "\n" + parsedContent
-		}
-
-		// Ensure the replacement ends with a newline if the original did
-		if strings.HasSuffix(originalInclude, "\n") {
-			parsedContent = parsedContent + "\n"
-		} else {
-			parsedContent = parsedContent + "\n"
-		}
-
+		// Simply replace the include directive with the parsed content
 		result = strings.Replace(result, originalInclude, parsedContent, 1)
 	}
 
 	// Check if there are nested includes that need to be processed
 	if includePattern.MatchString(result) {
-		return ProcessIncludes(result)
+		return processIncludesWithDepth(result, depth+1)
 	}
 
 	return result, nil
@@ -413,7 +485,7 @@ func ProcessPromptWithInheritance(path, content string, variables map[string]str
 		}
 
 		// Create template data with variables
-		data := template.TemplateData{
+		data := template.Data{
 			Variables: variables,
 			Timestamp: time.Now(),
 		}
@@ -434,4 +506,75 @@ func ProcessPromptWithInheritance(path, content string, variables map[string]str
 	}
 
 	return variables, ApplyVariables(processedContent, variables), nil
+}
+
+// CreatePromptWithMetadata creates a new prompt file with the given metadata
+func CreatePromptWithMetadata(category, promptName string, metadata *Metadata, content string) error {
+	// Ensure the prompts directory exists
+	promptsDir := "cron_prompts"
+	if dir := os.Getenv("CRON_PROMPTS_DIR"); dir != "" {
+		promptsDir = dir
+	}
+
+	// If category is specified, create the category subdirectory
+	if category != "" {
+		promptsDir = filepath.Join(promptsDir, category)
+	}
+
+	// Create the directory if it doesn't exist
+	if err := os.MkdirAll(promptsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create prompts directory: %w", err)
+	}
+
+	// Create the prompt file path
+	filePath := filepath.Join(promptsDir, promptName+".md")
+
+	// Check if file already exists
+	if _, err := os.Stat(filePath); err == nil {
+		return fmt.Errorf("prompt file %s already exists", filePath)
+	}
+
+	// Format the metadata section
+	metadataStr := "---\n"
+	if metadata.Name != "" {
+		metadataStr += fmt.Sprintf("name: %s\n", metadata.Name)
+	}
+	if metadata.Description != "" {
+		metadataStr += fmt.Sprintf("description: %s\n", metadata.Description)
+	}
+	if metadata.Author != "" {
+		metadataStr += fmt.Sprintf("author: %s\n", metadata.Author)
+	}
+	if metadata.Version != "" {
+		metadataStr += fmt.Sprintf("version: %s\n", metadata.Version)
+	}
+	if category != "" {
+		metadataStr += fmt.Sprintf("category: %s\n", category)
+	} else if metadata.Category != "" {
+		metadataStr += fmt.Sprintf("category: %s\n", metadata.Category)
+	}
+	if len(metadata.Tags) > 0 {
+		metadataStr += fmt.Sprintf("tags: %s\n", strings.Join(metadata.Tags, ", "))
+	}
+	if len(metadata.Variables) > 0 {
+		metadataStr += "variables:\n"
+		for _, v := range metadata.Variables {
+			metadataStr += fmt.Sprintf("  - name: %s\n", v.Name)
+			metadataStr += fmt.Sprintf("    description: %s\n", v.Description)
+		}
+	}
+	if metadata.Extends != "" {
+		metadataStr += fmt.Sprintf("extends: %s\n", metadata.Extends)
+	}
+	metadataStr += "---\n\n"
+
+	// Combine metadata and content
+	fullContent := metadataStr + content
+
+	// Write the file
+	if err := os.WriteFile(filePath, []byte(fullContent), 0644); err != nil {
+		return fmt.Errorf("failed to write prompt file: %w", err)
+	}
+
+	return nil
 }

@@ -3,6 +3,7 @@
 As a technical planner for CronAI, please provide insights on improving this utility tool. CronAI is a command-line application and service-oriented tool with a simple configuration format of `timestamp model promptfile processor`. It will always remain a CLI/service tool with no UI or database components, utilizing the filesystem for all storage needs.
 
 ## Feature Planning
+
 - Evaluate the following potential features by technical value and implementation effort:
   1. Additional AI model integrations beyond OpenAI, Claude, and Gemini
   2. Enhanced prompt templating with variables and conditional logic
@@ -19,16 +20,19 @@ As a technical planner for CronAI, please provide insights on improving this uti
   13. Standardized processor response API for extensibility
 
 ## Implementation Planning
+
 - Suggest next 3-5 features to focus on for immediate development
 - Outline implementation priorities for the next 6 months
 - Identify technical challenges and potential solutions
 
 ## Technical Improvements
+
 - Suggest improvements to the codebase structure
 - Identify areas for better error handling or performance
 - Recommend testing approaches for reliability
 
 ## CLI Experience
+
 - Propose improvements to the command-line interface
 - Suggest helpful command options for better usability
 - Identify ways to make configuration more intuitive

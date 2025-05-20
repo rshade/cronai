@@ -6,13 +6,34 @@ AI agent for scheduled prompt execution - Your automated AI assistant.
 
 CronAI is an intelligent agent that schedules and executes AI model prompts automatically. It acts as your personal AI automation system, running tasks on schedule and delivering results through your preferred channels.
 
-## Features
+## MVP Features
 
-- Cron-style scheduling
-- Support for multiple AI models (OpenAI, Claude, Gemini)
-- Customizable prompts stored as markdown files
-- Flexible response processing options (email, Slack, webhooks, file output)
-- Can be run as a systemd service
+The current MVP release includes:
+
+- ✅ Cron-style scheduling for automated execution
+- ✅ Support for multiple AI models:
+  - OpenAI (gpt-3.5-turbo, gpt-4)
+  - Claude (claude-3-sonnet, claude-3-opus)
+  - Gemini
+- ✅ Customizable prompts stored as markdown files
+- ✅ Response processing options:
+  - File output
+  - GitHub (issues and comments)
+  - Console output
+- ✅ Variable substitution in prompts
+- ✅ Systemd service for deployment
+
+### Planned Post-MVP Features (Coming Soon)
+
+The following features are in development and will be available in future releases:
+
+- Email processor integration
+- Slack processor integration
+- Webhook processor integration
+- Enhanced templating capabilities
+- Web UI for prompt management
+
+See [limitations-and-improvements.md](docs/limitations-and-improvements.md) for a detailed breakdown of current limitations and planned improvements.
 
 ## Installation
 
@@ -24,7 +45,7 @@ go install github.com/rshade/cronai/cmd/cronai@latest
 git clone https://github.com/rshade/cronai.git
 cd cronai
 go build -o cronai ./cmd/cronai
-```
+```text
 
 ## Configuration
 
@@ -32,153 +53,77 @@ Create a configuration file called `cronai.config` with your scheduled tasks.
 
 ### Format
 
-```
-timestamp model prompt response_processor [template] [variables] [model_params:...]
-```
+```text
+timestamp model prompt response_processor [variables] [model_params:...]
+```text
 
 - **timestamp**: Standard cron format (minute hour day-of-month month day-of-week)
 - **model**: AI model to use (openai, claude, gemini)
 - **prompt**: Name of prompt file in cron_prompts directory (with or without .md extension)
-- **response_processor**: How to process the response (email, slack, webhook, file)
-- **template** (optional): Name of template to use for formatting the response
+- **response_processor**: How to process the response:
+  - `file-path/to/output.txt`: Save to file
+  - `github-issue:owner/repo`: Create GitHub issue
+  - `github-comment:owner/repo#123`: Add comment to GitHub issue
+  - `console`: Display in console
 - **variables** (optional): Variables to replace in the prompt file, in the format `key1=value1,key2=value2,...`
 - **model_params** (optional): Model-specific parameters in the format `model_params:param1=value1,param2=value2,...`
 
 ### Example Configuration
 
-```
-# Run daily at 8 AM using Claude, sending to slack
-0 8 * * * claude product_manager slack-pm-channel
+```text
+# Run daily at 8 AM using OpenAI, saving to file
+0 8 * * * openai product_manager file-/var/log/cronai/product_manager.log
 
-# Run every Monday at 9 AM using OpenAI, sending to email
-0 9 * * 1 openai weekly_report email-team@company.com
+# Run weekly on Monday at 9 AM using Claude, creating GitHub issue
+0 9 * * 1 claude weekly_report github-issue:your-org/your-repo
 
-# Run monthly report with custom template and variables on the 1st of each month
-0 9 1 * * claude report_template email-execs@company.com monthly_report reportType=Monthly,date={{CURRENT_DATE}},project=CronAI
+# Run daily health check with variables
+0 6 * * * openai system_check file-/var/log/cronai/health.log system=production,check_level=detailed
 
 # Run with custom model parameters (temperature and specific model version)
-0 9 * * 1 openai weekly_report email-team@company.com model_params:temperature=0.5,model=gpt-4
-```
+0 9 * * 1 openai weekly_report file-/var/log/cronai/report.log model_params:temperature=0.5,model=gpt-4
+```text
 
 See [cronai.config.example](cronai.config.example), [cronai.config.variables.example](cronai.config.variables.example), and [cronai.config.model-params.example](cronai.config.model-params.example) for more examples.
 
 ## Prompt Management
 
-CronAI includes a robust file-based prompt management system to help you organize, discover, and reuse prompts efficiently.
+CronAI uses a file-based prompt management system to help you organize and use prompts efficiently.
 
-### Prompt Structure and Organization
+### Prompt Structure
 
-Prompts are organized in a category-based directory structure:
+Prompts are stored as markdown files in the `cron_prompts/` directory:
 
-```
+```text
 cron_prompts/
 ├── monitoring/     # Monitoring-related prompts
 ├── reports/        # Report generation prompts
 ├── system/         # System operations prompts
-├── templates/      # Reusable templates
 └── [custom]/       # Your custom categories
-```
-
-### Prompt Files
-
-Each prompt is stored as a markdown file and can include an optional metadata section:
-
-```markdown
----
-name: System Health Check
-description: Analyzes system health metrics
-author: CronAI Team
-version: 1.0
-category: system
-tags: health, monitoring, metrics
-variables:
-  - name: cpu_usage
-    description: Current CPU usage percentage
-  - name: memory_usage
-    description: Current memory usage percentage
----
-
-# System Health Check
-
-Analyze the following system metrics:
-- CPU Usage: {{cpu_usage}}%
-- Memory Usage: {{memory_usage}}%
-...
-```
+```text
 
 ### Variables in Prompts
 
 You can use variables in prompt files with the syntax `{{variable_name}}`. These variables will be replaced with values from the configuration:
 
 ```markdown
-# {{reportType}} Report for {{date}}
+# Report for {{CURRENT_DATE}}
 
 ## Overview
 
-This is an automatically generated {{reportType}} report for {{project}} created on {{date}}.
+This is a report for {{project}} created on {{CURRENT_DATE}}.
 
-## Team Details
+## Details
 
+Environment: {{environment}}
 Team: {{team}}
-```
+```text
 
 Special variables that are automatically populated:
+
 - `{{CURRENT_DATE}}`: Current date in YYYY-MM-DD format
 - `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
 - `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
-
-### Conditional Logic in Prompts
-
-CronAI supports conditional blocks in prompts, allowing for dynamic content based on variables:
-
-```markdown
-{{if eq .Variables.environment "production"}}
-## Production Environment
-This is a production system. Be cautious with recommendations.
-{{else if eq .Variables.environment "staging"}}
-## Staging Environment
-This is a staging system. Testing is allowed.
-{{else}}
-## Development Environment
-This is a development system. Feel free to experiment.
-{{end}}
-
-{{if hasVar .Variables "includeMetrics"}}
-## Metrics Analysis
-Detailed metrics included as requested.
-{{end}}
-
-{{if gt (getVar .Variables "errorCount" "0") "5"}}
-High error count detected: {{.Variables.errorCount}}
-{{else}}
-Low or no errors detected.
-{{end}}
-```
-
-Available conditional features:
-- If-else branching based on variable values
-- Variable existence checks with `hasVar`
-- Default values with `getVar`
-- String comparisons: eq (equals), ne (not equals), contains, hasPrefix, hasSuffix
-- Numeric comparisons: lt (less than), gt (greater than), le (less than or equal), ge (greater than or equal)
-- Logical operators: and, or, not
-- Nested conditionals for complex logic
-
-For a full guide to conditional syntax and examples, see [docs/conditional-templates.md](docs/conditional-templates.md).
-
-### Prompt Composition
-
-You can include content from other prompt files using the include directive:
-
-```markdown
-{{include "templates/common_header.md"}}
-
-# Main Content
-
-Your specific prompt content goes here.
-
-{{include "templates/common_footer.md"}}
-```
 
 ### Managing Prompts
 
@@ -188,35 +133,25 @@ CronAI includes CLI commands for prompt management:
 # List all prompts
 cronai prompt list
 
-# List prompts in a specific category
-cronai prompt list --category system
-
 # Search for prompts
 cronai prompt search "health check"
-cronai prompt search --content --query "CPU"
 
 # Show prompt details
-cronai prompt show system/system_health --vars
+cronai prompt show system/system_health
 
 # Preview a prompt with variables
 cronai prompt preview system/system_health --vars "cpu_usage=85,memory_usage=70"
-```
-
-For more details, see [docs/prompt-management.md](docs/prompt-management.md).
+```text
 
 ## Model Parameters
 
-You can configure model-specific parameters to fine-tune AI model behavior. The supported parameters include:
+You can configure model-specific parameters to fine-tune AI model behavior. Basic supported parameters:
 
 | Parameter          | Type   | Range        | Description                                        |
-|--------------------|--------|-------------|----------------------------------------------------|
+|--------------------|--------|-------------|-------------------------------------------------|
 | temperature        | float  | 0.0 - 1.0   | Controls response randomness (higher = more random) |
 | max_tokens         | int    | > 0         | Maximum number of tokens to generate                |
-| top_p              | float  | 0.0 - 1.0   | Nucleus sampling parameter                         |
-| frequency_penalty  | float  | -2.0 - 2.0  | Penalize frequent tokens                           |
-| presence_penalty   | float  | -2.0 - 2.0  | Penalize new tokens based on presence              |
 | model              | string | -           | Specific model version to use                      |
-| system_message     | string | -           | System message for the model                       |
 
 ### Default Model Versions
 
@@ -229,91 +164,74 @@ You can configure model-specific parameters to fine-tune AI model behavior. The 
 You can configure model parameters in three ways (in order of precedence):
 
 1. **Task-specific parameters in the config file**:
-   ```
-   0 8 * * * claude product_manager slack-pm-channel model_params:temperature=0.8,model=claude-3-opus-20240229
-   ```
+
+   ```text
+   0 8 * * * claude product_manager file-output.txt model_params:temperature=0.8,model=claude-3-opus-20240229
+   ```text
 
 2. **Environment variables**:
-   ```
+
+   ```text
    MODEL_TEMPERATURE=0.7
    MODEL_MAX_TOKENS=2048
    OPENAI_MODEL=gpt-4
    CLAUDE_MODEL=claude-3-opus-20240229
-   ```
+   ```text
 
 3. **Command line parameters** (with the `run` command):
-   ```bash
-   cronai run --model openai --prompt weekly_report --processor email-team@company.com --model-params "temperature=0.5,model=gpt-4"
-   ```
 
-For more details, see [docs/model-parameters.md](docs/model-parameters.md).
+   ```bash
+   cronai run --model openai --prompt weekly_report --processor file-report.txt --model-params "temperature=0.5,model=gpt-4"
+   ```text
 
 ## Response Processors
 
-CronAI supports various response processors:
+CronAI currently supports these response processors in the MVP:
 
-- **Slack**: `slack-channelname` - Send the response to a Slack channel
-- **Email**: `email-address@example.com` - Send the response via email
-- **Webhook**: `webhook-monitoring` - Send the response to a webhook
-- **File**: `log-to-file` or `file` - Save the response to a file in the logs directory
+- **File**: `file-path/to/file.txt` - Save the response to a file
+- **GitHub**: `github-issue:owner/repo` or `github-comment:owner/repo#123` - Create issues or comments
+- **Console**: `console` - Display the response in the console
 
-### Response Templating
+### GitHub Processor
 
-CronAI includes a powerful templating system for formatting responses. This allows you to:
+The GitHub processor allows you to create issues and add comments to existing issues.
 
-- Apply consistent formatting across different output channels
-- Create custom templates for different response types
-- Include model metadata and execution context in the output
-- Use conditional logic to customize output format based on content
+#### Format
 
-The template system uses Go's `text/template` syntax and supports different template formats for each processor type. You can specify a template in your configuration:
+```text
+github-action:owner/repo
+```text
 
-```
-# Format: timestamp model prompt response_processor [template] [variables]
-0 9 1 * * claude report_template email-team@company.com monthly_report reportType=Monthly
-```
+Where `action` can be:
 
-In this example, `monthly_report` is the template name, which will look for the appropriate template files based on the processor type (e.g., `monthly_report_subject.tmpl`, `monthly_report_html.tmpl`, etc. for email).
+- `issue` - Create a new issue
+- `comment` - Add a comment to an existing issue (format: `comment:owner/repo#issue_number`)
 
-For full details on the templating system, see [docs/response-templating.md](docs/response-templating.md).
+#### Examples
+
+```text
+# Create a GitHub issue
+0 9 * * 1 claude weekly_report github-issue:myorg/myrepo
+
+# Add a comment to issue #123  
+0 10 * * * claude issue_analysis github-comment:myorg/myrepo#123
+```text
 
 ## Environment Variables
 
-Create a `.env` file with your API keys and configuration (see [.env.example](.env.example)):
+Create a `.env` file with your API keys and configuration:
 
-```
+```text
+# Model API Keys (at least one is required)
 OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_claude_key
 GOOGLE_API_KEY=your_gemini_key
 
-# Response processor configs
-SMTP_SERVER=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=user
-SMTP_PASSWORD=pass
-SLACK_TOKEN=your_slack_token
-WEBHOOK_URL=https://example.com/webhook
-```
+# GitHub configuration
+GITHUB_TOKEN=your_github_token
+```text
 
 ## Usage
-
-### Getting Help
-
-CronAI includes comprehensive help documentation built into the CLI:
-
-```bash
-# Show general help and available commands
-cronai help
-
-# Get detailed help for any command
-cronai help start
-cronai help run
-cronai help prompt
-
-# Quick command help
-cronai run --help
-cronai prompt list --help
-```
 
 ### Common Commands
 
@@ -325,10 +243,10 @@ cronai start
 cronai start --config /path/to/config
 
 # Run a single task immediately
-cronai run --model claude --prompt product_manager --processor slack-pm-channel
+cronai run --model openai --prompt system_health --processor file-health.log
 
-# Run a task with template and variables
-cronai run --model claude --prompt report_template --processor email-execs@company.com --template monthly_report --vars "reportType=Weekly,date=2025-05-11,project=CronAI"
+# Run a task with variables
+cronai run --model claude --prompt report_template --processor github-issue:myorg/myrepo --vars "reportType=Weekly,date=2025-05-11,project=CronAI"
 
 # List all scheduled tasks
 cronai list
@@ -337,114 +255,32 @@ cronai list
 cronai prompt list
 cronai prompt search "monitoring"
 cronai prompt show system/system_health
-cronai prompt preview reports/monthly_report --vars "month=May,year=2025,team=Engineering"
-```
+```text
 
 ## Running as a systemd Service
 
 The application can be run as a systemd service for automatic startup and management. See [docs/systemd.md](docs/systemd.md) for detailed setup instructions.
 
+## Documentation
+
+CronAI includes comprehensive documentation in the `docs/` directory:
+
+### User Documentation
+
+- [Installation and Configuration](docs/systemd.md) - Systemd service setup guide
+- [Model Parameters](docs/model-parameters.md) - Details on configuring AI models
+- [Prompt Management](docs/prompt-management.md) - Working with prompt files
+
+### Developer Documentation
+
+- [Architecture Overview](docs/architecture.md) - System design and components
+- [Extension Points](docs/extension-points.md) - How to extend CronAI
+- [API Documentation](docs/api.md) - API endpoints (planned for future versions)
+- [Limitations and Improvements](docs/limitations-and-improvements.md) - Current limitations and future roadmap
+
 ## Development
 
-CronAI is designed to be extended with additional models and processors. See the [CLAUDE.md](CLAUDE.md) file for development information.
-
-### Processor API
-
-CronAI provides a standardized API for response processors to enable consistent development of both built-in and custom processors. This API includes:
-
-#### Processor Interface
-
-All processors implement the following interface:
-
-```go
-type Processor interface {
-    // Process handles the model response with optional template
-    Process(response *models.ModelResponse, templateName string) error
-    
-    // Validate checks if the processor is properly configured
-    Validate() error
-    
-    // GetType returns the processor type identifier
-    GetType() string
-    
-    // GetConfig returns the processor configuration
-    GetConfig() ProcessorConfig
-}
-```
-
-#### Creating Custom Processors
-
-To create a custom processor:
-
-1. Implement the `Processor` interface
-2. Register your processor with the global registry
-3. Configure any required environment variables
-
-Example:
-
-```go
-type CustomProcessor struct {
-    config ProcessorConfig
-}
-
-func NewCustomProcessor(config ProcessorConfig) (Processor, error) {
-    return &CustomProcessor{config: config}, nil
-}
-
-func (c *CustomProcessor) Process(response *models.ModelResponse, templateName string) error {
-    // Implement your processing logic here
-    return nil
-}
-
-func (c *CustomProcessor) Validate() error {
-    // Validate configuration
-    return nil
-}
-
-func (c *CustomProcessor) GetType() string {
-    return "custom"
-}
-
-func (c *CustomProcessor) GetConfig() ProcessorConfig {
-    return c.config
-}
-
-// Register the processor
-func init() {
-    registry := processor.GetRegistry()
-    registry.RegisterProcessor("custom", NewCustomProcessor)
-}
-```
-
-#### Environment Variables
-
-All processors use a consistent environment variable naming scheme:
-
-```bash
-# Slack processor
-SLACK_TOKEN=xoxb-your-slack-token
-
-# Email processor
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=user@example.com
-SMTP_PASSWORD=your-password
-SMTP_FROM=noreply@example.com
-
-# Webhook processor
-WEBHOOK_URL=https://api.example.com/webhook
-WEBHOOK_METHOD=POST
-WEBHOOK_HEADERS=Authorization:Bearer token,Content-Type:application/json
-
-# File processor
-LOGS_DIRECTORY=/var/log/cronai
-
-# Type-specific webhook configuration
-WEBHOOK_URL_MONITORING=https://monitoring.example.com/webhook
-WEBHOOK_METHOD_MONITORING=PUT
-```
-
-For more detailed information about the processor architecture, see [CLAUDE.md](CLAUDE.md).
+CronAI is designed to be extended with additional models and processors. See the [CONTRIBUTING.md](CONTRIBUTING.md) file for development guidelines and the [docs/](docs/) directory for technical documentation.
 
 ## License
 

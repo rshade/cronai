@@ -19,7 +19,7 @@ The log level can be configured through the `LOG_LEVEL` environment variable:
 ```bash
 export LOG_LEVEL=DEBUG
 ./cronai start
-```
+```text
 
 Valid values for `LOG_LEVEL` are: `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`.
 
@@ -37,11 +37,11 @@ CronAI uses structured logging to provide context for log messages. Each log mes
 
 Example log output:
 
-```
+```text
 [2025-05-18T14:30:45Z] [INFO] (service.go:40) Starting CronAI service | config_path=/etc/cronai/cronai.config
 [2025-05-18T14:30:45Z] [INFO] (service.go:207) Successfully parsed configuration file | path=/etc/cronai/cronai.config, task_count=3
 [2025-05-18T14:30:45Z] [INFO] (service.go:70) Scheduled task | task_index=0, schedule=0 9 * * 1-5, model=claude, prompt=weekly_report, processor=email-team@company.com
-```
+```text
 
 ## JSON Logging
 
@@ -50,14 +50,14 @@ For integration with log management systems, CronAI supports JSON-formatted logs
 ```bash
 export LOG_FORMAT=JSON
 ./cronai start
-```
+```text
 
 Example JSON log output:
 
 ```json
 {"time":"2025-05-18T14:30:45Z","level":"INFO","message":"Starting CronAI service","file":"service.go","line":40,"metadata":{"config_path":"/etc/cronai/cronai.config"}}
 {"time":"2025-05-18T14:30:45Z","level":"INFO","message":"Successfully parsed configuration file","file":"service.go","line":207,"metadata":{"path":"/etc/cronai/cronai.config","task_count":3}}
-```
+```text
 
 ## Error Handling
 
@@ -78,7 +78,7 @@ By default, logs are written to STDOUT. To direct logs to a file, use the `LOG_F
 ```bash
 export LOG_FILE=/var/log/cronai.log
 ./cronai start
-```
+```text
 
 If not specified, logs are written to STDOUT.
 
@@ -89,6 +89,6 @@ For troubleshooting issues, set the log level to DEBUG:
 ```bash
 export LOG_LEVEL=DEBUG
 ./cronai start
-```
+```text
 
 This will provide detailed logs of all operations, including prompt loading, model execution, and response processing.

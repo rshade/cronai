@@ -1,8 +1,9 @@
 package models
 
 import (
+	"errors"
 	"fmt"
-	"strings"
+	"os"
 	"testing"
 	"time"
 
@@ -17,16 +18,19 @@ type MockModelClient struct {
 	Content      string
 	Model        string
 	ExecuteCount int
+	Variables    map[string]string
 }
 
-func (m *MockModelClient) Execute(promptContent string) (*ModelResponse, error) {
+func (m *MockModelClient) Execute(_ string) (*ModelResponse, error) {
 	m.ExecuteCount++
 	if m.ShouldFail {
 		return nil, fmt.Errorf("%s", m.ErrorMessage)
 	}
 	return &ModelResponse{
-		Content: m.Content,
-		Model:   m.Model,
+		Content:   m.Content,
+		Model:     m.Model,
+		Variables: m.Variables,
+		Timestamp: time.Now(),
 	}, nil
 }
 
@@ -39,18 +43,146 @@ func TestExecuteModelBasic(t *testing.T) {
 		// Assertions
 		assert.Error(t, err)
 		assert.Nil(t, response)
-		assert.Contains(t, err.Error(), "invalid model parameters")
+		assert.Contains(t, err.Error(), "temperature must be between 0 and 1")
+	})
+
+	t.Run("should execute successfully with valid config", func(t *testing.T) {
+		// Set up env vars for the test
+		oldOpenAIKey := os.Getenv("OPENAI_API_KEY")
+		if err := os.Setenv("OPENAI_API_KEY", "test-key"); err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			if err := os.Setenv("OPENAI_API_KEY", oldOpenAIKey); err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		// Mock the createModelClient function
+		originalCreateModelClient := createModelClient
+		createModelClient = func(_ string, _ *config.ModelConfig) (ModelClient, error) {
+			return &MockModelClient{
+				Content: "Test response",
+				Model:   "test-model",
+			}, nil
+		}
+		defer func() { createModelClient = originalCreateModelClient }()
+
+		// Execute
+		response, err := ExecuteModel("openai", "test prompt", nil, "temperature=0.5")
+
+		// Assertions
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, "Test response", response.Content)
+	})
+
+	t.Run("should handle variables correctly", func(t *testing.T) {
+		// Set up env vars for the test
+		oldOpenAIKey := os.Getenv("OPENAI_API_KEY")
+		if err := os.Setenv("OPENAI_API_KEY", "test-key"); err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			if err := os.Setenv("OPENAI_API_KEY", oldOpenAIKey); err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		// Mock the createModelClient function
+		originalCreateModelClient := createModelClient
+		createModelClient = func(_ string, _ *config.ModelConfig) (ModelClient, error) {
+			return &MockModelClient{
+				Content: "Test response",
+				Model:   "test-model",
+			}, nil
+		}
+		defer func() { createModelClient = originalCreateModelClient }()
+
+		// Execute with variables
+		variables := map[string]string{"key": "value"}
+		response, err := ExecuteModel("openai", "test prompt", variables, "")
+
+		// Assertions
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, variables, response.Variables)
 	})
 }
 
-// TestFallbackMechanism tests the fallback mechanism by testing the executeWithFallback function directly
-func TestFallbackMechanism(t *testing.T) {
-	// Create a simple Fallback test that mimics the behavior without needing to mock the createModelClient function
-	primaryModel := "openai"
-	promptContent := "test prompt"
-	variables := map[string]string{"var": "value"}
+// TestCreateModelClient tests the createModelClient function
+func TestCreateModelClient(t *testing.T) {
+	// No need to store original function since we'll use defaultCreateModelClient directly
 
-	// Create a model config with fallback model and max retries
+	t.Run("should fail for unknown model", func(t *testing.T) {
+		client, err := defaultCreateModelClient("unknown", nil)
+		assert.Error(t, err)
+		assert.Nil(t, client)
+		assert.Contains(t, err.Error(), "unsupported model")
+	})
+
+	t.Run("should create OpenAI client", func(t *testing.T) {
+		// Set up env vars for the test
+		oldOpenAIKey := os.Getenv("OPENAI_API_KEY")
+		if err := os.Setenv("OPENAI_API_KEY", "test-key"); err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			if err := os.Setenv("OPENAI_API_KEY", oldOpenAIKey); err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		client, err := defaultCreateModelClient("openai", &config.ModelConfig{})
+		assert.NoError(t, err)
+		assert.NotNil(t, client)
+		assert.IsType(t, &OpenAIClient{}, client)
+	})
+
+	t.Run("should create Claude client", func(t *testing.T) {
+		// Set up env vars for the test
+		oldClaudeKey := os.Getenv("ANTHROPIC_API_KEY")
+		if err := os.Setenv("ANTHROPIC_API_KEY", "test-key"); err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			if err := os.Setenv("ANTHROPIC_API_KEY", oldClaudeKey); err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		client, err := defaultCreateModelClient("claude", &config.ModelConfig{})
+		assert.NoError(t, err)
+		assert.NotNil(t, client)
+		assert.IsType(t, &ClaudeClient{}, client)
+	})
+
+	t.Run("should create Gemini client", func(t *testing.T) {
+		// Set up env vars for the test
+		oldGeminiKey := os.Getenv("GOOGLE_API_KEY")
+		if err := os.Setenv("GOOGLE_API_KEY", "test-key"); err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			if err := os.Setenv("GOOGLE_API_KEY", oldGeminiKey); err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		client, err := defaultCreateModelClient("gemini", &config.ModelConfig{})
+		assert.NoError(t, err)
+		assert.NotNil(t, client)
+		assert.IsType(t, &GeminiClient{}, client)
+	})
+}
+
+// TestFallbackMechanism tests the fallback mechanism
+func TestFallbackMechanism(t *testing.T) {
+	// Store original function to restore later
+	originalCreateModelClient := createModelClient
+	defer func() { createModelClient = originalCreateModelClient }()
+
+	// Create a model config with fallback models and max retries
 	modelConfig := &config.ModelConfig{
 		Temperature:      0.7,
 		MaxTokens:        1024,
@@ -73,150 +205,288 @@ func TestFallbackMechanism(t *testing.T) {
 		},
 	}
 
-	// Test with openai failing, claude succeeding
-	// First we create a simulation of what would happen if createModelClient returned these clients
-	clients := map[string]ModelClient{
-		"openai": &MockModelClient{ShouldFail: true, ErrorMessage: "openai error", Model: "openai"},
-		"claude": &MockModelClient{ShouldFail: false, Content: "Claude response", Model: "claude"},
-		"gemini": &MockModelClient{ShouldFail: true, ErrorMessage: "should not be called", Model: "gemini"},
-	}
+	t.Run("should succeed with primary model", func(t *testing.T) {
+		// Mock createModelClient to return successful primary model
+		createModelClient = func(modelName string, _ *config.ModelConfig) (ModelClient, error) {
+			if modelName == "openai" {
+				return &MockModelClient{
+					Content: "OpenAI success",
+					Model:   "openai",
+				}, nil
+			}
+			return nil, errors.New("should not be called")
+		}
 
-	// Now we'll create a test executeWithFallback that uses our mock clients
-	result := simulateFallback(primaryModel, promptContent, variables, modelConfig, clients)
+		result := executeWithFallback("openai", "test prompt", nil, modelConfig, "test")
 
-	// Assertions for successful fallback
-	if result.Response == nil {
-		t.Errorf("Expected fallback to succeed with claude, but all models failed")
-	} else {
-		assert.Equal(t, "Claude response", result.Response.Content)
-		assert.Equal(t, "claude", result.FinalModel)
-		// We expect to have errors from previous failed attempts
-		assert.GreaterOrEqual(t, len(result.Errors), 1)
-		// At least one error should be from OpenAI
-		foundOpenAIError := false
-		for _, err := range result.Errors {
-			if err.Model == "openai" && strings.Contains(err.Message, "openai error") {
-				foundOpenAIError = true
+		assert.NotNil(t, result.Response)
+		assert.Equal(t, "OpenAI success", result.Response.Content)
+		assert.Equal(t, "openai", result.FinalModel)
+		assert.Empty(t, result.Errors)
+	})
+
+	t.Run("should fallback to claude when openai fails", func(t *testing.T) {
+		// Mock createModelClient
+		createModelClient = func(modelName string, _ *config.ModelConfig) (ModelClient, error) {
+			switch modelName {
+			case "openai":
+				return &MockModelClient{
+					ShouldFail:   true,
+					ErrorMessage: "openai error",
+					Model:        "openai",
+				}, nil
+			case "claude":
+				return &MockModelClient{
+					Content: "Claude success",
+					Model:   "claude",
+				}, nil
+			default:
+				return nil, fmt.Errorf("unexpected model: %s", modelName)
 			}
 		}
-		assert.True(t, foundOpenAIError, "Should contain at least one openai error")
-	}
 
-	// Test all models failing
-	clientsFailing := map[string]ModelClient{
-		"openai": &MockModelClient{ShouldFail: true, ErrorMessage: "openai error", Model: "openai"},
-		"claude": &MockModelClient{ShouldFail: true, ErrorMessage: "claude error", Model: "claude"},
-		"gemini": &MockModelClient{ShouldFail: true, ErrorMessage: "gemini error", Model: "gemini"},
-	}
+		result := executeWithFallback("openai", "test prompt", nil, modelConfig, "test")
 
-	// Now we'll create a test executeWithFallback that uses our failing mock clients
-	resultFailing := simulateFallback(primaryModel, promptContent, variables, modelConfig, clientsFailing)
+		assert.NotNil(t, result.Response)
+		assert.Equal(t, "Claude success", result.Response.Content)
+		assert.Equal(t, "claude", result.FinalModel)
+		assert.Len(t, result.Errors, 2) // Two attempts for openai
+		assert.Equal(t, "openai", result.Errors[0].Model)
+		assert.Equal(t, "openai", result.Errors[1].Model)
+	})
 
-	// Assertions for all failures
-	assert.Nil(t, resultFailing.Response)
-	assert.Equal(t, 6, len(resultFailing.Errors)) // 3 models * 2 retries each = 6 errors
-
-	// Check each model has the right errors and retry counts
-	openaiErrors := 0
-	claudeErrors := 0
-	geminiErrors := 0
-
-	for _, err := range resultFailing.Errors {
-		switch err.Model {
-		case "openai":
-			openaiErrors++
-			assert.Contains(t, err.Message, "openai error")
-		case "claude":
-			claudeErrors++
-			assert.Contains(t, err.Message, "claude error")
-		case "gemini":
-			geminiErrors++
-			assert.Contains(t, err.Message, "gemini error")
+	t.Run("should try all fallbacks and fail if all fail", func(t *testing.T) {
+		// Mock createModelClient - all models fail
+		createModelClient = func(modelName string, _ *config.ModelConfig) (ModelClient, error) {
+			return &MockModelClient{
+				ShouldFail:   true,
+				ErrorMessage: fmt.Sprintf("%s error", modelName),
+				Model:        modelName,
+			}, nil
 		}
-	}
 
-	assert.Equal(t, 2, openaiErrors) // 2 retries for openai
-	assert.Equal(t, 2, claudeErrors) // 2 retries for claude
-	assert.Equal(t, 2, geminiErrors) // 2 retries for gemini
+		result := executeWithFallback("openai", "test prompt", nil, modelConfig, "test")
 
-	// Test default fallback sequence
-	emptyConfig := &config.ModelConfig{
-		Temperature:      0.7,
-		MaxTokens:        1024,
-		TopP:             1.0,
-		FrequencyPenalty: 0.0,
-		PresencePenalty:  0.0,
-		FallbackModels:   []string{}, // Empty to test default sequence
-		MaxRetries:       1,
-	}
+		assert.Nil(t, result.Response)
+		assert.Len(t, result.Errors, 6) // 2 attempts per model * 3 models
+		assert.Equal(t, "openai", result.Errors[0].Model)
+		assert.Equal(t, "openai", result.Errors[1].Model)
+		assert.Equal(t, "claude", result.Errors[2].Model)
+		assert.Equal(t, "claude", result.Errors[3].Model)
+		assert.Equal(t, "gemini", result.Errors[4].Model)
+		assert.Equal(t, "gemini", result.Errors[5].Model)
+	})
 
-	clientsDefaultFallback := map[string]ModelClient{
-		"openai": &MockModelClient{ShouldFail: true, ErrorMessage: "openai error", Model: "openai"},
-		"claude": &MockModelClient{ShouldFail: true, ErrorMessage: "claude error", Model: "claude"},
-		"gemini": &MockModelClient{ShouldFail: false, Content: "Gemini response", Model: "gemini"},
-	}
+	t.Run("should retry within the same model before trying fallbacks", func(t *testing.T) {
+		// Counter to track retry attempts for openai
+		openaiAttempts := 0
 
-	resultDefaultFallback := simulateFallback(primaryModel, promptContent, variables, emptyConfig, clientsDefaultFallback)
+		// Mock createModelClient - openai fails on first attempt
+		createModelClient = func(modelName string, _ *config.ModelConfig) (ModelClient, error) {
+			if modelName == "openai" {
+				openaiAttempts++
+				if openaiAttempts == 1 { // Fail on first attempt only
+					return &MockModelClient{
+						ShouldFail:   true,
+						ErrorMessage: "openai error",
+						Model:        "openai",
+					}, nil
+				}
+				return &MockModelClient{
+					Content: "OpenAI retry success",
+					Model:   "openai",
+				}, nil
+			}
+			return nil, fmt.Errorf("unexpected model: %s", modelName)
+		}
 
-	// Assertions for default fallback sequence
-	assert.NotNil(t, resultDefaultFallback.Response)
-	assert.Equal(t, "Gemini response", resultDefaultFallback.Response.Content)
-	assert.Equal(t, "gemini", resultDefaultFallback.FinalModel)
-	assert.Equal(t, 2, len(resultDefaultFallback.Errors)) // One for openai, one for claude
+		result := executeWithFallback("openai", "test prompt", nil, modelConfig, "test")
+
+		assert.NotNil(t, result.Response)
+		assert.Equal(t, "OpenAI retry success", result.Response.Content)
+		assert.Equal(t, "openai", result.FinalModel)
+		assert.Len(t, result.Errors, 1) // One failed attempt
+		assert.Equal(t, 2, openaiAttempts)
+	})
 }
 
-// simulateFallback simulates the executeWithFallback function using mock clients
-func simulateFallback(primaryModel string, promptContent string, variables map[string]string, modelConfig *config.ModelConfig, mockClients map[string]ModelClient) *ModelFallbackResult {
-	result := &ModelFallbackResult{
-		Errors: []ModelError{},
+// TestModelParameterParsing tests parameter parsing
+func TestModelParameterParsing(t *testing.T) {
+	tests := []struct {
+		name      string
+		params    string
+		expectErr bool
+		errMsg    string
+	}{
+		{
+			name:      "valid empty params",
+			params:    "",
+			expectErr: false,
+		},
+		{
+			name:      "valid single param",
+			params:    "temperature=0.7",
+			expectErr: false,
+		},
+		{
+			name:      "valid multiple params",
+			params:    "temperature=0.7,max_tokens=500",
+			expectErr: false,
+		},
+		{
+			name:      "valid nested model-specific params",
+			params:    "temperature=0.7,openai.model=gpt-4",
+			expectErr: false,
+		},
+		{
+			name:      "invalid param format (no value)",
+			params:    "temperature",
+			expectErr: true,
+			errMsg:    "invalid parameter format",
+		},
+		{
+			name:      "invalid param format (no equals)",
+			params:    "temperature 0.7",
+			expectErr: true,
+			errMsg:    "invalid parameter format",
+		},
+		{
+			name:      "invalid temperature value",
+			params:    "temperature=abc",
+			expectErr: true,
+			errMsg:    "invalid temperature value",
+		},
+		{
+			name:      "temperature too high",
+			params:    "temperature=2.0",
+			expectErr: true,
+			errMsg:    "temperature must be between 0 and 1",
+		},
+		{
+			name:      "temperature negative",
+			params:    "temperature=-0.5",
+			expectErr: true,
+			errMsg:    "temperature must be between 0 and 1",
+		},
+		{
+			name:      "invalid max_tokens",
+			params:    "max_tokens=abc",
+			expectErr: true,
+			errMsg:    "invalid max_tokens value",
+		},
+		{
+			name:      "invalid top_p",
+			params:    "top_p=2.0",
+			expectErr: true,
+			errMsg:    "top_p must be between 0 and 1",
+		},
 	}
 
-	// Build the list of models to try (primary + fallbacks)
-	modelsToTry := []string{primaryModel}
-
-	// Add configured fallback models
-	if len(modelConfig.FallbackModels) > 0 {
-		modelsToTry = append(modelsToTry, modelConfig.FallbackModels...)
-	} else {
-		// Default fallback sequence if not configured
-		modelsToTry = append(modelsToTry, getDefaultFallbackSequence(primaryModel)...)
-	}
-
-	// Try each model with retries
-	for _, modelName := range modelsToTry {
-		client, exists := mockClients[modelName]
-		if !exists {
-			// Simulate client creation failure
-			result.Errors = append(result.Errors, ModelError{
-				Model:   modelName,
-				Message: "failed to create client: mock client not found",
-				Time:    time.Now(),
-			})
-			continue
-		}
-
-		for retry := 0; retry < modelConfig.MaxRetries; retry++ {
-			// Execute the prompt with mock client
-			response, err := client.Execute(promptContent)
-			if err != nil {
-				result.Errors = append(result.Errors, ModelError{
-					Model:   modelName,
-					Message: "execution failed: " + err.Error(),
-					Err:     err,
-					Retry:   retry,
-				})
-				continue
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse parameters like ExecuteModel does
+			modelConfig := config.DefaultModelConfig()
+			modelConfig.LoadFromEnvironment()
+			var err error
+			if tt.params != "" {
+				params, parseErr := config.ParseModelParams(tt.params)
+				if parseErr == nil {
+					err = modelConfig.UpdateFromParams(params)
+				} else {
+					err = parseErr
+				}
 			}
 
-			// Success! Add metadata and return
-			response.Variables = variables
-			response.ExecutionID = fmt.Sprintf("%s-test-%d", modelName, retry)
-			result.Response = response
-			result.FinalModel = modelName
+			if tt.expectErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
 
-			return result
-		}
+// TestValidateConfiguration tests configuration validation
+func TestValidateConfiguration(t *testing.T) {
+	tests := []struct {
+		name      string
+		setup     func(config *config.ModelConfig)
+		expectErr bool
+		errMsg    string
+	}{
+		{
+			name:      "valid basic config",
+			setup:     func(_ *config.ModelConfig) {},
+			expectErr: false,
+		},
+		{
+			name: "invalid temperature (too high)",
+			setup: func(config *config.ModelConfig) {
+				config.Temperature = 2.0
+			},
+			expectErr: true,
+			errMsg:    "temperature must be between 0 and 1",
+		},
+		{
+			name: "invalid temperature (too low)",
+			setup: func(config *config.ModelConfig) {
+				config.Temperature = -0.5
+			},
+			expectErr: true,
+			errMsg:    "temperature must be between 0 and 1",
+		},
+		{
+			name: "invalid top_p (too high)",
+			setup: func(config *config.ModelConfig) {
+				config.TopP = 2.0
+			},
+			expectErr: true,
+			errMsg:    "top_p must be between 0 and 1",
+		},
+		{
+			name: "invalid top_p (too low)",
+			setup: func(config *config.ModelConfig) {
+				config.TopP = -0.5
+			},
+			expectErr: true,
+			errMsg:    "top_p must be between 0 and 1",
+		},
+		{
+			name: "invalid frequency penalty (too high)",
+			setup: func(config *config.ModelConfig) {
+				config.FrequencyPenalty = 3.0
+			},
+			expectErr: true,
+			errMsg:    "frequency_penalty must be between -2.0 and 2.0",
+		},
+		{
+			name: "invalid presence penalty (too low)",
+			setup: func(config *config.ModelConfig) {
+				config.PresencePenalty = -3.0
+			},
+			expectErr: true,
+			errMsg:    "presence_penalty must be between -2.0 and 2.0",
+		},
 	}
 
-	return result
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := config.DefaultModelConfig()
+			tt.setup(config)
+
+			err := config.Validate()
+
+			if tt.expectErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

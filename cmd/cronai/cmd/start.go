@@ -30,7 +30,7 @@ Examples:
 
   # Run in background (systemd)
   sudo systemctl start cronai`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Get config file path
 		configPath := cfgFile
 		if configPath == "" {

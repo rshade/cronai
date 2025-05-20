@@ -1,9 +1,13 @@
 # Conditional Prompt Example
 
 {{if hasVar .Variables "systemType"}}
+
 ## System: {{.Variables.systemType}}
+
 {{else}}
+
 ## System: Unknown
+
 {{end}}
 
 {{if eq (getVar .Variables "environment" "") "production"}}
@@ -39,6 +43,7 @@ Your task is to analyze the following information and provide recommendations:
 {{.Variables.userQuestion}}
 
 Please structure your response with:
+
 1. Analysis of current state
 2. Identified issues
 3. Recommendations

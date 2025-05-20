@@ -453,7 +453,7 @@ func TestTemplateLoading(t *testing.T) {
 	}
 
 	// Execute the loaded template
-	data := template.TemplateData{
+	data := template.Data{
 		Content: "Test content",
 	}
 	result, err := manager.Execute("test_template", data)

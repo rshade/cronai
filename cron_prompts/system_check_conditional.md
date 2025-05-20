@@ -1,13 +1,19 @@
 # System Health Check with Conditional Logic
 
 {{if eq (getVar .Variables "role" "analyst") "admin"}}
+
 ## Admin System Health Check
+
 You are conducting a detailed system health check with admin privileges. This check should be thorough and include all system metrics.
 {{else if eq (getVar .Variables "role" "analyst") "operator"}}
+
 ## Operator System Health Check
+
 You are conducting a system health check with operator privileges. Focus on operational metrics and indicators.
 {{else}}
+
 ## General System Health Check
+
 You are conducting a basic system health check. Focus on high-level indicators and summary information.
 {{end}}
 
@@ -22,8 +28,11 @@ Target environment: {{.Variables.environment}}
 {{end}}
 
 {{if eq (getVar .Variables "includePerformance" "true") "true"}}
+
 ## Performance Analysis
+
 Include a detailed analysis of system performance metrics:
+
 - CPU utilization
 - Memory usage
 - Disk I/O
@@ -32,12 +41,16 @@ Include a detailed analysis of system performance metrics:
 {{end}}
 
 {{if eq (getVar .Variables "includeCapacity" "false") "true"}}
+
 ## Capacity Planning
+
 Include capacity planning recommendations based on current usage trends.
 {{end}}
 
 {{if gt (getVar .Variables "criticalErrors" "0") "0"}}
+
 ## Critical Issues
+
 {{if gt .Variables.criticalErrors "5"}}
 URGENT: Multiple critical errors detected ({{.Variables.criticalErrors}}). Immediate investigation required.
 {{else}}
@@ -48,7 +61,9 @@ No critical errors detected in this period.
 {{end}}
 
 {{if hasVar .Variables "customMetrics"}}
+
 ## Custom Metrics
+
 Include analysis of the following custom metrics: {{.Variables.customMetrics}}
 {{end}}
 
@@ -60,7 +75,9 @@ Include analysis of the following custom metrics: {{.Variables.customMetrics}}
 4. Prioritize recommendations based on impact and urgency
 
 {{if hasVar .Variables "additionalInstructions"}}
+
 ## Additional Instructions
+
 {{.Variables.additionalInstructions}}
 {{end}}
 

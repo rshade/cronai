@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -63,13 +64,25 @@ func TestLoadFromEnvironment(t *testing.T) {
 
 	// Restore environment variables after test
 	defer func() {
-		// Ignoring errors in defer as there's not much we can do about them
-		_ = os.Setenv("MODEL_TEMPERATURE", origTemperature)
-		_ = os.Setenv("MODEL_MAX_TOKENS", origMaxTokens)
-		_ = os.Setenv("OPENAI_MODEL", origOpenAIModel)
-		_ = os.Setenv("CLAUDE_MODEL", origClaudeModel)
-		_ = os.Setenv("GEMINI_MODEL", origGeminiModel)
-		_ = os.Setenv("GEMINI_SAFETY_SETTINGS", origSafetySettings)
+		// Use t.Logf for errors in cleanup functions
+		if err := os.Setenv("MODEL_TEMPERATURE", origTemperature); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("MODEL_MAX_TOKENS", origMaxTokens); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("OPENAI_MODEL", origOpenAIModel); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("CLAUDE_MODEL", origClaudeModel); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("GEMINI_MODEL", origGeminiModel); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
+		if err := os.Setenv("GEMINI_SAFETY_SETTINGS", origSafetySettings); err != nil {
+			t.Logf("Failed to restore environment variable: %v", err)
+		}
 	}()
 
 	// Create and load config from environment
@@ -100,6 +113,243 @@ func TestLoadFromEnvironment(t *testing.T) {
 	}
 	if !reflect.DeepEqual(config.GeminiConfig.SafetySettings, expectedSettings) {
 		t.Errorf("Expected safety settings %v, got %v", expectedSettings, config.GeminiConfig.SafetySettings)
+	}
+}
+
+func TestLoadFromEnvironmentWithErrors(t *testing.T) {
+	// Test invalid environment variable values
+	testCases := []struct {
+		name      string
+		envVar    string
+		value     string
+		setupFunc func() func()
+	}{
+		{
+			name:   "invalid temperature",
+			envVar: "MODEL_TEMPERATURE",
+			value:  "invalid",
+			setupFunc: func() func() {
+				orig := os.Getenv("MODEL_TEMPERATURE")
+				if err := os.Setenv("MODEL_TEMPERATURE", "invalid"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_TEMPERATURE", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "invalid max tokens",
+			envVar: "MODEL_MAX_TOKENS",
+			value:  "not_a_number",
+			setupFunc: func() func() {
+				orig := os.Getenv("MODEL_MAX_TOKENS")
+				if err := os.Setenv("MODEL_MAX_TOKENS", "not_a_number"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_MAX_TOKENS", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "invalid top_p",
+			envVar: "MODEL_TOP_P",
+			value:  "abc",
+			setupFunc: func() func() {
+				orig := os.Getenv("MODEL_TOP_P")
+				if err := os.Setenv("MODEL_TOP_P", "abc"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_TOP_P", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "invalid frequency penalty",
+			envVar: "MODEL_FREQUENCY_PENALTY",
+			value:  "invalid",
+			setupFunc: func() func() {
+				orig := os.Getenv("MODEL_FREQUENCY_PENALTY")
+				if err := os.Setenv("MODEL_FREQUENCY_PENALTY", "invalid"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_FREQUENCY_PENALTY", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "invalid presence penalty",
+			envVar: "MODEL_PRESENCE_PENALTY",
+			value:  "invalid",
+			setupFunc: func() func() {
+				orig := os.Getenv("MODEL_PRESENCE_PENALTY")
+				if err := os.Setenv("MODEL_PRESENCE_PENALTY", "invalid"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_PRESENCE_PENALTY", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "invalid max retries",
+			envVar: "MODEL_MAX_RETRIES",
+			value:  "invalid",
+			setupFunc: func() func() {
+				orig := os.Getenv("MODEL_MAX_RETRIES")
+				if err := os.Setenv("MODEL_MAX_RETRIES", "invalid"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_MAX_RETRIES", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "fallback models",
+			envVar: "MODEL_FALLBACK_MODELS",
+			value:  "claude|openai|gemini",
+			setupFunc: func() func() {
+				orig := os.Getenv("MODEL_FALLBACK_MODELS")
+				if err := os.Setenv("MODEL_FALLBACK_MODELS", "claude|openai|gemini"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("MODEL_FALLBACK_MODELS", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "openai system message",
+			envVar: "OPENAI_SYSTEM_MESSAGE",
+			value:  "OpenAI system message",
+			setupFunc: func() func() {
+				orig := os.Getenv("OPENAI_SYSTEM_MESSAGE")
+				if err := os.Setenv("OPENAI_SYSTEM_MESSAGE", "OpenAI system message"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("OPENAI_SYSTEM_MESSAGE", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "claude system message",
+			envVar: "CLAUDE_SYSTEM_MESSAGE",
+			value:  "Claude system message",
+			setupFunc: func() func() {
+				orig := os.Getenv("CLAUDE_SYSTEM_MESSAGE")
+				if err := os.Setenv("CLAUDE_SYSTEM_MESSAGE", "Claude system message"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				return func() {
+					if err := os.Setenv("CLAUDE_SYSTEM_MESSAGE", orig); err != nil {
+						t.Logf("Failed to restore environment variable: %v", err)
+					}
+				}
+			},
+		},
+		{
+			name:   "all environment variables",
+			envVar: "ALL",
+			value:  "various",
+			setupFunc: func() func() {
+				// Save all originals
+				originals := map[string]string{
+					"MODEL_TOP_P":             os.Getenv("MODEL_TOP_P"),
+					"MODEL_FREQUENCY_PENALTY": os.Getenv("MODEL_FREQUENCY_PENALTY"),
+					"MODEL_PRESENCE_PENALTY":  os.Getenv("MODEL_PRESENCE_PENALTY"),
+					"MODEL_MAX_RETRIES":       os.Getenv("MODEL_MAX_RETRIES"),
+				}
+
+				// Set new values
+				if err := os.Setenv("MODEL_TOP_P", "0.9"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				if err := os.Setenv("MODEL_FREQUENCY_PENALTY", "0.5"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				if err := os.Setenv("MODEL_PRESENCE_PENALTY", "0.5"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+				if err := os.Setenv("MODEL_MAX_RETRIES", "3"); err != nil {
+					t.Fatalf("Failed to set environment variable: %v", err)
+				}
+
+				return func() {
+					for k, v := range originals {
+						if err := os.Setenv(k, v); err != nil {
+							t.Logf("Failed to restore environment variable: %v", err)
+						}
+					}
+				}
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cleanup := tc.setupFunc()
+			defer cleanup()
+
+			config := DefaultModelConfig()
+			// LoadFromEnvironment should handle errors without panicking
+			config.LoadFromEnvironment()
+
+			// Check valid values were set correctly
+			if tc.name == "fallback models" {
+				expected := []string{"claude|openai|gemini"}
+				if !reflect.DeepEqual(config.FallbackModels, expected) {
+					t.Errorf("Expected fallback models %v, got %v", expected, config.FallbackModels)
+				}
+			}
+
+			if tc.name == "openai system message" {
+				if config.OpenAIConfig.SystemMessage != "OpenAI system message" {
+					t.Errorf("Expected OpenAI system message, got %s", config.OpenAIConfig.SystemMessage)
+				}
+			}
+
+			if tc.name == "claude system message" {
+				if config.ClaudeConfig.SystemMessage != "Claude system message" {
+					t.Errorf("Expected Claude system message, got %s", config.ClaudeConfig.SystemMessage)
+				}
+			}
+
+			if tc.name == "all environment variables" {
+				if config.TopP != 0.9 {
+					t.Errorf("Expected TopP 0.9, got %f", config.TopP)
+				}
+				if config.FrequencyPenalty != 0.5 {
+					t.Errorf("Expected FrequencyPenalty 0.5, got %f", config.FrequencyPenalty)
+				}
+				if config.PresencePenalty != 0.5 {
+					t.Errorf("Expected PresencePenalty 0.5, got %f", config.PresencePenalty)
+				}
+				if config.MaxRetries != 3 {
+					t.Errorf("Expected MaxRetries 3, got %d", config.MaxRetries)
+				}
+			}
+		})
 	}
 }
 
@@ -139,6 +389,15 @@ func TestParseModelParams(t *testing.T) {
 			name:    "invalid format",
 			input:   "temperature=0.8,invalid-format",
 			wantErr: true,
+		},
+		{
+			name:  "parameters with spaces",
+			input: "temperature = 0.8 , max_tokens = 2048",
+			expected: map[string]string{
+				"temperature": "0.8",
+				"max_tokens":  "2048",
+			},
+			wantErr: false,
 		},
 	}
 
@@ -320,6 +579,248 @@ func TestUpdateFromParams(t *testing.T) {
 	}
 }
 
+func TestUpdateFromParamsErrorHandling(t *testing.T) {
+	testCases := []struct {
+		name   string
+		params map[string]string
+	}{
+		{
+			name: "invalid max tokens",
+			params: map[string]string{
+				"max_tokens": "invalid",
+			},
+		},
+		{
+			name: "negative max tokens",
+			params: map[string]string{
+				"max_tokens": "-10",
+			},
+		},
+		{
+			name: "invalid top_p",
+			params: map[string]string{
+				"top_p": "invalid",
+			},
+		},
+		{
+			name: "out of range top_p low",
+			params: map[string]string{
+				"top_p": "-0.5",
+			},
+		},
+		{
+			name: "out of range top_p high",
+			params: map[string]string{
+				"top_p": "2.0",
+			},
+		},
+		{
+			name: "invalid frequency penalty",
+			params: map[string]string{
+				"frequency_penalty": "invalid",
+			},
+		},
+		{
+			name: "out of range frequency penalty high",
+			params: map[string]string{
+				"frequency_penalty": "3.0",
+			},
+		},
+		{
+			name: "out of range frequency penalty low",
+			params: map[string]string{
+				"frequency_penalty": "-3.0",
+			},
+		},
+		{
+			name: "invalid presence penalty",
+			params: map[string]string{
+				"presence_penalty": "invalid",
+			},
+		},
+		{
+			name: "out of range presence penalty high",
+			params: map[string]string{
+				"presence_penalty": "3.0",
+			},
+		},
+		{
+			name: "out of range presence penalty low",
+			params: map[string]string{
+				"presence_penalty": "-2.5",
+			},
+		},
+		{
+			name: "invalid max retries",
+			params: map[string]string{
+				"max_retries": "invalid",
+			},
+		},
+		{
+			name: "negative max retries",
+			params: map[string]string{
+				"max_retries": "-5",
+			},
+		},
+		{
+			name: "negative temperature",
+			params: map[string]string{
+				"temperature": "-0.5",
+			},
+		},
+		{
+			name: "fallback models with pipe separator",
+			params: map[string]string{
+				"fallback_models": "claude|openai|gemini",
+			},
+		},
+		{
+			name: "unhandled parameter ignored",
+			params: map[string]string{
+				"unknown_param": "value",
+			},
+		},
+		{
+			name: "model-specific unknown parameter ignored",
+			params: map[string]string{
+				"unknown.model": "value",
+			},
+		},
+		{
+			name: "invalid model prefix",
+			params: map[string]string{
+				"invalid.model": "value",
+			},
+		},
+		{
+			name: "unknown openai parameter",
+			params: map[string]string{
+				"openai.unknown": "value",
+			},
+		},
+		{
+			name: "unknown claude parameter",
+			params: map[string]string{
+				"claude.unknown": "value",
+			},
+		},
+		{
+			name: "unknown gemini parameter",
+			params: map[string]string{
+				"gemini.unknown": "value",
+			},
+		},
+		{
+			name: "invalid gemini safety setting format",
+			params: map[string]string{
+				"gemini.safety_setting": "invalid_format",
+			},
+		},
+		{
+			name: "nil model configs with model-specific params",
+			params: map[string]string{
+				"openai.model": "gpt-4",
+				"claude.model": "claude-3",
+				"gemini.model": "gemini-pro",
+			},
+		},
+		{
+			name: "alternative parameter names",
+			params: map[string]string{
+				"maxtokens":        "1000",
+				"topp":             "0.9",
+				"frequencypenalty": "0.5",
+				"presencepenalty":  "0.5",
+				"fallbackmodels":   "claude|openai",
+				"maxretries":       "3",
+				"systemmessage":    "Test message",
+			},
+		},
+		{
+			name: "openai system message alternative name",
+			params: map[string]string{
+				"openai.systemmessage": "OpenAI message",
+			},
+		},
+		{
+			name: "claude system message alternative name",
+			params: map[string]string{
+				"claude.systemmessage": "Claude message",
+			},
+		},
+		{
+			name: "gemini safety setting alternative name",
+			params: map[string]string{
+				"gemini.safetysetting": "harmful=block",
+			},
+		},
+		{
+			name: "model-specific with invalid format",
+			params: map[string]string{
+				"openai.model": "gpt-4",
+				"claude":       "invalid",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := DefaultModelConfig()
+
+			// For nil config test, set configs to nil
+			if tc.name == "nil model configs with model-specific params" {
+				config.OpenAIConfig = nil
+				config.ClaudeConfig = nil
+				config.GeminiConfig = nil
+			}
+
+			err := config.UpdateFromParams(tc.params)
+
+			// Most error cases should return error
+			if strings.Contains(tc.name, "invalid") || strings.Contains(tc.name, "negative") ||
+				strings.Contains(tc.name, "out of range") {
+				if err == nil && !strings.Contains(tc.name, "ignored") && !strings.Contains(tc.name, "unknown") && !strings.Contains(tc.name, "model-specific with") && !strings.Contains(tc.name, "model prefix") && !strings.Contains(tc.name, "safety setting format") {
+					t.Errorf("Expected error for %s, got nil", tc.name)
+				}
+			}
+
+			// Check fallback models were set correctly
+			if tc.name == "fallback models with pipe separator" && err == nil {
+				expected := []string{"claude", "openai", "gemini"}
+				if !reflect.DeepEqual(config.FallbackModels, expected) {
+					t.Errorf("Expected fallback models %v, got %v", expected, config.FallbackModels)
+				}
+			}
+
+			// Check alternative parameter names
+			if tc.name == "alternative parameter names" && err == nil {
+				if config.MaxTokens != 1000 {
+					t.Errorf("Expected MaxTokens 1000, got %d", config.MaxTokens)
+				}
+				if config.TopP != 0.9 {
+					t.Errorf("Expected TopP 0.9, got %f", config.TopP)
+				}
+				if config.FrequencyPenalty != 0.5 {
+					t.Errorf("Expected FrequencyPenalty 0.5, got %f", config.FrequencyPenalty)
+				}
+				if config.PresencePenalty != 0.5 {
+					t.Errorf("Expected PresencePenalty 0.5, got %f", config.PresencePenalty)
+				}
+				if config.MaxRetries != 3 {
+					t.Errorf("Expected MaxRetries 3, got %d", config.MaxRetries)
+				}
+			}
+
+			// Check nil configs are created when needed
+			if tc.name == "nil model configs with model-specific params" && err == nil {
+				if config.OpenAIConfig == nil || config.ClaudeConfig == nil || config.GeminiConfig == nil {
+					t.Errorf("Expected model configs to be created, but some were nil")
+				}
+			}
+		})
+	}
+}
+
 func TestValidate(t *testing.T) {
 	testCases := []struct {
 		name      string
@@ -328,7 +829,7 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			name:      "valid config",
-			configure: func(c *ModelConfig) {},
+			configure: func(_ *ModelConfig) {},
 			wantErr:   false,
 		},
 		{

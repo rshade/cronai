@@ -1,24 +1,18 @@
-# Model Parameters Configuration
+# Model Parameters Configuration (MVP)
 
-CronAI supports model-specific parameters that allow you to fine-tune AI model behavior for each prompt. This document explains how to configure and use these parameters.
+CronAI supports model-specific parameters that allow you to fine-tune AI model behavior for each prompt. This document explains how to configure and use these parameters in the MVP release.
 
 ## Supported Parameters
 
-### Common Parameters
+### Common Parameters for MVP
 
-The following parameters are supported across all models:
+The following parameters are supported across all models in the MVP:
 
 | Parameter          | Type   | Range        | Description                                        |
-|--------------------|--------|-------------|----------------------------------------------------|
+|--------------------|--------|-------------|-------------------------------------------------|
 | temperature        | float  | 0.0 - 1.0   | Controls response randomness (higher = more random) |
 | max_tokens         | int    | > 0         | Maximum number of tokens to generate                |
-| top_p              | float  | 0.0 - 1.0   | Nucleus sampling parameter                         |
-| frequency_penalty  | float  | -2.0 - 2.0  | Penalize frequent tokens                           |
-| presence_penalty   | float  | -2.0 - 2.0  | Penalize new tokens based on presence              |
 | model              | string | -           | Specific model version to use                      |
-| system_message     | string | -           | System message for the model                       |
-| fallback_models    | string | -           | Models to try if the primary model fails (comma-separated in environment variables, pipe-separated in configuration files) |
-| max_retries        | int    | > 0         | Maximum number of retry attempts per model (default: 1) |
 
 ### Model-Specific Parameters
 
@@ -29,66 +23,57 @@ Each model can also be configured with specific parameters using the prefix nota
 | Parameter          | Type   | Description                                     |
 |--------------------|--------|-------------------------------------------------|
 | openai.model       | string | Specific OpenAI model to use                    |
-| openai.system_message | string | System message specific to OpenAI            |
 
 #### Claude
 
 | Parameter           | Type   | Description                                    |
 |---------------------|--------|------------------------------------------------|
 | claude.model        | string | Specific Claude model to use                   |
-| claude.system_message | string | System message specific to Claude            |
 
 #### Gemini
 
 | Parameter           | Type   | Description                                    |
 |---------------------|--------|------------------------------------------------|
 | gemini.model        | string | Specific Gemini model to use                   |
-| gemini.safety_setting | string | Safety settings in format "category=level"   |
+
+## Supported Processors in MVP
+
+**Important Note:** For the MVP release, only a subset of response processors is fully implemented:
+
+| Processor | Status | Description |
+|-----------|--------|-------------|
+| console   | ✅ Available | Outputs response to the console |
+| file      | ✅ Available | Writes response to a file |
+| github    | ✅ Available | Creates or updates GitHub issues/comments |
+| email     | ⏳ Planned | Email delivery (coming post-MVP) |
+| slack     | ⏳ Planned | Slack messaging (coming post-MVP) |
+| webhook   | ⏳ Planned | HTTP webhook integration (coming post-MVP) |
+
+When configuring tasks in your `cronai.config` file, please use only the available processors for the MVP release.
 
 ## Model-Specific Default Values
 
-### OpenAI
-- **Default Model**: `gpt-3.5-turbo`
-- **System Message**: `You are a helpful assistant.`
-- **Supported Models**: 
-  - `gpt-3.5-turbo` - Fast and cost-effective for most tasks
-  - `gpt-3.5-turbo-16k` - Extended context length for 3.5
-  - `gpt-4` - Strong reasoning and instruction following
-  - `gpt-4o` - Optimized version with improved speed and 16k context
-  - `gpt-4-turbo` - Advanced capabilities with 128k context
-  - `gpt-4-32k` - Extended context length for GPT-4
-  - `gpt-4.1` - Latest model with improved coding capabilities
+### OpenAI Default Settings
 
-### Claude
+- **Default Model**: `gpt-3.5-turbo`
+- **Supported Models**:
+  - `gpt-3.5-turbo` - Fast and cost-effective for most tasks
+  - `gpt-4` - Strong reasoning and instruction following
+
+### Claude Default Settings
+
 - **Default Model**: `claude-3-sonnet-20240229`
-- **System Message**: `You are a helpful assistant.`
-- **Supported Models**: 
+- **Supported Models**:
   - `claude-3-opus-20240229` - Most powerful Claude model for complex tasks
   - `claude-3-sonnet-20240229` - Balanced performance and speed
   - `claude-3-haiku-20240307` - Fast and economical
-  - `claude-3.5-sonnet` - Enhanced reasoning and capabilities
-  - `claude-3.7-sonnet` - Latest model with advanced multimodal capabilities
 
-### Gemini
+### Gemini Default Settings
+
 - **Default Model**: `gemini-pro`
-- **Supported Models**: 
+- **Supported Models**:
   - `gemini-pro` - Original Gemini model
-  - `gemini-1.5-pro` - Enhanced capabilities
-  - `gemini-1.5-flash` - Optimized for speed
-  - `gemini-2.5-pro` - Latest model with enhanced reasoning
-  - `gemini-2.5-pro-latest` - Most current version with 2M token context
-- **Safety Categories**: 
-  - `harassment` - Harmful content targeting identity and/or protected attributes
-  - `hate_speech`, `hate` - Content that is rude, disrespectful, or profane
-  - `sexually_explicit`, `sexual` - Content meant to arouse sexual excitement
-  - `dangerous_content`, `dangerous` - Promotes, facilitates, or encourages harmful acts
-- **Safety Levels**:
-  - `block_none`, `none` - Block no content based on safety
-  - `block_low`, `low` - Block only very harmful content
-  - `block_medium`, `medium` - Block moderately harmful content (default)
-  - `block_high`, `high` - Block content that has a low risk of harm
-  - `block`, `block_all` - Block all potentially harmful content
-
+  
 ## SDK Implementation
 
 CronAI uses official client SDKs for all supported AI models:
@@ -96,8 +81,6 @@ CronAI uses official client SDKs for all supported AI models:
 - **OpenAI**: Uses the official `github.com/sashabaranov/go-openai` SDK
 - **Claude**: Uses the official `github.com/anthropics/anthropic-sdk-go` SDK
 - **Gemini**: Uses the official `github.com/google/generative-ai-go` SDK
-
-These SDKs ensure reliable connectivity to the respective AI services and proper implementation of all model parameters.
 
 ## Configuration Methods
 
@@ -109,33 +92,33 @@ You can configure model parameters in three ways, listed in order of precedence:
 
 ### 1. Task-specific Configuration
 
-In the `cronai.config` file, you can specify model parameters after variables using the prefix `model_params:`:
+In the `cronai.config` file, you can specify model parameters using the prefix `model_params:`:
 
-```
-# Format: timestamp model prompt.md response_processor [variables] [model_params:...]
-0 8 * * * claude product_manager slack-pm-channel model_params:temperature=0.8,model=claude-3-opus-20240229
-```
+```text
+# Format: timestamp model prompt response_processor [variables] [model_params:...]
+0 8 * * * claude product_manager file-output.txt model_params:temperature=0.8,model=claude-3-opus-20240229
+```text
 
 You can also include both variables and model parameters:
 
-```
-0 9 * * 1 openai report_template email-team@company.com reportType=Weekly,date={{CURRENT_DATE}} model_params:temperature=0.5,max_tokens=4000,model=gpt-4
-```
+```text
+0 9 * * 1 openai report_template github-issue:owner/repo reportType=Weekly,date={{CURRENT_DATE}} model_params:temperature=0.5,max_tokens=4000,model=gpt-4
+```text
 
 #### Using Model-Specific Parameters
 
 For model-specific configuration, use the prefix notation:
 
-```
+```text
 # Use OpenAI-specific parameters
-0 9 * * 1 openai report_template email-team@company.com model_params:openai.model=gpt-4,openai.system_message=You are a business analyst.
+0 9 * * 1 openai report_template file-output.txt model_params:openai.model=gpt-4
 
 # Use Claude-specific parameters
-0 8 * * * claude product_manager slack-pm-channel model_params:claude.model=claude-3-opus-20240229,claude.system_message=You are a product manager.
+0 8 * * * claude product_manager file-output.txt model_params:claude.model=claude-3-opus-20240229
 
 # Use Gemini-specific parameters
-*/15 * * * * gemini system_health webhook-monitoring model_params:gemini.model=gemini-1.5-pro,gemini.safety_setting=harmful=block,gemini.safety_setting=harassment=warn
-```
+*/15 * * * * gemini system_health file-output.txt model_params:gemini.model=gemini-pro
+```text
 
 ### 2. Environment Variables
 
@@ -145,24 +128,12 @@ You can set global defaults for all tasks using environment variables:
 # Common parameters
 MODEL_TEMPERATURE=0.7
 MODEL_MAX_TOKENS=2048
-MODEL_TOP_P=0.9
-MODEL_FREQUENCY_PENALTY=0.0
-MODEL_PRESENCE_PENALTY=0.0
-MODEL_FALLBACK_MODELS="claude,gemini"  # Comma-separated list of fallback models
-MODEL_MAX_RETRIES=3                   # Maximum retry attempts per model
 
 # Model-specific parameters
 OPENAI_MODEL=gpt-4
-OPENAI_SYSTEM_MESSAGE="You are a helpful assistant specialized in business analysis."
-OPENAI_BASE_URL="https://your-custom-endpoint.com/v1" # Optional custom endpoint
-
 CLAUDE_MODEL=claude-3-opus-20240229
-CLAUDE_SYSTEM_MESSAGE="You are a helpful assistant specialized in technical documentation."
-ANTHROPIC_BASE_URL="https://your-custom-endpoint.com" # Optional custom endpoint
-
 GEMINI_MODEL=gemini-pro
-GEMINI_SAFETY_SETTINGS="harmful=block,harassment=warn"
-```
+```text
 
 ### 3. Command Line Parameters
 
@@ -170,56 +141,49 @@ When using the `run` command, you can specify model parameters with the `--model
 
 ```bash
 # Using common parameters
-cronai run --model openai --prompt weekly_report --processor email-team@company.com --model-params "temperature=0.5,max_tokens=4000,model=gpt-4"
+cronai run --model openai --prompt weekly_report --processor file-output.txt --model-params "temperature=0.5,max_tokens=4000,model=gpt-4"
 
 # Using model-specific parameters
-cronai run --model gemini --prompt system_health --processor webhook-monitoring --model-params "gemini.model=gemini-1.5-pro,gemini.safety_setting=harmful=block"
-```
+cronai run --model gemini --prompt system_health --processor file-output.txt --model-params "gemini.model=gemini-pro"
+```text
 
 ## Examples
 
 ### Low Temperature for Consistent Output
 
-```
+```text
 # Run system health check with very precise (low temperature) settings
-*/15 * * * * claude system_health webhook-monitoring cluster=Primary model_params:temperature=0.1,max_tokens=1000
-```
-
-### Custom System Message
-
-```
-# Run daily at 10 PM using Claude with custom system message
-0 22 * * * claude test_prompt slack-dev-channel model_params:claude.system_message=You are a systems analyst providing clear, actionable insights.
-```
+*/15 * * * * claude system_health file-health.log cluster=Primary model_params:temperature=0.1,max_tokens=1000
+```text
 
 ### Specific Model Version
 
-```
+```text
 # Run weekly with OpenAI using a specific model
-0 9 * * 1 openai report_template email-team@company.com model_params:openai.model=gpt-4-turbo
-```
+0 9 * * 1 openai report_template file-report.log model_params:openai.model=gpt-4
+```text
 
-### Safety Settings for Gemini
+### GitHub Processor Example
 
-```
-# Run with Gemini using safety settings
-0 9-17 * * 1-5 gemini monitoring_check log-to-file model_params:gemini.safety_setting=harmful=block,gemini.safety_setting=harassment=warn
-```
+```text
+# Create a GitHub issue with the weekly report
+0 9 * * 1 claude weekly_report github-owner/repo reportType=Weekly,date={{CURRENT_DATE}} model_params:temperature=0.7
+```text
 
-### Mixed Common and Model-Specific Parameters
+### Console Output Example
 
-```
-# Use both common and model-specific parameters
-0 9 * * 1 openai report_template email-team@company.com model_params:temperature=0.7,max_tokens=2000,openai.model=gpt-4,openai.system_message=You are a report generator.
-```
+```text
+# Output system health check to console (useful for testing)
+*/30 * * * * gemini system_health console model_params:temperature=0.3,max_tokens=2000
+```text
 
-## Integration with Variables
+### Integration with Variables
 
 Model parameters can be used alongside variables:
 
-```
-0 9 * * 1 openai report_template email-team@company.com reportType=Weekly,date={{CURRENT_DATE}} model_params:temperature=0.5,max_tokens=4000,openai.model=gpt-4
-```
+```text
+0 9 * * 1 openai report_template file-report.log reportType=Weekly,date={{CURRENT_DATE}} model_params:temperature=0.5,max_tokens=4000,openai.model=gpt-4
+```text
 
 ## Advanced Configuration
 
@@ -235,75 +199,15 @@ For organizations using proxy services or custom endpoints for AI models, CronAI
 All model clients have a default timeout of 120 seconds (2 minutes) for API requests. This can be adjusted by setting the appropriate environment variables:
 
 - **OpenAI**: Set `OPENAI_TIMEOUT` to the desired timeout in seconds
-- **Claude**: Set `ANTHROPIC_TIMEOUT` to the desired timeout in seconds 
+- **Claude**: Set `ANTHROPIC_TIMEOUT` to the desired timeout in seconds
 - **Gemini**: Set `GEMINI_TIMEOUT` to the desired timeout in seconds
 
-### Error Handling
+## Post-MVP Features
 
-CronAI implements robust error handling for all model clients:
+The following features are planned for post-MVP releases:
 
-- Network errors are properly captured and reported
-- API rate limiting is handled with appropriate backoff
-- Token limit errors are clearly reported
-- Safety filter blocks are identified and reported
-
-When an error occurs during model execution, CronAI will log detailed information while ensuring that sensitive data like prompt contents are not leaked in logs.
-
-## Model Fallback Mechanism
-
-CronAI includes a robust fallback mechanism that automatically attempts alternative models when the primary model fails. This ensures greater reliability and resilience for your scheduled tasks.
-
-### How Fallbacks Work
-
-1. When the primary model fails (due to API errors, rate limits, etc.), CronAI will try fallback models in sequence
-2. Each model (primary and fallbacks) can be retried multiple times based on the `max_retries` setting
-3. Detailed error information is preserved and logged for each attempt
-4. If any model succeeds, its response is returned and execution continues normally
-5. If all models fail, a comprehensive error message with details of all attempts is returned
-
-### Configuring Fallbacks
-
-You can configure the fallback behavior using the following parameters:
-
-1. **fallback_models**: A comma-separated list (or pipe-separated in config files) of model names to try in sequence if the primary model fails
-2. **max_retries**: The maximum number of retry attempts for each model (primary and fallbacks)
-
-#### Default Fallback Sequences
-
-If not explicitly configured, CronAI uses the following default fallback sequences:
-
-- **openai**: Falls back to `claude`, then `gemini`
-- **claude**: Falls back to `openai`, then `gemini`
-- **gemini**: Falls back to `openai`, then `claude`
-
-#### Configuration Examples
-
-**In cronai.config file:**
-```
-# Use OpenAI with Claude fallback and 2 retries per model
-0 9 * * * openai report_template email-team@company.com model_params:fallback_models=claude,max_retries=2
-
-# Use Claude with custom fallback sequence
-0 8 * * * claude system_health webhook-monitoring model_params:fallback_models=gemini|openai,max_retries=3
-```
-
-**Using environment variables:**
-```bash
-# Global fallback configuration
-MODEL_FALLBACK_MODELS="claude,gemini"
-MODEL_MAX_RETRIES=3
-```
-
-**Using command line:**
-```bash
-cronai run --model openai --prompt system_health --processor webhook-monitoring --model-params "fallback_models=claude|gemini,max_retries=2"
-```
-
-### Fallback Behavior
-
-- Fallbacks are logged with detailed information about each attempt
-- The model that ultimately succeeds is recorded in the response metadata
-- When all models fail, a clear error message lists each failed attempt
-- The original errors from each model are preserved for debugging
-
-This fallback mechanism significantly improves the reliability of CronAI, ensuring that temporary API issues or model-specific problems don't interrupt your scheduled tasks.
+- Advanced parameters like top_p, frequency_penalty, and presence_penalty
+- System message customization
+- Model fallback mechanism for automatic model switching on failure
+- Safety setting configurations for Gemini
+- Detailed error handling with retry mechanisms

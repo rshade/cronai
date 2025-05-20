@@ -54,7 +54,7 @@ Report generated on {{getVar .Variables "date" "unknown date"}}.
 
 	// For testing, we'll use a local function to simulate template processing
 	// This is a simplified version of what the real template engine would do
-	testLoadPromptWithVars := func(promptName string, vars map[string]string) (string, error) {
+	testLoadPromptWithVars := func(_ string, vars map[string]string) (string, error) {
 		// This is a simplified implementation for test purposes only
 		// The real implementation would use the template engine
 
@@ -86,7 +86,10 @@ Report generated on {{getVar .Variables "date" "unknown date"}}.
 		// Process the error count condition
 		errorCount, hasErrors := vars["errorCount"]
 		if hasErrors {
-			errorCountInt, _ := strconv.Atoi(errorCount)
+			errorCountInt, err := strconv.Atoi(errorCount)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if errorCountInt > 5 {
 				result.WriteString(fmt.Sprintf("High error count detected: %s\n", errorCount))
 			} else if errorCountInt > 0 {

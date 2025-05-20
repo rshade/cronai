@@ -1,63 +1,48 @@
-# Prompt Management
+# Prompt Management (MVP)
 
-CronAI includes a robust file-based prompt management system that helps you organize, discover, and reuse prompts efficiently.
+CronAI includes a simple file-based prompt management system that helps you organize and use prompts efficiently.
 
 ## Directory Structure
 
-Prompts are organized in the following directory structure:
+Prompts are stored as markdown files in the `cron_prompts/` directory:
 
-```
+```text
 cron_prompts/
 ├── README.md           # Documentation for prompt structure
 ├── monitoring/         # Prompts for monitoring purposes
 ├── reports/            # Prompts for report generation
 ├── system/             # Prompts for system operations
-├── templates/          # Reusable prompt templates
 └── [other_categories]/ # Custom categories
-```
+```text
 
-## Prompt Metadata
+## Prompt Files
 
-Each prompt file can include an optional YAML metadata section at the beginning of the file, enclosed by triple dashes (`---`):
-
-```markdown
----
-name: System Health Check
-description: Analyzes system health metrics and provides recommendations
-author: CronAI Team
-version: 1.0
-category: system
-tags: health, monitoring, metrics, analysis
-extends: templates/base_system_check
-variables:
-  - name: cpu_usage
-    description: Current CPU usage percentage
-  - name: memory_usage
-    description: Current memory usage percentage
----
-
-# Actual Prompt Content
-
-The content of your prompt goes here...
-```
-
-The `extends` field is optional and allows the prompt to inherit from another template. See [Template Inheritance and Composition](template-inheritance.md) for more details.
-
-## Prompt Composition
-
-CronAI supports prompt composition through includes. You can include content from other prompt files using the `{{include}}` directive:
+Prompts are standard markdown files with a `.md` extension. During the MVP phase, prompts are simple text files that can contain variables:
 
 ```markdown
-{{include "templates/common_header.md"}}
+# System Health Check
 
-# Main Content
+Analyze the following system metrics and provide recommendations:
 
-Your specific prompt content goes here.
+- CPU Usage: {{cpu_usage}}%
+- Memory Usage: {{memory_usage}}%
+- Disk Usage: {{disk_usage}}%
 
-{{include "templates/common_footer.md"}}
-```
+Please provide:
+1. Assessment of current system health
+2. Potential issues identified
+3. Recommended actions
+```text
 
-For more advanced template reuse patterns, CronAI now also supports template inheritance with the `{{extends}}` and `{{block}}` directives. See [Template Inheritance and Composition](template-inheritance.md) for complete documentation.
+## Variables in Prompts
+
+Variables in prompts use the `{{variable_name}}` syntax. CronAI automatically provides the following special variables:
+
+- `{{CURRENT_DATE}}`: Current date in YYYY-MM-DD format
+- `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
+- `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
+
+Custom variables can be provided in the configuration file or command line using a comma-separated list of key=value pairs.
 
 ## CLI Commands
 
@@ -68,19 +53,27 @@ CronAI provides several commands to help you manage your prompts:
 List all available prompts, optionally filtered by category:
 
 ```bash
+# List all prompts
 cronai prompt list
+
+# List prompts in a specific category
 cronai prompt list --category system
-```
+```text
 
 ### Search Prompts
 
-Search for prompts by name, description, or content:
+Search for prompts by name or content:
 
 ```bash
+# Search by name or description
 cronai prompt search "health check"
+
+# Search in a specific category
 cronai prompt search --query "monitoring" --category system
+
+# Search in prompt content
 cronai prompt search --content --query "CPU usage"
-```
+```text
 
 ### Show Prompt Details
 
@@ -88,35 +81,66 @@ Show detailed information about a specific prompt:
 
 ```bash
 cronai prompt show system/system_health
-cronai prompt show --vars system/system_health
-```
+```text
 
 ### Preview Prompt
 
 Preview a prompt with variables substituted:
 
 ```bash
-cronai prompt preview system/system_health --vars "cpu_usage=85,memory_usage=70"
-```
+cronai prompt preview system/system_health --vars "cpu_usage=85,memory_usage=70,disk_usage=50"
+```text
 
 ## Using Prompts in CronAI Configuration
 
 Reference prompts in your cronai.config file using either the full path or category/name format:
 
-```
+```text
 # Using a prompt from a category
-0 8 * * * claude system/system_health slack-alerts
+0 8 * * * openai system/system_health file-/var/log/cronai/health.log
 
 # Using a prompt with variables
-0 9 * * 1 claude reports/weekly_report email-team@company.com date={{CURRENT_DATE}},team=Engineering
-```
+0 9 * * 1 claude reports/weekly_report github-issue:owner/repo date={{CURRENT_DATE}},team=Engineering
+```text
 
-## Variables in Prompts
+## Example Prompt Files
 
-Variables in prompts use the `{{variable_name}}` syntax. CronAI automatically provides the following special variables:
+### Basic Prompt
 
-- `{{CURRENT_DATE}}`: Current date in YYYY-MM-DD format
-- `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
-- `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
+```markdown
+# Daily Status Report
 
-Custom variables can be defined in the prompt metadata and provided in the configuration file or command line using a comma-separated list of key=value pairs.
+Generate a daily status report for {{project}} on {{CURRENT_DATE}}.
+
+1. Current status overview
+2. Progress since yesterday
+3. Planned tasks for today
+4. Blocking issues, if any
+```text
+
+### Prompt with System Metrics
+
+```markdown
+# System Health Check
+
+CPU Usage: {{cpu_usage}}%
+Memory Usage: {{memory_usage}}%
+Disk Space: {{disk_usage}}%
+
+Please analyze these metrics and provide:
+1. Current system health assessment
+2. Potential issues or warning signs
+3. Recommended actions
+```text
+
+## Post-MVP Features
+
+The following prompt management features are planned for future releases:
+
+- Prompt metadata (YAML frontmatter)
+- Template inheritance and composition
+- Includes for reusing common prompt components
+- Conditional logic in prompts
+- Advanced variable validation and defaults
+
+For more information on these upcoming features, see the project roadmap.
