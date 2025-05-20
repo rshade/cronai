@@ -265,6 +265,11 @@ func getTemplateFuncMap() template.FuncMap {
 		"replace": ReplaceFunction,
 		"json":    JSONFunction,
 		"default": DefaultFunction,
+		// GitHub JSON template functions
+		"GitHubIssueTemplate":   GitHubIssueTemplate,
+		"GitHubCommentTemplate": GitHubCommentTemplate,
+		"GitHubPRTemplate":      GitHubPRTemplate,
+		"JSONEscape":            JSONEscape,
 	}
 }
 
