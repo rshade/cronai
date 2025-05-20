@@ -1,0 +1,62 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      run_integration_tests:
+        description: 'Run full integration tests with real APIs'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run integration tests (mock mode)
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !inputs.run_integration_tests)
+        run: |
+          echo "Running integration tests in mock mode (no real API calls)"
+          export GO_TEST=1
+          go test -v ./internal/integration/
+
+      - name: Run integration tests with real APIs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.run_integration_tests)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.INTEGRATION_GITHUB_TOKEN }}
+          RUN_INTEGRATION_TESTS: '1'
+        run: |
+          echo "Running integration tests with real API calls"
+          go test -v ./internal/integration/
+
+      - name: Upload test logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-logs
+          path: |
+            /tmp/TestIntegration*
+            ./**/*test_output.txt
+          retention-days: 5
