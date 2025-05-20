@@ -67,7 +67,7 @@ func (c *ClaudeClient) Execute(promptContent string) (*ModelResponse, error) {
 				Role: anthropic.MessageParamRoleUser,
 				Content: []anthropic.ContentBlockParamUnion{
 					{
-						OfRequestTextBlock: &anthropic.TextBlockParam{
+						OfText: &anthropic.TextBlockParam{
 							Text: promptContent,
 						},
 					},
