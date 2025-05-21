@@ -46,6 +46,6 @@ func TestIntegration_APIKeys(t *testing.T) {
 
 	// If we're missing keys, fail the test with a summary
 	if len(missingKeys) > 0 {
-		t.Errorf("Missing required API keys for real integration tests: %v. Tests will run in mock mode.", missingKeys)
+		t.Fatalf("Missing required API keys for real integration tests: %v. Tests will run in mock mode.", missingKeys)
 	}
 }
