@@ -63,16 +63,7 @@ func (c *ClaudeClient) Execute(promptContent string) (*ModelResponse, error) {
 		TopP:        anthropic.Float(c.config.TopP),
 		System:      []anthropic.TextBlockParam{{Text: systemMessage}},
 		Messages: []anthropic.MessageParam{
-			{
-				Role: anthropic.MessageParamRoleUser,
-				Content: []anthropic.ContentBlockParamUnion{
-					{
-						OfText: &anthropic.TextBlockParam{
-							Text: promptContent,
-						},
-					},
-				},
-			},
+			anthropic.NewUserMessage(anthropic.NewTextBlock(promptContent)),
 		},
 	}
 

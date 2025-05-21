@@ -7,62 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestJSONEscape(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "simple string",
-			input:    "hello world",
-			expected: "hello world",
-		},
-		{
-			name:     "string with quotes",
-			input:    "hello \"world\"",
-			expected: "hello \\\"world\\\"",
-		},
-		{
-			name:     "string with newlines",
-			input:    "hello\nworld",
-			expected: "hello\\nworld",
-		},
-		{
-			name:     "string with backslashes",
-			input:    "hello\\world",
-			expected: "hello\\\\world",
-		},
-		{
-			name:     "string with special characters",
-			input:    "hello\tworld\r\n",
-			expected: "hello\\tworld\\r\\n",
-		},
-		{
-			name:     "empty string",
-			input:    "",
-			expected: "",
-		},
-		{
-			name:     "string with unicode",
-			input:    "hello 世界",
-			expected: "hello 世界",
-		},
-		{
-			name:     "string with json control characters",
-			input:    "{ \"key\": \"value\" }",
-			expected: "{ \\\"key\\\": \\\"value\\\" }",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := JSONEscape(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestGitHubIssueTemplate(t *testing.T) {
 	// Create test data
 	testTime := time.Date(2024, 3, 15, 12, 30, 45, 0, time.UTC)

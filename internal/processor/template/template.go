@@ -269,7 +269,6 @@ func getTemplateFuncMap() template.FuncMap {
 		"GitHubIssueTemplate":   GitHubIssueTemplate,
 		"GitHubCommentTemplate": GitHubCommentTemplate,
 		"GitHubPRTemplate":      GitHubPRTemplate,
-		"JSONEscape":            JSONEscape,
 	}
 }
 
