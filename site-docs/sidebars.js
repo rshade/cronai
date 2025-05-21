@@ -1,0 +1,47 @@
+/**
+ * Creating a sidebar enables you to:
+ - create an ordered group of docs
+ - render a sidebar for each doc of that group
+ - provide next/previous navigation
+
+ The sidebars can be generated from the filesystem, or explicitly defined here.
+
+ Create as many sidebars as you want.
+ */
+
+// @ts-check
+
+/** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
+const sidebars = {
+  tutorialSidebar: [
+    {
+      type: 'category',
+      label: 'Introduction',
+      items: ['intro', 'architecture'],
+    },
+    {
+      type: 'category',
+      label: 'Guides',
+      items: [
+        'systemd',
+        'prompt-management',
+        'model-parameters',
+        'template-inheritance',
+        'conditional-templates',
+        'response-templating',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Reference',
+      items: ['api', 'logging', 'extension-points'],
+    },
+    {
+      type: 'category',
+      label: 'Advanced',
+      items: ['troubleshooting', 'limitations-and-improvements'],
+    },
+  ],
+};
+
+module.exports = sidebars;

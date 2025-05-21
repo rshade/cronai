@@ -21,3 +21,4 @@ jobs:
           AUTO_ASSIGN: true
           IDENTIFIERS: ['TODO', 'FIXME']
           LABEL: 'todo'
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}

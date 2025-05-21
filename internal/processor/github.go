@@ -135,6 +135,24 @@ func (g *GitHubProcessor) GetConfig() Config {
 	return g.config
 }
 
+// prepareJSONPayload transforms a map into a properly formatted JSON object
+// This enables consistent JSON payload preparation across different GitHub actions
+func prepareJSONPayload(data map[string]interface{}) (map[string]interface{}, error) {
+	// Marshal to JSON to ensure proper JSON structure
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
+	}
+
+	// Parse back to map to ensure consistent format
+	var jsonPayload map[string]interface{}
+	if err := json.Unmarshal(jsonBytes, &jsonPayload); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON payload: %w", err)
+	}
+
+	return jsonPayload, nil
+}
+
 // processGitHubWithTemplate processes GitHub operations with templates
 func (g *GitHubProcessor) processGitHubWithTemplate(target string, data template.Data, templateName string) error {
 	// Ensure client is initialized
@@ -198,25 +216,105 @@ func (g *GitHubProcessor) processGitHubWithTemplate(target string, data template
 	data.Metadata["github_repo"] = repoInfo
 	data.Metadata["template_used"] = templateName
 
-	// Parse the payload as JSON to extract fields
+	// Create properly structured JSON payloads for each GitHub template type
 	var jsonPayload map[string]interface{}
-	if err := json.Unmarshal([]byte(payload), &jsonPayload); err != nil {
-		log.Error("Invalid GitHub JSON payload", logger.Fields{
-			"template": templateName,
-			"error":    err.Error(),
-		})
-		return errors.Wrap(errors.CategoryApplication, err, "GitHub payload is not valid JSON")
-	}
 
-	// Process based on action type
 	switch action {
-	case "issue":
-		return g.processGitHubIssue(repoInfo, jsonPayload)
 	case "comment":
+		// Use the FormatGitHubMessage helper to generate standardized content
+		body := FormatGitHubMessage("comment", data)
+
+		// Create a clean JSON object
+		commentPayload := map[string]interface{}{
+			"body": body,
+		}
+
+		// Prepare the JSON payload
+		jsonPayload, err := prepareJSONPayload(commentPayload)
+		if err != nil {
+			log.Error("Failed to prepare JSON payload", logger.Fields{
+				"template": templateName,
+				"error":    err.Error(),
+			})
+			return errors.Wrap(errors.CategoryApplication, err, "Failed to prepare GitHub JSON payload")
+		}
+
+		// Process the action
 		return g.processGitHubComment(repoInfo, jsonPayload)
+
+	case "issue":
+		// Use the FormatGitHubMessage helper to generate standardized content
+		title := fmt.Sprintf("%s - %s", data.PromptName, data.Timestamp.Format("2006-01-02"))
+		body := FormatGitHubMessage("issue", data)
+
+		// Create a clean JSON object
+		issuePayload := map[string]interface{}{
+			"title":  title,
+			"body":   body,
+			"labels": []string{"auto-generated", "cronai"},
+		}
+
+		// Prepare the JSON payload
+		jsonPayload, err := prepareJSONPayload(issuePayload)
+		if err != nil {
+			log.Error("Failed to prepare JSON payload", logger.Fields{
+				"template": templateName,
+				"error":    err.Error(),
+			})
+			return errors.Wrap(errors.CategoryApplication, err, "Failed to prepare GitHub JSON payload")
+		}
+		// Process the action
+		return g.processGitHubIssue(repoInfo, jsonPayload)
+
 	case "pr":
+		// Use the FormatGitHubMessage helper to generate standardized content
+		title := fmt.Sprintf("%s - %s", data.PromptName, data.Timestamp.Format("2006-01-02"))
+		body := FormatGitHubMessage("pr", data)
+
+		// Get head branch from variables or default
+		headBranch := data.Variables["head_branch"]
+		if headBranch == "" {
+			headBranch = "feature-branch"
+		}
+
+		// Get base branch from variables or default to main
+		baseBranch := data.Variables["base_branch"]
+		if baseBranch == "" {
+			baseBranch = "main"
+		}
+
+		// Create a clean JSON object
+		prPayload := map[string]interface{}{
+			"title": title,
+			"body":  body,
+			"head":  headBranch,
+			"base":  baseBranch,
+		}
+
+		// Prepare the JSON payload
+		jsonPayload, err := prepareJSONPayload(prPayload)
+		if err != nil {
+			log.Error("Failed to prepare JSON payload", logger.Fields{
+				"template": templateName,
+				"error":    err.Error(),
+			})
+			return errors.Wrap(errors.CategoryApplication, err, "Failed to prepare GitHub JSON payload")
+		}
+
+		// Process the action
 		return g.processGitHubPR(repoInfo, jsonPayload)
+
 	default:
+		// For unknown actions, try to parse the payload normally
+		if err := json.Unmarshal([]byte(payload), &jsonPayload); err != nil {
+			log.Error("Invalid GitHub JSON payload", logger.Fields{
+				"template": templateName,
+				"error":    err.Error(),
+			})
+			return errors.Wrap(errors.CategoryApplication, err, "GitHub payload is not valid JSON")
+		}
+
+		// Return an error for unknown actions
 		return errors.Wrap(errors.CategoryApplication,
 			fmt.Errorf("unsupported github action: %s", action),
 			"GitHub action not supported")
