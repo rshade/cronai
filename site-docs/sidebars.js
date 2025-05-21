@@ -26,20 +26,12 @@ const sidebars = {
         'systemd',
         'prompt-management',
         'model-parameters',
-        'template-inheritance',
-        'conditional-templates',
-        'response-templating',
       ],
     },
     {
       type: 'category',
       label: 'Reference',
-      items: ['api', 'logging', 'extension-points'],
-    },
-    {
-      type: 'category',
-      label: 'Advanced',
-      items: ['troubleshooting', 'limitations-and-improvements'],
+      items: ['api'],
     },
   ],
 };

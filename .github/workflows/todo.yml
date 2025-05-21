@@ -1,26 +1,52 @@
-name: TODO to Issue
+name: "TODO to Issue"
 
 on:
-  push:
-    branches: [ main ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   todo-to-issue:
-    name: TODO to Issue
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       issues: write
+      pull-requests: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: TODO to Issue
-        uses: alstr/todo-to-issue-action@v5
+        uses: alstr/todo-to-issue-action@v5.1.12
         with:
-          AUTO_ASSIGN: true
-          IDENTIFIERS:
-            - 'TODO'
-            - 'FIXME'
-          LABEL: 'todo'
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INSERT_ISSUE_URLS: "true"
+          AUTO_ASSIGN: "true"
+          CLOSE_ISSUES: "true"
+          COMMENT_MARKER: "https://github.com/rshade/cronai/issues/"
+          IDENTICAL_TITLE_FILTER: "true"
+
+      - name: Configure Git User
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and Push Changes
+        run: |
+          git add -A
+          if git status --porcelain | grep .; then
+            git commit -m "Automatically added GitHub issue links to TODOs"
+            # Make sure we have the branch explicitly checked out
+            git branch
+            # Push using token to ensure proper authentication
+            git push origin HEAD:${GITHUB_HEAD_REF} || git push origin HEAD:${{ github.head_ref }}
+          else
+            echo "No changes to commit"
+          fi

@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testModelName = "gpt-4o"
+
 // TestIntegration_EndToEnd tests the full end-to-end pipeline
 func TestIntegration_EndToEnd(t *testing.T) {
 	// Setup test directory structure
@@ -23,7 +25,7 @@ func TestIntegration_EndToEnd(t *testing.T) {
 	require.NoError(t, os.MkdirAll(outputDir, 0755))
 
 	// Create test prompt file
-	promptContent := "# Hello World\n\nPrint 'Hello, World!'"
+	promptContent := "# Hello World\n\nPlease respond with exactly: Hello, World!"
 	promptPath := filepath.Join(promptsDir, "hello_world.md")
 	require.NoError(t, os.WriteFile(promptPath, []byte(promptContent), 0644))
 
@@ -55,7 +57,7 @@ func TestIntegration_EndToEnd(t *testing.T) {
 		MaxTokens:   1000,
 		TopP:        1.0,
 		OpenAIConfig: &config.OpenAIConfig{
-			Model:         "gpt-3.5-turbo",
+			Model:         testModelName,
 			SystemMessage: "You are a test assistant.",
 		},
 	}
@@ -71,7 +73,7 @@ func TestIntegration_EndToEnd(t *testing.T) {
 	if err != nil || response == nil {
 		response = &models.ModelResponse{
 			Content:     "Hello, World!",
-			Model:       "gpt-3.5-turbo",
+			Model:       "gpt-4o",
 			PromptName:  "hello_world",
 			ExecutionID: "test-execution-id",
 			Variables:   map[string]string{},
