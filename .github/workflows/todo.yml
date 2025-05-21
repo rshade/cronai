@@ -19,6 +19,8 @@ jobs:
         uses: alstr/todo-to-issue-action@v5
         with:
           AUTO_ASSIGN: true
-          IDENTIFIERS: ['TODO', 'FIXME']
+          IDENTIFIERS:
+            - 'TODO'
+            - 'FIXME'
           LABEL: 'todo'
           TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -46,10 +46,13 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.run_integration_tests)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.INTEGRATION_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.INTEGRATION_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           RUN_INTEGRATION_TESTS: '1'
         run: |
           echo "Running integration tests with real API calls"
+          if [ -z "$OPENAI_API_KEY" ] || [ -z "$GITHUB_TOKEN" ]; then
+            echo "Warning: Some API keys are missing. Tests may run in mock mode for missing services."
+          fi
           go test -v ./internal/integration/
 
       - name: Upload test logs
