@@ -412,6 +412,9 @@ Located in `internal/processor` - Processes model responses (sending to email, S
 
 - **NEVER close GitHub issue #89** - This issue is used for GitHub integration tests and must remain open.
 - All GitHub processor tests utilize issue #89 to verify comment functionality.
+- Integration tests verify that GitHub comments are actually created by fetching comments before/after processing and checking for new comments with expected content.
+- Test comments are kept by default for visibility, but can be automatically cleaned up by setting `CLEANUP_TEST_COMMENTS=1`.
+- To run integration tests with real GitHub API calls, set `RUN_INTEGRATION_TESTS=1` and provide a valid `GITHUB_TOKEN`.
 
 ## Environment Variables
 
@@ -420,6 +423,9 @@ The application uses a `.env` file for configuration with the following variable
 - `OPENAI_API_KEY` - OpenAI API key
 - `ANTHROPIC_API_KEY` - Claude API key
 - `GOOGLE_API_KEY` - Gemini API key
+- `GITHUB_TOKEN` - GitHub personal access token for GitHub processor integration
+- `RUN_INTEGRATION_TESTS` - Set to "1" to run integration tests with real API calls
+- `CLEANUP_TEST_COMMENTS` - Set to "1" to automatically delete test comments after verification (default: keep comments)
 - Various processor-specific configuration variables (SMTP, Slack tokens, etc.)
 
 ## CLI Commands
