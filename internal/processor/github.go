@@ -426,6 +426,17 @@ func (g *GitHubProcessor) processGitHubComment(repoInfo string, payload map[stri
 	owner := repoParts[0]
 	repoName := repoParts[1]
 
+	// Skip actual API calls in unit tests unless integration tests are enabled
+	if os.Getenv("GO_TEST") == "1" && os.Getenv("RUN_INTEGRATION_TESTS") != "1" {
+		log.Info("Would create GitHub comment", logger.Fields{
+			"owner": owner,
+			"repo":  repoName,
+			"issue": issueNumber,
+			"body":  body,
+		})
+		return nil
+	}
+
 	// Create comment request
 	commentRequest := &github.IssueComment{
 		Body: &body,
