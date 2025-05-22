@@ -57,12 +57,14 @@ The processor system follows these patterns:
 
 ### Code Quality and Linting
 
-- **For CI/PR checks: run `make lint` (strict mode, no automatic fixes)**
-- **For local development: run `make lint-fix` to automatically fix issues**
+- **For CI/PR checks: run `make vet` and `make lint` separately (to avoid timeout issues)**
+- **For local development: run `make lint-fix-all` to automatically fix all issues including go vet**
+- **Quick linting without go vet: run `make lint` or `make lint-fix`**
+- **Run all linting checks: run `make lint-all` (includes go vet + lint)**
 - Fix all linting issues before submitting pull requests
 - The linting process checks:
   - Code formatting with `gofmt`
-  - Static analysis with `go vet`
+  - Static analysis with `go vet` (separated into `make vet`)
   - Comprehensive linting with `golangci-lint`
   - Markdown linting with `markdownlint`
   - Revive linter with the following rules:
@@ -170,6 +172,73 @@ The processor system follows these patterns:
 - Always generate a changelog before creating a new release
 - Include the changelog in release notes when creating GitHub releases
 
+### Release Management
+
+The project uses GitHub Actions for automated releases through GoReleaser:
+
+#### Workflows
+
+- **Build Workflow** (`.github/workflows/build.yml`):
+  - Triggers on pushes to main branch
+  - Runs tests with coverage
+  - Builds the application
+  - Uploads build artifacts
+  - Does NOT create releases
+
+- **Release Workflow** (`.github/workflows/release.yml`):
+  - Triggers on any tag matching `v*` pattern
+  - Runs tests before release
+  - Generates changelog using git-chglog
+  - Creates GitHub releases using GoReleaser
+  - Supports both stable and prerelease versions
+
+#### Release Types
+
+The release system automatically handles different release types based on tag naming:
+
+- **Stable Releases**: Tags like `v1.0.0`, `v2.1.3`
+  - Creates normal GitHub releases
+  - Marked as "Latest" release
+
+- **Prerelease Versions**: Tags containing `-alpha`, `-beta`, `-rc`, etc.
+  - Examples: `v0.0.2-beta`, `v1.0.0-rc1`, `v2.0.0-alpha.1`
+  - Automatically marked as "Pre-release" on GitHub
+  - Not marked as "Latest" release
+
+#### Creating Releases
+
+To create a release:
+
+1. Ensure all changes are committed and pushed to main
+2. Create and push a tag:
+
+   ```bash
+   # For stable release
+   git tag -a v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+   
+   # For beta release
+   git tag -a v0.0.2-beta -m "Release v0.0.2-beta"
+   git push origin v0.0.2-beta
+   ```
+
+3. GitHub Actions will automatically:
+   - Run tests
+   - Generate changelog
+   - Build binaries for multiple platforms
+   - Create GitHub release with assets
+   - Mark prerelease appropriately
+
+#### GoReleaser Configuration
+
+The `.goreleaser.yml` file configures:
+
+- Multi-platform builds (Linux, Windows, macOS)
+- Architecture support (amd64, arm64)
+- Archive naming and contents
+- Automatic prerelease detection (`prerelease: auto`)
+- Changelog generation and filtering
+
 ## Project Overview
 
 CronAI is a Go utility designed to run AI model prompts on a cron-type schedule. It allows scheduled execution of AI prompts and automatic processing of responses through various channels (email, Slack, webhooks, file output).
@@ -182,9 +251,12 @@ This project follows standard Go project structure:
 cronai/
 ├── .github/               # GitHub configuration
 │   └── workflows/         # GitHub Actions workflows
-│       ├── build.yml      # Build workflow
+│       ├── build.yml      # Build workflow (runs on main branch)
+│       ├── release.yml    # Release workflow (runs on tags)
 │       ├── commit-check.yml # Conventional commit checker
 │       ├── pr-check.yml   # PR validation workflow
+│       ├── integration-tests.yml # Integration tests
+│       ├── deploy-docs.yml # Documentation deployment
 │       └── todo.yml       # TODO to Issue converter
 ├── cmd/cronai/            # Main application entry point
 │   ├── main.go            # Entry point

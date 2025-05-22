@@ -1,11 +1,16 @@
-.PHONY: all build test test-coverage coverage-report clean lint lint-fix format run changelog
+.PHONY: all build test test-coverage coverage coverage-report clean vet lint lint-all lint-fix lint-fix-all format run changelog release
 
 # Default target
 all: build
 
+# Get version information
+VERSION ?= $(shell git describe --tags --always --dirty --match='v*' 2>/dev/null || echo "v0.0.0-dev")
+BUILD_VERSION := $(shell echo $(VERSION) | sed 's/^v//')
+LDFLAGS := -s -w -X github.com/rshade/cronai/cmd/cronai/cmd.Version=$(BUILD_VERSION)
+
 # Build the application
 build:
-	go build -o cronai ./cmd/cronai
+	go build -ldflags="$(LDFLAGS)" -o cronai ./cmd/cronai
 
 # Run tests
 test:
@@ -15,6 +20,10 @@ test:
 test-coverage:
 	go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
+# Generate coverage percentage
+coverage: test-coverage
+	@go tool cover -func=coverage.out | grep total | awk '{print $$3}'
+
 # Clean build artifacts
 clean:
 	rm -f cronai coverage.out
@@ -23,18 +32,21 @@ clean:
 coverage-report: test-coverage
 	go tool cover -html=coverage.out
 
-# Run linter (strict mode for CI)
+# Run go vet (separated for CI timeout management)
+vet:
+	@echo "Running go vet..."
+	go vet ./...
+
+# Run linter (strict mode for CI, excludes go vet)
 lint:
 	@echo "Running gofmt check..."
 	@! gofmt -d . 2>&1 | grep -q '^' || (echo "Code not formatted. Run 'make lint-fix' to fix."; exit 1)
-	@echo "Running go vet..."
-	go vet ./...
 	@echo "Running golangci-lint..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run; \
 	else \
 		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
-		go vet ./...; \
+		echo "Note: go vet should be run separately with 'make vet'"; \
 	fi
 	@echo "Running markdownlint..."
 	@if command -v markdownlint >/dev/null 2>&1; then \
@@ -43,18 +55,19 @@ lint:
 		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
 	fi
 
+# Run all linting including go vet (for convenience)
+lint-all: vet lint
+
 # Run linter with automatic fixes (for local development)
 lint-fix:
 	@echo "Running gofmt with fix..."
 	@gofmt -w .
-	@echo "Running go vet..."
-	go vet ./...
 	@echo "Running golangci-lint with fix..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run --fix; \
 	else \
 		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
-		go vet ./...; \
+		echo "Note: go vet should be run separately with 'make vet'"; \
 	fi
 	@echo "Running markdownlint with fix..."
 	@if command -v markdownlint >/dev/null 2>&1; then \
@@ -62,6 +75,9 @@ lint-fix:
 	else \
 		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
 	fi
+
+# Run all linting with fixes including go vet (for convenience)
+lint-fix-all: vet lint-fix
 
 # Format all Go files
 format:
@@ -74,7 +90,7 @@ run:
 
 # Install the application
 install:
-	go install ./cmd/cronai
+	go install -ldflags="$(LDFLAGS)" ./cmd/cronai
 
 # Run a specific task immediately
 run-task:
@@ -93,6 +109,18 @@ changelog:
 	@echo "Generating changelog..."
 	@./scripts/generate_changelog.sh $(FROM) $(TO)
 	@echo "Changelog generated at CHANGELOG.md"
+
+# Release the application using goreleaser
+release:
+	@if [ -z "$(VERSION)" ] || [ "$(VERSION)" = "v0.0.0-dev" ]; then \
+		echo "Error: VERSION must be set to a valid version tag for releases"; \
+		echo "Usage: make release VERSION=v1.0.0"; \
+		exit 1; \
+	fi
+	@echo "Creating release $(VERSION)..."
+	git tag -a $(VERSION) -m "Release $(VERSION)"
+	git push origin $(VERSION)
+	goreleaser release --clean
 
 # Setup development environment
 setup:

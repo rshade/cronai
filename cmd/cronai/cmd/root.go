@@ -49,6 +49,22 @@ For more information, use 'cronai help [command]' or visit the documentation.
 
   # Search for available prompts
   cronai prompt search "monitoring"`,
+	Run: func(cmd *cobra.Command, _ []string) {
+		versionFlag, err := cmd.Flags().GetBool("version")
+		if err != nil {
+			fmt.Printf("Error getting version flag: %v\n", err)
+			return
+		}
+		if versionFlag {
+			fmt.Printf("CronAI version %s\n", Version)
+			return
+		}
+		// If no flags provided, show help
+		err = cmd.Help()
+		if err != nil {
+			fmt.Printf("Error showing help: %v\n", err)
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -63,6 +79,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./cronai.config)")
+	rootCmd.Flags().BoolP("version", "v", false, "Print the version of CronAI and exit")
 }
 
 func initConfig() {
