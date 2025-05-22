@@ -426,34 +426,41 @@ func (g *GitHubProcessor) processGitHubComment(repoInfo string, payload map[stri
 	owner := repoParts[0]
 	repoName := repoParts[1]
 
-	// Create comment request
-	// commentRequest := &github.IssueComment{
-	// 	Body: &body,
-	// }
+	// Skip actual API calls in unit tests unless integration tests are enabled
+	if os.Getenv("GO_TEST") == "1" && os.Getenv("RUN_INTEGRATION_TESTS") != "1" {
+		log.Info("Would create GitHub comment", logger.Fields{
+			"owner": owner,
+			"repo":  repoName,
+			"issue": issueNumber,
+			"body":  body,
+		})
+		return nil
+	}
 
-	// In MVP, just log rather than actually creating
-	log.Info("Would add GitHub comment", logger.Fields{
+	// Create comment request
+	commentRequest := &github.IssueComment{
+		Body: &body,
+	}
+
+	// Create the comment
+	ctx := context.Background()
+	comment, _, err := g.client.Issues.CreateComment(ctx, owner, repoName, issueNumber, commentRequest)
+	if err != nil {
+		log.Error("Failed to add GitHub comment", logger.Fields{
+			"owner": owner,
+			"repo":  repoName,
+			"issue": issueNumber,
+			"error": err.Error(),
+		})
+		return errors.Wrap(errors.CategoryExternal, err, "failed to add GitHub comment")
+	}
+
+	log.Info("Added GitHub comment", logger.Fields{
 		"owner": owner,
 		"repo":  repoName,
 		"issue": issueNumber,
-		"body":  body,
+		"url":   comment.GetHTMLURL(),
 	})
-
-	// For production implementation:
-	/*
-		ctx := context.Background()
-		comment, _, err := g.client.Issues.CreateComment(ctx, owner, repoName, issueNumber, commentRequest)
-		if err != nil {
-			return errors.Wrap(errors.CategoryExternal, err, "failed to add GitHub comment")
-		}
-
-		log.Info("Added GitHub comment", logger.Fields{
-			"owner":  owner,
-			"repo":   repoName,
-			"issue":  issueNumber,
-			"url":    comment.GetHTMLURL(),
-		})
-	*/
 
 	return nil
 }

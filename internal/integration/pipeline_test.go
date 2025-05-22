@@ -2,18 +2,70 @@
 package integration
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-github/v72/github"
 	"github.com/rshade/cronai/internal/models"
 	"github.com/rshade/cronai/internal/processor"
 	"github.com/rshade/cronai/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 const testModelName = "gpt-4o"
+
+// initializeGitHubClient creates a GitHub client for testing
+func initializeGitHubClient() (*github.Client, context.Context, error) {
+	ctx := context.Background()
+
+	// Check if running in test mode
+	if os.Getenv("GO_TEST") == "1" {
+		// Return nil client in test mode to skip actual API calls
+		return nil, ctx, nil
+	}
+
+	// Get GitHub token
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" || token == "test-token" {
+		// Return nil client if no valid token
+		return nil, ctx, nil
+	}
+
+	// Create authenticated client
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+
+	return client, ctx, nil
+}
+
+// getGitHubIssueComments fetches all comments for a GitHub issue
+func getGitHubIssueComments(owner, repo string, issueNumber int) ([]*github.IssueComment, error) {
+	client, ctx, err := initializeGitHubClient()
+	if err != nil || client == nil {
+		return nil, err // Skip in test mode or return initialization error
+	}
+
+	comments, _, err := client.Issues.ListComments(ctx, owner, repo, issueNumber, nil)
+	return comments, err
+}
+
+// deleteGitHubComment deletes a GitHub comment
+func deleteGitHubComment(owner, repo string, commentID int64) error {
+	client, ctx, err := initializeGitHubClient()
+	if err != nil || client == nil {
+		return err // Skip in test mode or return initialization error
+	}
+
+	_, err = client.Issues.DeleteComment(ctx, owner, repo, commentID)
+	return err
+}
 
 // TestIntegration_EndToEnd tests the full end-to-end pipeline
 func TestIntegration_EndToEnd(t *testing.T) {
@@ -102,14 +154,58 @@ func TestIntegration_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(outputContent), "Hello, World!")
 
-	// Process with GitHub processor
-	githubProcessorConfig := processor.Config{
-		Type:   "github",
-		Target: "comment:rshade/cronai#89",
-	}
-	githubProcessor, err := processor.NewGitHubProcessor(githubProcessorConfig)
-	require.NoError(t, err)
+	// Process with GitHub processor (only if running real tests with GitHub token)
+	if runRealTests && os.Getenv("GITHUB_TOKEN") != "" && os.Getenv("GITHUB_TOKEN") != "test-token" {
+		githubProcessorConfig := processor.Config{
+			Type:   "github",
+			Target: "comment:rshade/cronai#89",
+		}
+		githubProcessor, err := processor.NewGitHubProcessor(githubProcessorConfig)
+		require.NoError(t, err)
 
-	err = githubProcessor.Process(response, "")
-	require.NoError(t, err)
+		// Get initial comment count to verify new comment was added
+		initialComments, err := getGitHubIssueComments("rshade", "cronai", 89)
+		if err != nil {
+			t.Logf("Warning: Could not fetch initial comments for verification: %v", err)
+		}
+
+		err = githubProcessor.Process(response, "")
+		require.NoError(t, err)
+
+		// Verify the comment was actually created
+		if err == nil && initialComments != nil {
+			finalComments, err := getGitHubIssueComments("rshade", "cronai", 89)
+			require.NoError(t, err, "Failed to fetch comments after processing")
+
+			// Check that a new comment was added
+			assert.Greater(t, len(finalComments), len(initialComments), "Expected new comment to be added to issue #89")
+
+			if len(finalComments) > len(initialComments) {
+				// Verify the last comment contains our expected content
+				lastComment := finalComments[len(finalComments)-1]
+				assert.Contains(t, lastComment.GetBody(), "Hello, World!", "Comment should contain the response content")
+				t.Logf("Successfully verified GitHub comment was created: %s", lastComment.GetHTMLURL())
+
+				// Optionally clean up the test comment if CLEANUP_TEST_COMMENTS is set
+				if os.Getenv("CLEANUP_TEST_COMMENTS") == "1" {
+					if err := deleteGitHubComment("rshade", "cronai", lastComment.GetID()); err != nil {
+						t.Logf("Warning: Failed to clean up test comment: %v", err)
+					} else {
+						t.Log("Successfully cleaned up test comment")
+					}
+				}
+			}
+		}
+	} else {
+		// In test mode, just verify the processor can be created and validated
+		githubProcessorConfig := processor.Config{
+			Type:   "github",
+			Target: "comment:rshade/cronai#89",
+		}
+		_, err := processor.NewGitHubProcessor(githubProcessorConfig)
+		require.NoError(t, err)
+
+		// Skip actual processing in test mode to avoid API calls
+		t.Log("Skipping GitHub processor execution in test mode")
+	}
 }
