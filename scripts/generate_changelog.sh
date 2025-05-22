@@ -19,7 +19,7 @@ if ! command -v git-chglog &> /dev/null; then
 fi
 
 # Check if there's a config file
-CONFIG_FILE="$(dirname "$0")/git-chglog-config.yml"
+CONFIG_FILE=".chglog/config.yml"
 if [ ! -f "$CONFIG_FILE" ]; then
     echo -e "${COLOR_YELLOW}Configuration file not found at $CONFIG_FILE${COLOR_RESET}"
     exit 1
@@ -112,12 +112,12 @@ else
             local type=$1
             local title=$2
             
-            echo "### $title" >> CHANGELOG.md
-            local commits=$(git log --pretty=format:"- %s (%h)" | grep -E "^$type" || true)
+            local commits=$(git log --pretty=format:"- %s (%h)" | grep -E "^- $type(\(|:)" || true)
             if [ -n "$commits" ]; then
-                echo "$commits" | sed -E "s/^$type(\([^)]*\))?:\s*/- /" >> CHANGELOG.md
+                echo "### $title" >> CHANGELOG.md
+                echo "$commits" | sed -E "s/^- $type(\([^)]*\))?:\s*/- /" >> CHANGELOG.md
+                echo "" >> CHANGELOG.md
             fi
-            echo "" >> CHANGELOG.md
         }
         
         # Process each commit type

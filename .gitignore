@@ -32,7 +32,8 @@ go.work.sum
 *.swo
 
 # Build artifacts
-cronai
+/cronai
+*.bak
 
 # PR message file
 PR_MESSAGE.md
