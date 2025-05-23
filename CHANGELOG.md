@@ -1,9 +1,9 @@
 # Changelog
 
-## v0.1.0 (2025-05-22)
+## v0.0.1 (2025-05-23)
 
 ### Features
-
+- prepare v0.0.1 release infrastructure (#115) (dd6a195)
 - enable GitHub comment creation and verification (#113) (543b27a)
 - implement end-to-end integration tests for MVP pipeline (#103) (411eece)
 - implement GitHub response processor (#90) (7a9c6db)
@@ -26,18 +26,16 @@
 - adding the initial layout and prompts (8950b14)
 
 ### Bug Fixes
-
 - update module google.golang.org/api to v0.234.0 (#110) (c6e1958)
 - update module github.com/anthropics/anthropic-sdk-go to v0.2.0-beta.4 (#102) (98829c1)
 - update module google.golang.org/api to v0.233.0 (#58) (17bff77)
 - update module github.com/sashabaranov/go-openai to v1.40.0 (#57) (4eab234)
 
 ### Continuous Integration
-
 - add pull-requests write permission to integration tests (#105) (d2be290)
 
 ### Chores
-
+- fixing release again (f8380ad)
 - update peaceiris/actions-gh-pages action to v4 (#114) (2891390)
 - docusaurus build (#112) (64b534b)
 - update actions/setup-node action to v4 (#111) (4b2cce3)
@@ -49,3 +47,4 @@
 - update actions/upload-artifact action to v4 (#49) (020417f)
 - update actions/setup-go action to v5 (#47) (dff826a)
 - update actions/checkout action to v4 (#46) (7b76ab3)
+
