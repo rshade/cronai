@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.7.0">
 <title data-rh="true">Running CronAI as a systemd Service | CronAI Documentation</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://rshade.github.io/cronai/img/docusaurus-social-card.jpg"><meta data-rh="true" name="twitter:image" content="https://rshade.github.io/cronai/img/docusaurus-social-card.jpg"><meta data-rh="true" property="og:url" content="https://rshade.github.io/cronai/docs/systemd"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Running CronAI as a systemd Service | CronAI Documentation"><meta data-rh="true" name="description" content="This document explains how to set up CronAI to run as a systemd service on Linux systems."><meta data-rh="true" property="og:description" content="This document explains how to set up CronAI to run as a systemd service on Linux systems."><link data-rh="true" rel="icon" href="/cronai/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://rshade.github.io/cronai/docs/systemd"><link data-rh="true" rel="alternate" href="https://rshade.github.io/cronai/docs/systemd" hreflang="en"><link data-rh="true" rel="alternate" href="https://rshade.github.io/cronai/docs/systemd" hreflang="x-default"><link rel="stylesheet" href="/cronai/assets/css/styles.c34166a7.css">
-<script src="/cronai/assets/js/runtime~main.51db2738.js" defer="defer"></script>
+<script src="/cronai/assets/js/runtime~main.9ab7b0fc.js" defer="defer"></script>
 <script src="/cronai/assets/js/main.b2624098.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -23,7 +23,12 @@
 <ul>
 <li><code>User</code>: The user account that will run the service</li>
 <li><code>WorkingDirectory</code>: The directory where your configuration is located (e.g., <code>/etc/cronai</code>)</li>
-<li><code>ExecStart</code>: The path to the CronAI binary (e.g., <code>/usr/local/bin/cronai start --config /etc/cronai/cronai.config</code>)</li>
+<li><code>ExecStart</code>: The path to the CronAI binary (e.g., <code>/usr/local/bin/cronai start --config /etc/cronai/cronai.config</code>)<!-- -->
+<ul>
+<li>Since v0.0.2: You can also specify the operation mode with <code>--mode cron</code> (default)</li>
+<li>Future modes (bot, queue) will be available in upcoming releases</li>
+</ul>
+</li>
 <li><code>EnvironmentFile</code>: The path to your .env file (e.g., <code>/etc/cronai/.env</code>)</li>
 </ul>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="5-enable-and-start-the-service">5. Enable and start the service<a href="#5-enable-and-start-the-service" class="hash-link" aria-label="Direct link to 5. Enable and start the service" title="Direct link to 5. Enable and start the service">​</a></h3>
