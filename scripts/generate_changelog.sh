@@ -99,7 +99,7 @@ if [ -n "$FROM_TAG" ]; then
         git-chglog --config "$CONFIG_FILE" --output CHANGELOG.md
     else
         # Check if there are actually commits in the range
-        if git rev-list "$FROM_TAG..$TO_REF" --count | grep -q "^0$"; then
+        if [ "$(git rev-list "$FROM_TAG..$TO_REF" --count)" -eq 0 ]; then
             echo -e "${COLOR_YELLOW}No commits found between $FROM_TAG and $TO_REF${COLOR_RESET}"
             # Generate the full changelog instead
             git-chglog --config "$CONFIG_FILE" --output CHANGELOG.md
