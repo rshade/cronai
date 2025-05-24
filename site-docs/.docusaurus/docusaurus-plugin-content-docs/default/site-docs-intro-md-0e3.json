@@ -1,0 +1,25 @@
+{
+  "id": "intro",
+  "title": "CronAI",
+  "description": "AI agent for scheduled prompt execution - Your automated AI assistant.",
+  "source": "@site/docs/intro.md",
+  "sourceDirName": ".",
+  "slug": "/",
+  "permalink": "/cronai/docs/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/intro.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "intro",
+    "title": "CronAI",
+    "sidebar_label": "Introduction",
+    "slug": "/"
+  },
+  "sidebar": "tutorialSidebar",
+  "next": {
+    "title": "Architecture",
+    "permalink": "/cronai/docs/architecture"
+  }
+}

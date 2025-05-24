@@ -1,0 +1,73 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/cronai/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/cronai/docs",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "api",
+              "path": "/cronai/docs/api",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "architecture",
+              "path": "/cronai/docs/architecture",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "intro",
+              "path": "/cronai/docs/",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "limitations-and-improvements",
+              "path": "/cronai/docs/limitations-and-improvements",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "logging",
+              "path": "/cronai/docs/logging",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "model-parameters",
+              "path": "/cronai/docs/model-parameters",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "prompt-management",
+              "path": "/cronai/docs/prompt-management",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "systemd",
+              "path": "/cronai/docs/systemd",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "troubleshooting",
+              "path": "/cronai/docs/troubleshooting",
+              "sidebar": "tutorialSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "tutorialSidebar": {
+              "link": {
+                "path": "/cronai/docs/",
+                "label": "intro"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}
