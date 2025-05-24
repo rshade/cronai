@@ -299,6 +299,17 @@ cronai/
 └── CLAUDE.md              # This file
 ```text
 
+## Prompt Files Location
+
+All prompt files are stored in the `cron_prompts/` directory. When referencing prompts:
+- `product_manager` → `cron_prompts/product_manager.md`
+- `weekly_report` → `cron_prompts/weekly_report.md`
+- `system_health` → `cron_prompts/system_health.md`
+- `monitoring_check` → `cron_prompts/monitoring_check.md`
+- `report_template` → `cron_prompts/report_template.md`
+
+The prompt loader automatically looks in the `cron_prompts/` directory, so you only need to specify the filename (with or without .md extension) in configurations.
+
 ## Configuration Format
 
 The configuration file uses the following format:

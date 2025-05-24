@@ -89,13 +89,30 @@ echo -e "${COLOR_PURPLE}Generating changelog...${COLOR_RESET}"
 
 # Run git-chglog with the appropriate options
 if [ -n "$FROM_TAG" ]; then
-    # If a specific range is provided
-    git-chglog --config "$CONFIG_FILE" --template "$(dirname "$0")/CHANGELOG.tpl.md" --output CHANGELOG.md "$RANGE"
+    # Check if FROM_TAG and TO_REF point to the same commit
+    FROM_COMMIT=$(git rev-parse "$FROM_TAG" 2>/dev/null || echo "")
+    TO_COMMIT=$(git rev-parse "$TO_REF" 2>/dev/null || echo "")
+    
+    if [ "$FROM_COMMIT" = "$TO_COMMIT" ]; then
+        echo -e "${COLOR_YELLOW}No changes between $FROM_TAG and $TO_REF${COLOR_RESET}"
+        # Generate the full changelog instead
+        git-chglog --config "$CONFIG_FILE" --output CHANGELOG.md
+    else
+        # Check if there are actually commits in the range
+        if [ "$(git rev-list "$FROM_TAG..$TO_REF" --count)" -eq 0 ]; then
+            echo -e "${COLOR_YELLOW}No commits found between $FROM_TAG and $TO_REF${COLOR_RESET}"
+            # Generate the full changelog instead
+            git-chglog --config "$CONFIG_FILE" --output CHANGELOG.md
+        else
+            # If a specific range is provided and commits differ
+            git-chglog --config "$CONFIG_FILE" --output CHANGELOG.md "$FROM_TAG..$TO_REF"
+        fi
+    fi
 else
     # Check if there are any tags
     if git tag -l | grep -q .; then
         # Auto-detect range with existing tags
-        git-chglog --config "$CONFIG_FILE" --template "$(dirname "$0")/CHANGELOG.tpl.md" --output CHANGELOG.md
+        git-chglog --config "$CONFIG_FILE" --output CHANGELOG.md
     else
         # No tags exist, create changelog from all commits
         FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
