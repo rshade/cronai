@@ -34,6 +34,8 @@ snapshot:
 
 release:
   prerelease: auto
+  header: |
+    {{ .Env.RELEASE_NOTES }}
 
 changelog:
   disable: true
