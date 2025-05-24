@@ -3,3 +3,101 @@ description:
 globs:
 alwaysApply: false
 ---
+# Linting Guidelines
+
+This project follows strict Go linting rules to maintain code quality and consistency. The rules are defined in `.golanglint.yml`.
+
+## Package Documentation
+
+Every package must have a package comment that:
+- Starts with "Package" followed by the package name
+- Provides a clear description of the package's purpose
+- Is placed before the `package` declaration
+
+Example:
+```go
+// Package config provides configuration management for AI models, including OpenAI, Claude, and Gemini.
+// It handles model-specific settings, environment variable loading, and parameter validation.
+package config
+```
+
+## Variable Declarations
+
+- Use `:=` only for new variable declarations
+- Use `=` for reassignment of existing variables
+- Declare variables at the smallest possible scope
+- Avoid variable shadowing
+
+Example:
+```go
+// Correct
+var err error
+err = someFunction()
+
+// Incorrect
+err := someFunction() // When err is already declared
+```
+
+## Error Handling
+
+- Always check returned errors
+- Use descriptive error messages
+- Wrap errors with context when appropriate
+- Use `require.NoError` in tests for setup
+- Use `assert.Error` in tests for expected errors
+
+## Naming Conventions
+
+- Use camelCase for variables and functions
+- Use PascalCase for exported types and functions
+- Use descriptive names that indicate purpose
+- Avoid abbreviations unless very common
+
+## Code Organization
+
+- Group related declarations together
+- Order imports: standard library, external packages, internal packages
+- Keep functions focused and small
+- Use consistent formatting (go fmt)
+
+## Testing Requirements
+
+- All exported functions must have tests
+- Use table-driven tests for multiple cases
+- Test both success and error paths
+- Include descriptive test names
+- Use `t.Run` for subtests
+
+## Common Linting Errors to Avoid
+
+1. Package Comments:
+   - Missing package comment
+   - Package comment doesn't start with "Package"
+
+2. Variable Declarations:
+   - Redeclaring variables with `:=`
+   - Unused variables
+   - Variable shadowing
+
+3. Error Handling:
+   - Unchecked errors
+   - Error variables not used
+
+4. Documentation:
+   - Missing function comments
+   - Incomplete documentation
+   - Incorrect documentation format
+
+## Running Linters
+
+To check your code against the linting rules:
+
+```bash
+golangci-lint run
+```
+
+To automatically fix some issues:
+
+```bash
+golangci-lint run --fix
+```

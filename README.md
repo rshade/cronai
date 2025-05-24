@@ -13,7 +13,9 @@ The current MVP release includes:
 - ✅ Cron-style scheduling for automated execution
 - ✅ Support for multiple AI models:
   - OpenAI (gpt-3.5-turbo, gpt-4)
-  - Claude (claude-3-sonnet, claude-3-opus)
+  - Claude 4 (opus, sonnet, haiku) - Available in v0.0.2+
+  - Claude 3.5 (opus, sonnet, haiku) - Available in v0.0.2+
+  - Claude 3 (opus, sonnet, haiku) - Available in v0.0.2+
   - Gemini
 - ✅ Customizable prompts stored as markdown files
 - ✅ Response processing options:

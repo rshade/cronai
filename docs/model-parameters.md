@@ -60,13 +60,36 @@ When configuring tasks in your `cronai.config` file, please use only the availab
   - `gpt-3.5-turbo` - Fast and cost-effective for most tasks
   - `gpt-4` - Strong reasoning and instruction following
 
-### Claude Default Settings
+### Claude Default Settings (v0.0.2+)
 
-- **Default Model**: `claude-3-sonnet-20240229`
+- **Default Model**: `claude-3-5-sonnet-latest`
 - **Supported Models**:
-  - `claude-3-opus-20240229` - Most powerful Claude model for complex tasks
-  - `claude-3-sonnet-20240229` - Balanced performance and speed
-  - `claude-3-haiku-20240307` - Fast and economical
+  
+  **Claude 4 Models (Latest - v0.0.2+)**:
+  - `claude-4-opus-latest` / `claude-4-opus-20250514` - Most capable model for complex tasks
+  - `claude-4-sonnet-latest` - Balanced performance and cost
+  - `claude-4-haiku-latest` - Fastest and most efficient
+  
+  **Claude 3.5 Models (v0.0.2+)**:
+  - `claude-3-5-opus-latest` / `claude-3-5-opus-20250120` - Most capable 3.5 model
+  - `claude-3-5-sonnet-latest` / `claude-3-5-sonnet-20241022` / `claude-3-5-sonnet-20240620` - Balanced 3.5 model
+  - `claude-3-5-haiku-latest` / `claude-3-5-haiku-20241022` - Fast 3.5 model
+  
+  **Claude 3 Models (v0.0.2+)**:
+  - `claude-3-opus-latest` / `claude-3-opus-20240229` - Most powerful Claude 3 model
+  - `claude-3-sonnet-latest` / `claude-3-sonnet-20240229` - Balanced performance and speed
+  - `claude-3-haiku-latest` / `claude-3-haiku-20240307` - Fast and economical
+
+- **Model Aliases (v0.0.2+)**:
+  - `opus` → `claude-4-opus-latest`
+  - `sonnet` → `claude-4-sonnet-latest`
+  - `haiku` → `claude-4-haiku-latest`
+  - `3.5-opus` → `claude-3-5-opus-latest`
+  - `3.5-sonnet` → `claude-3-5-sonnet-latest`
+  - `3.5-haiku` → `claude-3-5-haiku-latest`
+  - `3-opus` → `claude-3-opus-latest`
+  - `3-sonnet` → `claude-3-sonnet-latest`
+  - `3-haiku` → `claude-3-haiku-latest`
 
 ### Gemini Default Settings
 
@@ -115,6 +138,13 @@ For model-specific configuration, use the prefix notation:
 
 # Use Claude-specific parameters
 0 8 * * * claude product_manager file-output.txt model_params:claude.model=claude-3-opus-20240229
+
+# Use Claude 4 models (v0.0.2+)
+0 8 * * * claude product_manager file-output.txt model_params:claude.model=opus
+0 8 * * * claude product_manager file-output.txt model_params:claude.model=claude-4-opus-latest
+
+# Use Claude 3.5 models (v0.0.2+)
+0 8 * * * claude product_manager file-output.txt model_params:claude.model=3.5-sonnet
 
 # Use Gemini-specific parameters
 */15 * * * * gemini system_health file-output.txt model_params:gemini.model=gemini-pro

@@ -1,7 +1,37 @@
-.PHONY: all build test test-coverage coverage coverage-report clean clean_branches vet lint lint-all lint-fix lint-fix-all format run changelog release
+.PHONY: all help build test test-pkg test-verbose test-coverage coverage coverage-report \
+	clean clean_branches \
+	vet vet-pkg lint lint-all lint-fix lint-fix-all \
+	lint-fmt lint-golangci lint-golangci-pkg lint-markdown \
+	lint-fix-fmt lint-fix-golangci lint-fix-markdown \
+	format run run-task list changelog release setup install
 
 # Default target
 all: build
+
+# Help target to show available commands
+help:
+	@echo "Available targets:"
+	@echo "  make build          - Build the application"
+	@echo "  make test           - Run all tests"
+	@echo "  make test-pkg       - Run tests package by package (avoids timeouts)"
+	@echo "  make test-verbose   - Run tests with verbose output"
+	@echo "  make test-coverage  - Run tests with coverage"
+	@echo "  make coverage       - Show coverage percentage"
+	@echo "  make vet            - Run go vet on all packages"
+	@echo "  make vet-pkg        - Run go vet package by package (avoids timeouts)"
+	@echo "  make lint-fmt       - Check Go formatting"
+	@echo "  make lint-golangci  - Run golangci-lint"
+	@echo "  make lint-golangci-pkg - Run golangci-lint package by package (avoids timeouts)"
+	@echo "  make lint-markdown  - Run markdownlint"
+	@echo "  make lint           - Run all linters"
+	@echo "  make lint-fix-fmt   - Fix Go formatting"
+	@echo "  make lint-fix-golangci - Fix golangci-lint issues"
+	@echo "  make lint-fix-markdown - Fix markdown issues"
+	@echo "  make lint-fix       - Fix all linting issues"
+	@echo "  make clean          - Clean build artifacts"
+	@echo "  make install        - Install the application"
+	@echo "  make run            - Run the application"
+	@echo "  make setup          - Setup development environment"
 
 # Get version information
 VERSION ?= $(shell git describe --tags --always --dirty --match='v*' 2>/dev/null || echo "v0.0.0-dev")
@@ -15,6 +45,14 @@ build:
 # Run tests
 test:
 	go test ./...
+
+# Run tests package by package (useful for debugging and avoiding timeouts)
+test-pkg:
+	@./scripts/test-pkg.sh
+
+# Run tests with verbose output
+test-verbose:
+	go test -v ./...
 
 # Run tests with coverage
 test-coverage:
@@ -44,22 +82,30 @@ clean_branches:
 coverage-report: test-coverage
 	go tool cover -html=coverage.out
 
+# Get all Go packages
+GO_PACKAGES := $(shell go list ./... 2>/dev/null || echo "")
+
 # Run go vet (separated for CI timeout management)
 vet:
 	@echo "Running go vet..."
 	go vet ./...
 
-# Run linter (strict mode for CI, excludes go vet)
-lint:
-	@echo "Running gofmt check..."
-	@! gofmt -d . 2>&1 | grep -q '^' || (echo "Code not formatted. Run 'make lint-fix' to fix."; exit 1)
-	@echo "Running golangci-lint..."
-	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run; \
-	else \
-		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
-		echo "Note: go vet should be run separately with 'make vet'"; \
-	fi
+# Run go vet package by package (slower but avoids timeouts)
+vet-pkg:
+	@./scripts/lint-vet.sh pkg
+
+# Individual lint targets for better control and avoiding timeouts
+lint-fmt:
+	@./scripts/lint-fmt.sh
+
+lint-golangci:
+	@./scripts/lint-golangci.sh
+
+# Run golangci-lint package by package (slower but avoids timeouts)
+lint-golangci-pkg:
+	@./scripts/lint-golangci.sh pkg
+
+lint-markdown:
 	@echo "Running markdownlint..."
 	@if command -v markdownlint >/dev/null 2>&1; then \
 		markdownlint . --ignore node_modules; \
@@ -67,13 +113,19 @@ lint:
 		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
 	fi
 
+# Run linter (strict mode for CI, excludes go vet)
+# This runs all linters sequentially - use individual targets to avoid timeouts
+lint: lint-fmt lint-golangci lint-markdown
+
 # Run all linting including go vet (for convenience)
 lint-all: vet lint
 
-# Run linter with automatic fixes (for local development)
-lint-fix:
+# Individual fix targets for better control
+lint-fix-fmt:
 	@echo "Running gofmt with fix..."
 	@gofmt -w .
+
+lint-fix-golangci:
 	@echo "Running golangci-lint with fix..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run --fix; \
@@ -81,12 +133,18 @@ lint-fix:
 		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
 		echo "Note: go vet should be run separately with 'make vet'"; \
 	fi
+
+lint-fix-markdown:
 	@echo "Running markdownlint with fix..."
 	@if command -v markdownlint >/dev/null 2>&1; then \
 		markdownlint . --ignore node_modules --fix; \
 	else \
 		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
 	fi
+
+# Run linter with automatic fixes (for local development)
+# This runs all fixers sequentially - use individual targets to avoid timeouts
+lint-fix: lint-fix-fmt lint-fix-golangci lint-fix-markdown
 
 # Run all linting with fixes including go vet (for convenience)
 lint-fix-all: vet lint-fix

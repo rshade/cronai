@@ -4,13 +4,100 @@ package models
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/rshade/cronai/pkg/config"
 )
+
+// Claude model constants for all supported models
+const (
+	// Claude 4 models (newest generation - as per issue requirements)
+	Claude4OpusLatest   = "claude-4-opus-latest"
+	Claude4Opus20250514 = "claude-4-opus-20250514"
+	Claude4SonnetLatest = "claude-4-sonnet-latest"
+	Claude4HaikuLatest  = "claude-4-haiku-latest"
+
+	// Claude 3.5 models (latest generation)
+	Claude35OpusLatest     = "claude-3-5-opus-latest"
+	Claude35Opus20250120   = "claude-3-5-opus-20250120"
+	Claude35SonnetLatest   = "claude-3-5-sonnet-latest"
+	Claude35Sonnet20241022 = "claude-3-5-sonnet-20241022"
+	Claude35Sonnet20240620 = "claude-3-5-sonnet-20240620"
+	Claude35HaikuLatest    = "claude-3-5-haiku-latest"
+	Claude35Haiku20241022  = "claude-3-5-haiku-20241022"
+
+	// Claude 3 models
+	Claude3OpusLatest     = "claude-3-opus-latest"
+	Claude3Opus20240229   = "claude-3-opus-20240229"
+	Claude3SonnetLatest   = "claude-3-sonnet-latest"
+	Claude3Sonnet20240229 = "claude-3-sonnet-20240229"
+	Claude3HaikuLatest    = "claude-3-haiku-latest"
+	Claude3Haiku20240307  = "claude-3-haiku-20240307"
+
+	// Default model - using latest Sonnet for balance of capability and cost
+	DefaultClaudeModel = Claude35SonnetLatest
+)
+
+// ClaudeModelAliases maps common aliases to specific model versions
+var ClaudeModelAliases = map[string]string{
+	// Opus aliases
+	"opus":          Claude4OpusLatest, // Default to latest
+	"opus-latest":   Claude4OpusLatest,
+	"4-opus":        Claude4OpusLatest,
+	"3.5-opus":      Claude35OpusLatest,
+	"3-opus":        Claude3OpusLatest,
+	"claude-opus":   Claude4OpusLatest,
+	"claude-4-opus": Claude4OpusLatest,
+
+	// Sonnet aliases
+	"sonnet":          Claude4SonnetLatest, // Default to latest
+	"sonnet-latest":   Claude4SonnetLatest,
+	"4-sonnet":        Claude4SonnetLatest,
+	"3.5-sonnet":      Claude35SonnetLatest,
+	"3-sonnet":        Claude3SonnetLatest,
+	"claude-sonnet":   Claude4SonnetLatest,
+	"claude-4-sonnet": Claude4SonnetLatest,
+
+	// Haiku aliases
+	"haiku":          Claude4HaikuLatest, // Default to latest
+	"haiku-latest":   Claude4HaikuLatest,
+	"4-haiku":        Claude4HaikuLatest,
+	"3.5-haiku":      Claude35HaikuLatest,
+	"3-haiku":        Claude3HaikuLatest,
+	"claude-haiku":   Claude4HaikuLatest,
+	"claude-4-haiku": Claude4HaikuLatest,
+}
+
+// SupportedClaudeModels contains all supported Claude model versions
+var SupportedClaudeModels = map[string]bool{
+	// Claude 4 models
+	Claude4OpusLatest:   true,
+	Claude4Opus20250514: true,
+	Claude4SonnetLatest: true,
+	Claude4HaikuLatest:  true,
+
+	// Claude 3.5 models
+	Claude35OpusLatest:     true,
+	Claude35Opus20250120:   true,
+	Claude35SonnetLatest:   true,
+	Claude35Sonnet20241022: true,
+	Claude35Sonnet20240620: true,
+	Claude35HaikuLatest:    true,
+	Claude35Haiku20241022:  true,
+
+	// Claude 3 models
+	Claude3OpusLatest:     true,
+	Claude3Opus20240229:   true,
+	Claude3SonnetLatest:   true,
+	Claude3Sonnet20240229: true,
+	Claude3HaikuLatest:    true,
+	Claude3Haiku20240307:  true,
+}
 
 // ClaudeClient handles interactions with Claude API
 type ClaudeClient struct {
@@ -108,10 +195,25 @@ func (c *ClaudeClient) Execute(promptContent string) (*ModelResponse, error) {
 // getModelName returns the Claude model name to use
 func (c *ClaudeClient) getModelName() string {
 	if c.config != nil && c.config.ClaudeConfig != nil && c.config.ClaudeConfig.Model != "" {
-		return c.config.ClaudeConfig.Model
+		model := c.config.ClaudeConfig.Model
+
+		// Check if it's an alias and resolve it
+		if resolvedModel, ok := ClaudeModelAliases[strings.ToLower(model)]; ok {
+			return resolvedModel
+		}
+
+		// Check if it's a supported model
+		if SupportedClaudeModels[strings.ToLower(model)] {
+			return strings.ToLower(model)
+		}
+
+		// If not supported, log a warning and use default
+		// Note: In production, you might want to return an error instead
+		log.Printf("Warning: Unsupported Claude model '%s', using default: %s", model, DefaultClaudeModel)
+		return DefaultClaudeModel
 	}
-	// Default to a reasonable model if not specified
-	return "claude-3-sonnet-20240229"
+	// Default to the configured default model if not specified
+	return DefaultClaudeModel
 }
 
 // getSystemMessage returns the Claude system message to use
@@ -121,4 +223,37 @@ func (c *ClaudeClient) getSystemMessage() string {
 	}
 	// Default to a standard system message if not specified
 	return "You are a helpful assistant."
+}
+
+// GetAvailableClaudeModels returns a list of available Claude models with their descriptions
+func GetAvailableClaudeModels() map[string]string {
+	return map[string]string{
+		// Claude 4 models
+		Claude4OpusLatest:   "Claude 4 Opus (latest) - Most capable model for complex tasks",
+		Claude4Opus20250514: "Claude 4 Opus (2025-05-14) - Specific version",
+		Claude4SonnetLatest: "Claude 4 Sonnet (latest) - Balanced performance and cost",
+		Claude4HaikuLatest:  "Claude 4 Haiku (latest) - Fastest and most efficient",
+
+		// Claude 3.5 models
+		Claude35OpusLatest:     "Claude 3.5 Opus (latest) - Most capable 3.5 model",
+		Claude35Opus20250120:   "Claude 3.5 Opus (2025-01-20) - Specific version",
+		Claude35SonnetLatest:   "Claude 3.5 Sonnet (latest) - Balanced 3.5 model",
+		Claude35Sonnet20241022: "Claude 3.5 Sonnet (2024-10-22) - Specific version",
+		Claude35Sonnet20240620: "Claude 3.5 Sonnet (2024-06-20) - Specific version",
+		Claude35HaikuLatest:    "Claude 3.5 Haiku (latest) - Fast 3.5 model",
+		Claude35Haiku20241022:  "Claude 3.5 Haiku (2024-10-22) - Specific version",
+
+		// Claude 3 models
+		Claude3OpusLatest:     "Claude 3 Opus (latest) - Most capable 3.0 model",
+		Claude3Opus20240229:   "Claude 3 Opus (2024-02-29) - Specific version",
+		Claude3SonnetLatest:   "Claude 3 Sonnet (latest) - Balanced 3.0 model",
+		Claude3Sonnet20240229: "Claude 3 Sonnet (2024-02-29) - Specific version",
+		Claude3HaikuLatest:    "Claude 3 Haiku (latest) - Fast 3.0 model",
+		Claude3Haiku20240307:  "Claude 3 Haiku (2024-03-07) - Specific version",
+	}
+}
+
+// GetClaudeModelAliases returns available model aliases
+func GetClaudeModelAliases() map[string]string {
+	return ClaudeModelAliases
 }
