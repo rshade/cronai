@@ -41,6 +41,7 @@ This document outlines the current limitations of CronAI's MVP release and plann
 - **Sequential Execution**: Tasks are executed sequentially without parallel processing capabilities.
 - **No Task Prioritization**: All tasks have equal priority with no queue management.
 - **No Execution History**: No persistent record of execution history beyond log files.
+- **Single Operation Mode**: Only cron mode is functional in the MVP (v0.0.2 adds `--mode` flag stub for future bot/queue modes).
 
 ### Security and Observability
 
@@ -113,6 +114,7 @@ This document outlines the current limitations of CronAI's MVP release and plann
 - **Distributed Task Execution**: Run tasks across multiple nodes.
 - **Horizontal Scaling**: Add capacity by adding more nodes.
 - **Execution Queues**: Prioritize and manage task execution.
+- **Operation Modes**: Bot and queue modes for event-driven and distributed processing (CLI stub available in v0.0.2).
 
 ### Q1 2026 - Enterprise Features
 

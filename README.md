@@ -32,6 +32,8 @@ The following features are in development and will be available in future releas
 - Webhook processor integration
 - Enhanced templating capabilities
 - Web UI for prompt management
+- Bot mode for event-driven webhook handling (stub available via `--mode bot`)
+- Queue mode for distributed task execution (stub available via `--mode queue`)
 
 See [limitations-and-improvements.md](docs/limitations-and-improvements.md) for a detailed breakdown of current limitations and planned improvements.
 
@@ -236,11 +238,18 @@ GITHUB_TOKEN=your_github_token
 ### Common Commands
 
 ```bash
-# Start the service with default config file
+# Start the service with default config file (cron mode)
 cronai start
+
+# Start with explicit operation mode (available since v0.0.2)
+cronai start --mode cron
 
 # Specify a custom config file
 cronai start --config /path/to/config
+
+# Future operation modes (coming soon)
+cronai start --mode bot    # Event-driven webhook handler (planned)
+cronai start --mode queue  # Job queue processor (planned)
 
 # Run a single task immediately
 cronai run --model openai --prompt system_health --processor file-health.log
@@ -255,7 +264,17 @@ cronai list
 cronai prompt list
 cronai prompt search "monitoring"
 cronai prompt show system/system_health
-```text
+```
+
+### Operation Modes
+
+As of v0.0.2, CronAI supports the `--mode` flag to prepare for future operation modes:
+
+- **cron** (default): Traditional scheduled task execution using cron syntax
+- **bot** (coming soon): Event-driven webhook handler for real-time responses
+- **queue** (coming soon): Job queue processor for distributed task execution
+
+The `--mode` flag establishes the CLI interface early, allowing users to prepare for future features without breaking changes.text
 
 ## Running as a systemd Service
 
