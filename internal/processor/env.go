@@ -27,6 +27,9 @@ const (
 	EnvWebhookMethodPrefix  = "WEBHOOK_METHOD_"
 	EnvWebhookHeadersPrefix = "WEBHOOK_HEADERS_"
 
+	// Teams-specific webhook environment variables
+	EnvTeamsWebhookURL = "TEAMS_WEBHOOK_URL"
+
 	// File processor environment variables
 	EnvLogsDirectory = "LOGS_DIRECTORY"
 
@@ -49,6 +52,14 @@ func GetEnvWithDefault(key, defaultValue string) string {
 
 // GetWebhookURL returns the webhook URL for a specific type or the default
 func GetWebhookURL(webhookType string) string {
+	// Special handling for Teams webhook
+	if webhookType == "teams" {
+		// Check TEAMS_WEBHOOK_URL first
+		if url := os.Getenv(EnvTeamsWebhookURL); url != "" {
+			return url
+		}
+	}
+	
 	// Try type-specific URL first
 	if url := os.Getenv(EnvWebhookURLPrefix + strings.ToUpper(webhookType)); url != "" {
 		return url

@@ -135,6 +135,14 @@ func (w *WebhookProcessor) processWebhookWithTemplate(webhookType string, data t
 		return errors.Wrap(errors.CategoryApplication, err, "webhook payload is not valid JSON")
 	}
 
+	// Check message size limit for Teams (25KB)
+	if webhookType == "teams" && len(payload) > 25*1024 {
+		log.Warn("Teams webhook payload exceeds 25KB limit", logger.Fields{
+			"size": len(payload),
+		})
+		// In production, we would truncate or handle this appropriately
+	}
+
 	// In MVP, just log rather than actually sending
 	log.Info("Would send webhook", logger.Fields{
 		"url":     webhookURL,
