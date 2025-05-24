@@ -57,7 +57,7 @@ func (c *ClaudeClient) Execute(promptContent string) (*ModelResponse, error) {
 
 	// Create the message request
 	request := &anthropic.MessageNewParams{
-		Model:       modelName,
+		Model:       anthropic.Model(modelName),
 		MaxTokens:   maxTokens,
 		Temperature: anthropic.Float(c.config.Temperature),
 		TopP:        anthropic.Float(c.config.TopP),

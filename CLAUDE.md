@@ -416,24 +416,29 @@ go vet ./...
 golangci-lint run
 ```text
 
+## Claude Models
+
+All claude models come from this site: <https://docs.anthropic.com/en/docs/about-claude/models/overview>
+
 ## Roadmap Overview
 
-The project has a defined roadmap divided into four milestones:
+The project has a defined roadmap divided into milestones:
 
-### Q2 2025 - MVP Release
+### v0.0.2 - Claude Support & Queue/Bot MVP (Due: June 15, 2025)
 
-- ✅ Basic variable support in prompts (#5)
-- Model-specific configuration support (#6)
-- Response processor templating (#7)
-- Model fallback mechanism (#8)
-- Comprehensive logging and error handling (#9)
+MVP implementation focusing on:
+- Claude model support (#13) - Add support for Anthropic Claude 3 models
+- Slack processor (#96) - Enable and test Slack processor functionality  
+- Microsoft Teams processor (#54) - Implement Teams webhook processor
+- Bot mode foundations (#120, #121, #122) - Basic webhook server and event routing
+- Queue mode infrastructure (#63, #86) - Core queue system and basic message queue support
 
 ### Q3 2025 - Enhanced Usability
 
 - Basic web UI (#10)
 - Conditional logic in prompt templates (#11)
 - Prompt testing tool (#12)
-- Claude 3 model support (#13)
+- Advanced bot features (context awareness, state management)
 
 ### Q4 2025 - Integration & Scale
 
@@ -441,6 +446,7 @@ The project has a defined roadmap divided into four milestones:
 - Performance metrics and analytics (#15)
 - Distributed task execution (#16)
 - CI/CD platform integrations (#17)
+- Enterprise queue providers (AWS SQS, Azure Service Bus, RabbitMQ)
 
 ### Q1 2026 - Enterprise Features
 

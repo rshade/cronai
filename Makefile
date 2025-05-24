@@ -1,4 +1,4 @@
-.PHONY: all build test test-coverage coverage coverage-report clean vet lint lint-all lint-fix lint-fix-all format run changelog release
+.PHONY: all build test test-coverage coverage coverage-report clean clean_branches vet lint lint-all lint-fix lint-fix-all format run changelog release
 
 # Default target
 all: build
@@ -27,6 +27,18 @@ coverage: test-coverage
 # Clean build artifacts
 clean:
 	rm -f cronai coverage.out
+
+# Clean up local branches that no longer have remote tracking branches
+clean_branches:
+	@echo "Fetching latest changes and pruning deleted remote branches..."
+	@git fetch --prune
+	@echo "Cleaning up local branches that no longer exist on remote..."
+	@git branch -vv | grep ': gone]' | awk '{print $$1}' | while read branch; do \
+		echo "Deleting branch: $$branch"; \
+		git branch -d "$$branch" 2>/dev/null || \
+		(echo "Warning: Branch $$branch has unmerged changes. Use 'git branch -D $$branch' to force delete." >&2); \
+	done
+	@echo "Branch cleanup complete."
 
 # View coverage report in browser (for local development)
 coverage-report: test-coverage
