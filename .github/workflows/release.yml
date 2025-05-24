@@ -27,9 +27,6 @@ jobs:
       - name: Install git-chglog
         run: go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
 
-      - name: Make scripts executable
-        run: chmod +x ./scripts/*.sh
-
       - name: Generate release notes
         id: changelog
         run: |
