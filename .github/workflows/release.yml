@@ -30,34 +30,34 @@ jobs:
       - name: Make scripts executable
         run: chmod +x ./scripts/*.sh
 
-      - name: Generate changelog
-        run: |
-          # Generate changelog for the current tag
-          CURRENT_TAG=${GITHUB_REF#refs/tags/}
-          make changelog FROM=$(git describe --tags --abbrev=0 $CURRENT_TAG^ 2>/dev/null || echo "") TO=$CURRENT_TAG
-
-      - name: Extract changelog for current version
+      - name: Generate release notes
         id: changelog
         run: |
-          # Extract the changelog section for the current version
+          # Generate release notes for the current tag without modifying files
           CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 $CURRENT_TAG^ 2>/dev/null || echo "")
           
-          # Read the changelog and extract the section for current version
-          # This extracts from the version header to the next version header or end of file
-          CHANGELOG=$(awk -v tag="$CURRENT_TAG" '
-            /^## / && found { exit }
-            /^## / && $2 == tag { found=1; next }
-            found && /^## / { exit }
+          # Generate changelog content to stdout only
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # First release - get all commits
+            CHANGELOG_CONTENT=$(git-chglog --config .chglog/config.yml "$CURRENT_TAG")
+          else
+            # Generate changelog for the range
+            CHANGELOG_CONTENT=$(git-chglog --config .chglog/config.yml "$PREVIOUS_TAG..$CURRENT_TAG")
+          fi
+          
+          # Extract just the content for the current version (remove the version header)
+          RELEASE_NOTES=$(echo "$CHANGELOG_CONTENT" | awk '
+            /^## / { if (found) exit; found=1; next }
             found { print }
-          ' CHANGELOG.md)
+          ')
           
-          # Save to file for GoReleaser
-          echo "$CHANGELOG" > release-notes.md
-          
-          # Also set as output for debugging
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Set as output for GoReleaser
+          {
+            echo "notes<<EOF"
+            echo "$RELEASE_NOTES"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Run tests
         run: go test -race ./...
@@ -67,6 +67,8 @@ jobs:
         with:
           distribution: goreleaser
           version: v2.9.0
-          args: release --clean --release-notes=release-notes.md
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+          RELEASE_NOTES: ${{ steps.changelog.outputs.notes }}
