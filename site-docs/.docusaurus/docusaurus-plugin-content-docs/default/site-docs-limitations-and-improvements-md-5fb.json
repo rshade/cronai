@@ -1,0 +1,24 @@
+{
+  "id": "limitations-and-improvements",
+  "title": "CronAI: Known Limitations and Future Improvements",
+  "description": "This document outlines the current limitations of CronAI's MVP release and planned improvements for future versions. Understanding these limitations will help users make informed decisions about deployment and usage.",
+  "source": "@site/docs/limitations-and-improvements.md",
+  "sourceDirName": ".",
+  "slug": "/limitations-and-improvements",
+  "permalink": "/cronai/docs/limitations-and-improvements",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/limitations-and-improvements.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Architecture",
+    "permalink": "/cronai/docs/architecture"
+  },
+  "next": {
+    "title": "systemd Service",
+    "permalink": "/cronai/docs/systemd"
+  }
+}

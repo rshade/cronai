@@ -21,24 +21,29 @@ The current MVP release includes:
   - Claude (claude-3-sonnet, claude-3-opus)
   - Gemini
 - ✅ Customizable prompts stored as markdown files
-- ✅ Response processing options:
-  - File output
-  - GitHub (issues and comments)
-  - Console output
+- ✅ Implemented response processors:
+  - File output - Save responses to files
+  - GitHub integration - Create issues and add comments
+  - Console output - Display responses in terminal
 - ✅ Variable substitution in prompts
 - ✅ Systemd service for deployment
 
-### Planned Post-MVP Features (Coming Soon)
+### Planned Features (Not Yet Implemented)
 
-The following features are in development and will be available in future releases:
+The following processors are planned but not yet implemented in the current release:
 
-- Email processor integration
-- Slack processor integration
-- Webhook processor integration
+- ⚠️ Email processor - Currently logs actions only
+- ⚠️ Slack processor - Currently logs actions only
+- ⚠️ Webhook processor - Currently logs actions only
+
+Additional planned features:
+
 - Enhanced templating capabilities
 - Web UI for prompt management
 - Bot mode for event-driven webhook handling (stub available via `--mode bot` since v0.0.2)
 - Queue mode for distributed task execution (stub available via `--mode queue` since v0.0.2)
+- Model fallback mechanisms
+- Advanced scheduling options
 
 See [Limitations and Improvements](https://github.com/rshade/cronai/blob/main/docs/limitations-and-improvements.md) for a detailed breakdown of current limitations and planned improvements.
 

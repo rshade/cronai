@@ -1,0 +1,28 @@
+{
+  "id": "model-parameters",
+  "title": "Model Parameters Configuration",
+  "description": "CronAI supports model-specific parameters that allow you to fine-tune AI model behavior for each prompt. This document explains how to configure and use these parameters.",
+  "source": "@site/docs/model-parameters.md",
+  "sourceDirName": ".",
+  "slug": "/model-parameters",
+  "permalink": "/cronai/docs/model-parameters",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/model-parameters.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "model-parameters",
+    "title": "Model Parameters Configuration",
+    "sidebar_label": "Model Parameters"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Prompt Management",
+    "permalink": "/cronai/docs/prompt-management"
+  },
+  "next": {
+    "title": "Logging in CronAI",
+    "permalink": "/cronai/docs/logging"
+  }
+}

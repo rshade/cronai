@@ -1,0 +1,24 @@
+{
+  "id": "api",
+  "title": "CronAI API Documentation",
+  "description": "Note: This document is a placeholder for future API documentation. The external API is planned for post-MVP releases.",
+  "source": "@site/docs/api.md",
+  "sourceDirName": ".",
+  "slug": "/api",
+  "permalink": "/cronai/docs/api",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/api.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "api",
+    "title": "CronAI API Documentation",
+    "sidebar_label": "API Reference"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Troubleshooting Guide (Coming Soon)",
+    "permalink": "/cronai/docs/troubleshooting"
+  }
+}

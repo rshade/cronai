@@ -1,0 +1,28 @@
+{
+  "id": "systemd",
+  "title": "Running CronAI as a systemd Service",
+  "description": "This document explains how to set up CronAI to run as a systemd service on Linux systems.",
+  "source": "@site/docs/systemd.md",
+  "sourceDirName": ".",
+  "slug": "/systemd",
+  "permalink": "/cronai/docs/systemd",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/systemd.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "systemd",
+    "title": "Running CronAI as a systemd Service",
+    "sidebar_label": "systemd Service"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "CronAI: Known Limitations and Future Improvements",
+    "permalink": "/cronai/docs/limitations-and-improvements"
+  },
+  "next": {
+    "title": "Prompt Management",
+    "permalink": "/cronai/docs/prompt-management"
+  }
+}
