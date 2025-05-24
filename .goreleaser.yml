@@ -36,8 +36,4 @@ release:
   prerelease: auto
 
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
+  disable: true
