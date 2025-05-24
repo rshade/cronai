@@ -1,0 +1,28 @@
+{
+  "id": "architecture",
+  "title": "CronAI Architecture",
+  "description": "This document provides an overview of the CronAI system architecture, explaining the key components, their interactions, and design principles.",
+  "source": "@site/docs/architecture.md",
+  "sourceDirName": ".",
+  "slug": "/architecture",
+  "permalink": "/cronai/docs/architecture",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/architecture.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "architecture",
+    "title": "CronAI Architecture",
+    "sidebar_label": "Architecture"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Introduction",
+    "permalink": "/cronai/docs/"
+  },
+  "next": {
+    "title": "CronAI: Known Limitations and Future Improvements",
+    "permalink": "/cronai/docs/limitations-and-improvements"
+  }
+}

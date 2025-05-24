@@ -39,11 +39,6 @@ const config = {
           editUrl:
             'https://github.com/rshade/cronai/tree/main/site-docs/',
         },
-        blog: {
-          showReadingTime: true,
-          editUrl:
-            'https://github.com/rshade/cronai/tree/main/site-docs/',
-        },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -69,7 +64,6 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
           {
             href: 'https://github.com/rshade/cronai',
             label: 'GitHub',
@@ -109,10 +103,6 @@ const config = {
           {
             title: 'More',
             items: [
-              {
-                label: 'Blog',
-                to: '/blog',
-              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/rshade/cronai',

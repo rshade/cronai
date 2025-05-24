@@ -1,0 +1,24 @@
+{
+  "id": "troubleshooting",
+  "title": "Troubleshooting Guide (Coming Soon)",
+  "description": "⚠️ Note: This troubleshooting guide is a placeholder for the upcoming comprehensive guide that will be available in future releases. For the MVP release, we've included some basic troubleshooting tips below.",
+  "source": "@site/docs/troubleshooting.md",
+  "sourceDirName": ".",
+  "slug": "/troubleshooting",
+  "permalink": "/cronai/docs/troubleshooting",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/troubleshooting.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Logging in CronAI",
+    "permalink": "/cronai/docs/logging"
+  },
+  "next": {
+    "title": "API Reference",
+    "permalink": "/cronai/docs/api"
+  }
+}

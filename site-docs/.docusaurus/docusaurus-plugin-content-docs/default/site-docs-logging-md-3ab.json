@@ -1,0 +1,24 @@
+{
+  "id": "logging",
+  "title": "Logging in CronAI",
+  "description": "CronAI implements structured logging with configurable log levels to help with troubleshooting and monitoring.",
+  "source": "@site/docs/logging.md",
+  "sourceDirName": ".",
+  "slug": "/logging",
+  "permalink": "/cronai/docs/logging",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/logging.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Model Parameters",
+    "permalink": "/cronai/docs/model-parameters"
+  },
+  "next": {
+    "title": "Troubleshooting Guide (Coming Soon)",
+    "permalink": "/cronai/docs/troubleshooting"
+  }
+}

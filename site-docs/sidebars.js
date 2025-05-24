@@ -17,7 +17,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'Introduction',
-      items: ['intro', 'architecture'],
+      items: ['intro', 'architecture', 'limitations-and-improvements'],
     },
     {
       type: 'category',
@@ -26,6 +26,8 @@ const sidebars = {
         'systemd',
         'prompt-management',
         'model-parameters',
+        'logging',
+        'troubleshooting',
       ],
     },
     {

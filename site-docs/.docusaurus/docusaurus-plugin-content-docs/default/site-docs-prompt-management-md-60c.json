@@ -1,0 +1,28 @@
+{
+  "id": "prompt-management",
+  "title": "Prompt Management",
+  "description": "CronAI includes a simple file-based prompt management system that helps you organize and use prompts efficiently.",
+  "source": "@site/docs/prompt-management.md",
+  "sourceDirName": ".",
+  "slug": "/prompt-management",
+  "permalink": "/cronai/docs/prompt-management",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/rshade/cronai/tree/main/site-docs/docs/prompt-management.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "prompt-management",
+    "title": "Prompt Management",
+    "sidebar_label": "Prompt Management"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "systemd Service",
+    "permalink": "/cronai/docs/systemd"
+  },
+  "next": {
+    "title": "Model Parameters",
+    "permalink": "/cronai/docs/model-parameters"
+  }
+}
