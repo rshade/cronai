@@ -42,6 +42,8 @@ Update the following fields in the service file:
 - `User`: The user account that will run the service
 - `WorkingDirectory`: The directory where your configuration is located (e.g., `/etc/cronai`)
 - `ExecStart`: The path to the CronAI binary (e.g., `/usr/local/bin/cronai start --config /etc/cronai/cronai.config`)
+  - Since v0.0.2: You can also specify the operation mode with `--mode cron` (default)
+  - Future modes (bot, queue) will be available in upcoming releases
 - `EnvironmentFile`: The path to your .env file (e.g., `/etc/cronai/.env`)
 
 5. **Enable and start the service**
