@@ -40,7 +40,7 @@ jobs:
           # Generate changelog content to stdout only
           if [ -z "$PREVIOUS_TAG" ]; then
             # First release - get all commits
-            CHANGELOG_CONTENT=$(git-chglog --config .chglog/config.yml $CURRENT_TAG)
+            CHANGELOG_CONTENT=$(git-chglog --config .chglog/config.yml "$CURRENT_TAG")
           else
             # Generate changelog for the range
             CHANGELOG_CONTENT=$(git-chglog --config .chglog/config.yml "$PREVIOUS_TAG..$CURRENT_TAG")
