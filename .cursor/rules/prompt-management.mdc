@@ -3,3 +3,52 @@ description:
 globs:
 alwaysApply: false
 ---
+# Prompt Management Guide
+
+The prompt management system provides functionality for handling AI prompts with the following key features:
+
+## Core Functions
+
+- `CreatePromptWithMetadata`: Creates a new prompt with YAML frontmatter metadata
+- `GetPromptInfo`: Retrieves metadata and information about a prompt
+- `ListPrompts`: Lists all available prompts with their metadata
+- `SearchPrompts`: Searches prompts by name, description, or category
+- `SearchPromptContent`: Searches within prompt content
+- `LoadPromptWithIncludes`: Loads a prompt and processes any included files
+- `ValidatePromptTemplate`: Validates Go template syntax in prompts
+
+## Prompt Structure
+
+Prompts are stored as markdown files with YAML frontmatter:
+
+```yaml
+---
+title: Prompt Title
+description: Prompt description
+category: category_name
+tags: [tag1, tag2]
+author: author_name
+version: 1.0.0
+variables:
+  - name: var1
+    description: First variable
+  - name: var2
+    description: Second variable
+---
+
+Prompt content goes here...
+```
+
+## File Organization
+
+- Prompts are stored in the `CRON_PROMPTS_DIR` directory
+- Each prompt is a `.md` file
+- Prompts can be organized in category subdirectories
+- Templates and includes are stored in a `templates` subdirectory
+
+## Template Features
+
+- Supports Go template syntax for variables
+- Allows including other prompt files with `{{include path/to/file.md}}`
+- Handles nested includes with recursion protection
+- Validates template syntax before use

@@ -3,3 +3,22 @@ description:
 globs:
 alwaysApply: false
 ---
+# Project Structure Guide
+
+This project follows a standard Go project layout with the following key directories:
+
+- `cmd/`: Contains the main applications of the project
+  - `cronai/`: Main CLI application
+    - `cmd/`: Command implementations
+    - `prompt.go`: Main entry point for prompt-related commands
+
+- `internal/`: Private application and library code
+  - `prompt/`: Core prompt management functionality
+    - `loader.go`: Prompt loading and file operations
+    - `loader_func_test.go`: Tests for prompt loading functions
+
+- `pkg/`: Library code that's ok to use by external applications
+  - `config/`: Configuration management
+    - `model_config.go`: AI model configuration settings
+
+The project is organized to separate concerns between CLI commands, core functionality, and configuration management. The `internal` package contains the main business logic, while `pkg` contains reusable components that could be used by other applications.

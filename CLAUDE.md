@@ -57,10 +57,34 @@ The processor system follows these patterns:
 
 ### Code Quality and Linting
 
-- **For CI/PR checks: run `make vet` and `make lint` separately (to avoid timeout issues)**
+- **For CI/PR checks: run individual lint targets to avoid timeout issues**:
+  - `make vet` - Run go vet on all packages at once
+  - `make vet-pkg` - Run go vet package by package (slower but avoids timeouts)
+  - `make lint-fmt` - Check Go formatting
+  - `make lint-golangci` - Run golangci-lint on all packages
+  - `make lint-golangci-pkg` - Run golangci-lint package by package (slower but avoids timeouts)
+  - `make lint-markdown` - Run markdownlint
+- **Alternative: Use scripts directly if make times out**:
+  - `./scripts/lint-fmt.sh` - Check Go formatting
+  - `./scripts/lint-vet.sh` - Run go vet
+  - `./scripts/lint-vet.sh pkg` - Run go vet package by package
+  - `./scripts/lint-golangci.sh` - Run golangci-lint
+  - `./scripts/lint-golangci.sh pkg` - Run golangci-lint package by package
+  - `./scripts/lint-all.sh` - Run all linters
+  - `./scripts/test-pkg.sh` - Run tests package by package
 - **For local development: run `make lint-fix-all` to automatically fix all issues including go vet**
+- **Individual fix targets (to avoid timeouts)**:
+  - `make lint-fix-fmt` - Fix Go formatting
+  - `make lint-fix-golangci` - Fix golangci-lint issues
+  - `make lint-fix-markdown` - Fix markdown issues
+- **Testing targets**:
+  - `make test` - Run all tests at once
+  - `make test-pkg` - Run tests package by package (avoids timeouts)
+  - `make test-verbose` - Run tests with verbose output
+  - `make test-coverage` - Run tests with coverage report
 - **Quick linting without go vet: run `make lint` or `make lint-fix`**
 - **Run all linting checks: run `make lint-all` (includes go vet + lint)**
+- **View all available commands: run `make help`**
 - Fix all linting issues before submitting pull requests
 - The linting process checks:
   - Code formatting with `gofmt`

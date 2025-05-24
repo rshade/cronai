@@ -3,3 +3,115 @@ description:
 globs:
 alwaysApply: false
 ---
+# Testing Guidelines
+
+This project follows Go testing best practices with a focus on table-driven tests and proper test organization.
+
+## Test Structure
+
+- Tests are co-located with the code they test
+- Test files are named with `_test.go` suffix
+- Each test function is prefixed with `Test`
+- Table-driven tests are used for multiple test cases
+
+## Test Setup
+
+Tests typically follow this pattern:
+1. Create temporary directory structure
+2. Set up test environment
+3. Create test files and data
+4. Run test cases
+5. Clean up
+
+Example:
+```go
+func TestFunction(t *testing.T) {
+    // Setup
+    tempDir := t.TempDir()
+    // ... setup code ...
+
+    // Test cases
+    tests := []struct {
+        name      string
+        input     string
+        expected  string
+        expectErr bool
+    }{
+        // ... test cases ...
+    }
+
+    // Run tests
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            // ... test code ...
+        })
+    }
+}
+```
+
+## Testing Best Practices
+
+1. Use `t.TempDir()` for file operations
+2. Clean up resources in `defer` statements
+3. Use `require` for setup assertions
+4. Use `assert` for test case assertions
+5. Test both success and error cases
+6. Include descriptive test names
+7. Test edge cases and error conditions
+
+## Common Test Patterns
+
+- File operations: Create temp dir, write test files, verify content
+- Environment variables: Save old values, set test values, restore in defer
+- Working directory: Save old dir, change to test dir, restore in defer
+- Error cases: Test invalid inputs, missing files, permission issues
+
+## Linting Requirements for Tests
+
+1. Variable Declarations:
+   - Declare error variables at the start of test functions
+   - Use `var err error` for error variables that are reused
+   - Avoid redeclaring variables with `:=` in loops
+
+2. Error Handling:
+   - Always check returned errors
+   - Use `require.NoError` for setup errors
+   - Use `assert.Error` for expected errors
+   - Include error message checks with `assert.Contains`
+
+3. Test Organization:
+   - Group related test cases together
+   - Use descriptive test names
+   - Keep test functions focused
+   - Document complex test scenarios
+
+4. Common Linting Issues to Avoid:
+   - Unused variables in test cases
+   - Missing error checks
+   - Inconsistent error handling
+   - Unnecessary variable declarations
+
+Example of proper error handling in tests:
+```go
+func TestFunction(t *testing.T) {
+    var err error
+    
+    // Setup
+    tempDir := t.TempDir()
+    require.NoError(t, os.MkdirAll(tempDir, 0755))
+    
+    // Test cases
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result, err := someFunction(tt.input)
+            if tt.expectErr {
+                assert.Error(t, err)
+                assert.Contains(t, err.Error(), tt.expectedErr)
+            } else {
+                assert.NoError(t, err)
+                assert.Equal(t, tt.expected, result)
+            }
+        })
+    }
+}
+```

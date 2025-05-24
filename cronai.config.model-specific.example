@@ -11,8 +11,17 @@
 # OpenAI-specific configuration with file output
 0 8 * * * openai product_manager file-/var/log/cronai/product.log model_params:openai.model=gpt-4-turbo
 
-# Claude-specific configuration with file output
+# Claude-specific configuration with file output (v0.0.2+ supports Claude 3, 3.5, and 4)
 0 9 * * 1 claude weekly_report file-/var/log/cronai/weekly.log reportType=Weekly,date={{CURRENT_DATE}} model_params:claude.model=claude-3-opus-20240229
+
+# Claude 4 models (v0.0.2+) - using aliases
+0 9 * * 1 claude weekly_report file-/var/log/cronai/weekly.log reportType=Weekly,date={{CURRENT_DATE}} model_params:claude.model=opus
+
+# Claude 4 models (v0.0.2+) - using full model names
+0 9 * * 1 claude weekly_report file-/var/log/cronai/weekly.log reportType=Weekly,date={{CURRENT_DATE}} model_params:claude.model=claude-4-opus-latest
+
+# Claude 3.5 models (v0.0.2+)
+0 9 * * 1 claude weekly_report file-/var/log/cronai/weekly.log reportType=Weekly,date={{CURRENT_DATE}} model_params:claude.model=3.5-sonnet
 
 # Gemini-specific configuration with console output
 */15 * * * * gemini system_health console cluster=Primary model_params:gemini.model=gemini-pro

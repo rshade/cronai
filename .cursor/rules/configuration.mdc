@@ -3,3 +3,60 @@ description:
 globs:
 alwaysApply: false
 ---
+# Configuration Management Guide
+
+The project uses a structured approach to configuration management, particularly for AI model settings.
+
+## Model Configuration
+
+The `ModelConfig` struct in [pkg/config/model_config.go](mdc:pkg/config/model_config.go) manages AI model settings with the following features:
+
+### Common Parameters
+- Temperature (0.0-1.0)
+- MaxTokens (response length)
+- TopP (nucleus sampling)
+- FrequencyPenalty (-2.0 to 2.0)
+- PresencePenalty (-2.0 to 2.0)
+
+### Model-Specific Settings
+- OpenAI configuration
+- Claude configuration
+- Gemini configuration
+
+## Configuration Sources
+
+1. Environment Variables:
+   ```
+   MODEL_TEMPERATURE=0.7
+   MODEL_MAX_TOKENS=1024
+   OPENAI_MODEL=gpt-4
+   CLAUDE_MODEL=claude-3-sonnet
+   GEMINI_MODEL=gemini-pro
+   ```
+
+2. Command-line Parameters:
+   ```
+   temperature=0.8,max_tokens=2048,model=gpt-4
+   ```
+
+3. Model-specific parameters:
+   ```
+   openai.model=gpt-4
+   claude.system_message=You are a helpful assistant
+   gemini.safety_setting=category=level
+   ```
+
+## Configuration Loading
+
+1. Default values are provided by `DefaultModelConfig()`
+2. Environment variables override defaults
+3. Command-line parameters override environment variables
+4. Model-specific parameters have highest priority
+
+## Validation
+
+The configuration system includes validation for:
+- Parameter ranges
+- Required fields
+- Model compatibility
+- Safety settings
