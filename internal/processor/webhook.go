@@ -79,6 +79,39 @@ func (w *WebhookProcessor) GetConfig() Config {
 	return w.config
 }
 
+// truncatePayload truncates a JSON payload to fit within the specified size limit
+// while preserving valid JSON structure
+func truncatePayload(payload string, maxSize int) string {
+	if len(payload) <= maxSize {
+		return payload
+	}
+
+	// Parse the JSON to handle truncation properly
+	var jsonData interface{}
+	if err := json.Unmarshal([]byte(payload), &jsonData); err != nil {
+		// If we can't parse as JSON, do a simple string truncation
+		return payload[:maxSize]
+	}
+
+	// Convert back to JSON with indentation for better truncation
+	truncated, err := json.MarshalIndent(jsonData, "", "  ")
+	if err != nil {
+		return payload[:maxSize]
+	}
+
+	// If still too large, truncate and try to close any open JSON structures
+	if len(truncated) > maxSize {
+		truncated = truncated[:maxSize]
+		// Find the last complete JSON structure
+		lastBrace := strings.LastIndex(string(truncated), "}")
+		if lastBrace > 0 {
+			truncated = truncated[:lastBrace+1]
+		}
+	}
+
+	return string(truncated)
+}
+
 // processWebhookWithTemplate sends webhook payload using template
 func (w *WebhookProcessor) processWebhookWithTemplate(webhookType string, data template.Data, templateName string) error {
 	// Check for webhook URL
@@ -137,10 +170,10 @@ func (w *WebhookProcessor) processWebhookWithTemplate(webhookType string, data t
 
 	// Check message size limit for Teams (25KB)
 	if webhookType == "teams" && len(payload) > 25*1024 {
-		log.Warn("Teams webhook payload exceeds 25KB limit", logger.Fields{
-			"size": len(payload),
+		log.Warn("Teams webhook payload exceeds 25KB limit, truncating", logger.Fields{
+			"original_size": len(payload),
 		})
-		// In production, we would truncate or handle this appropriately
+		payload = truncatePayload(payload, 25*1024)
 	}
 
 	// In MVP, just log rather than actually sending

@@ -18,12 +18,15 @@ The current MVP release includes:
 - ✅ Cron-style scheduling for automated execution
 - ✅ Support for multiple AI models:
   - OpenAI (gpt-3.5-turbo, gpt-4)
-  - Claude (claude-3-sonnet, claude-3-opus)
+  - Claude 4 (opus, sonnet, haiku) - Available in v0.0.2+
+  - Claude 3.5 (opus, sonnet, haiku) - Available in v0.0.2+
+  - Claude 3 (opus, sonnet, haiku) - Available in v0.0.2+
   - Gemini
 - ✅ Customizable prompts stored as markdown files
 - ✅ Implemented response processors:
   - File output - Save responses to files
   - GitHub integration - Create issues and add comments
+  - Microsoft Teams webhooks - Send to Teams channels (Available in v0.0.2+)
   - Console output - Display responses in terminal
 - ✅ Variable substitution in prompts
 - ✅ Systemd service for deployment
@@ -34,7 +37,7 @@ The following processors are planned but not yet implemented in the current rele
 
 - ⚠️ Email processor - Currently logs actions only
 - ⚠️ Slack processor - Currently logs actions only
-- ⚠️ Webhook processor - Currently logs actions only
+- ⚠️ Generic webhook processor - Currently logs actions only
 
 Additional planned features:
 
@@ -76,6 +79,7 @@ timestamp model prompt response_processor [variables] [model_params:...]
   - `file-path/to/output.txt`: Save to file
   - `github-issue:owner/repo`: Create GitHub issue
   - `github-comment:owner/repo#123`: Add comment to GitHub issue
+  - `teams-channel`: Send to Microsoft Teams webhook (Available in v0.0.2+)
   - `console`: Display in console
 - **variables** (optional): Variables to replace in the prompt file, in the format `key1=value1,key2=value2,...`
 - **model_params** (optional): Model-specific parameters in the format `model_params:param1=value1,param2=value2,...`
@@ -91,6 +95,9 @@ timestamp model prompt response_processor [variables] [model_params:...]
 
 # Run daily health check with variables
 0 6 * * * openai system_check file-/var/log/cronai/health.log system=production,check_level=detailed
+
+# Send monitoring alerts to Microsoft Teams (v0.0.2+)
+0 */4 * * * claude system_health teams-monitoring
 
 # Run with custom model parameters (temperature and specific model version)
 0 9 * * 1 openai weekly_report file-/var/log/cronai/report.log model_params:temperature=0.5,model=gpt-4

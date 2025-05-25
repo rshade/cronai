@@ -24,6 +24,12 @@ The integration tests cover:
    - Authentication handling
    - Template-based formatting
 
+4. **Microsoft Teams Processor**
+   - Teams webhook integration
+   - MessageCard format validation
+   - Payload size limit checking (25KB)
+   - Template-based formatting
+
 ## Running the Tests
 
 ### Basic Test Run
@@ -42,6 +48,7 @@ To run tests with real API keys:
 # Set your API keys
 export OPENAI_API_KEY=your_openai_key
 export GITHUB_TOKEN=your_github_token
+export TEAMS_WEBHOOK_URL=your_teams_webhook_url
 
 # Run tests with real APIs
 export RUN_INTEGRATION_TESTS=1
@@ -66,11 +73,14 @@ The integration tests use the following environment variables:
 - `RUN_INTEGRATION_TESTS=1`: Enables tests that use real API calls
 - `OPENAI_API_KEY`: API key for OpenAI
 - `GITHUB_TOKEN`: API token for GitHub
+- `TEAMS_WEBHOOK_URL`: Webhook URL for Microsoft Teams
 - `LOGS_DIRECTORY`: Directory for file processor outputs
+- `USE_MOCK_HTTP`: Use mock HTTP client for webhook tests
 
 ## Test Files
 
 - `pipeline_test.go`: Tests the full end-to-end pipeline from prompt to processor
+- `teams_integration_test.go`: Tests Microsoft Teams webhook integration
 
 ## Adding New Tests
 

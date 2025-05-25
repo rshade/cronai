@@ -21,6 +21,7 @@ The current MVP release includes:
 - ✅ Response processing options:
   - File output
   - GitHub (issues and comments)
+  - Microsoft Teams webhooks - Available in v0.0.2+
   - Console output
 - ✅ Variable substitution in prompts
 - ✅ Systemd service for deployment
@@ -31,7 +32,7 @@ The following features are in development and will be available in future releas
 
 - Email processor integration
 - Slack processor integration
-- Webhook processor integration
+- Generic webhook processor integration
 - Enhanced templating capabilities
 - Web UI for prompt management
 - Bot mode for event-driven webhook handling (stub available via `--mode bot`)
@@ -68,6 +69,7 @@ timestamp model prompt response_processor [variables] [model_params:...]
   - `file-path/to/output.txt`: Save to file
   - `github-issue:owner/repo`: Create GitHub issue
   - `github-comment:owner/repo#123`: Add comment to GitHub issue
+  - `teams-channel`: Send to Microsoft Teams webhook (Available in v0.0.2+)
   - `console`: Display in console
 - **variables** (optional): Variables to replace in the prompt file, in the format `key1=value1,key2=value2,...`
 - **model_params** (optional): Model-specific parameters in the format `model_params:param1=value1,param2=value2,...`
@@ -83,6 +85,9 @@ timestamp model prompt response_processor [variables] [model_params:...]
 
 # Run daily health check with variables
 0 6 * * * openai system_check file-/var/log/cronai/health.log system=production,check_level=detailed
+
+# Send monitoring alerts to Microsoft Teams (v0.0.2+)
+0 */4 * * * claude system_health teams-monitoring
 
 # Run with custom model parameters (temperature and specific model version)
 0 9 * * 1 openai weekly_report file-/var/log/cronai/report.log model_params:temperature=0.5,model=gpt-4
@@ -194,6 +199,7 @@ CronAI currently supports these response processors in the MVP:
 
 - **File**: `file-path/to/file.txt` - Save the response to a file
 - **GitHub**: `github-issue:owner/repo` or `github-comment:owner/repo#123` - Create issues or comments
+- **Microsoft Teams**: `teams-channel` - Send to Teams webhook (v0.0.2+)
 - **Console**: `console` - Display the response in the console
 
 ### GitHub Processor
@@ -221,6 +227,45 @@ Where `action` can be:
 0 10 * * * claude issue_analysis github-comment:myorg/myrepo#123
 ```text
 
+### Microsoft Teams Processor (v0.0.2+)
+
+The Teams processor sends formatted messages to Microsoft Teams channels via webhooks.
+
+#### Format
+
+```text
+teams-channel_identifier
+```text
+
+Where `channel_identifier` is an optional identifier for your Teams channel (e.g., `general`, `monitoring`, `alerts`).
+
+#### Configuration
+
+Set up your Teams webhook URL using one of these environment variables:
+- `TEAMS_WEBHOOK_URL` - Primary Teams webhook URL
+- `WEBHOOK_URL_TEAMS` - Alternative configuration
+- `WEBHOOK_URL_<CHANNEL>` - Channel-specific URLs (e.g., `WEBHOOK_URL_MONITORING`)
+
+#### Examples
+
+```text
+# Send daily reports to Teams
+0 9 * * * claude daily_report teams-general
+
+# Send monitoring alerts to a specific Teams channel
+*/30 * * * * openai system_monitor teams-monitoring
+
+# Send critical alerts with custom formatting
+0 * * * * claude critical_check teams-alerts
+```text
+
+The Teams processor uses Microsoft's MessageCard format with:
+- Themed color coding (blue for general, red for alerts)
+- Structured sections with activity titles
+- Facts display for metadata (model, timestamp, variables)
+- Markdown support in message content
+- Automatic 25KB message size validation
+
 ## Environment Variables
 
 Create a `.env` file with your API keys and configuration:
@@ -233,6 +278,11 @@ GOOGLE_API_KEY=your_gemini_key
 
 # GitHub configuration
 GITHUB_TOKEN=your_github_token
+
+# Microsoft Teams webhook configuration (v0.0.2+)
+TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/your_webhook_url
+# Or use type-specific URLs:
+WEBHOOK_URL_TEAMS=https://outlook.office.com/webhook/your_webhook_url
 ```text
 
 ## Usage

@@ -59,7 +59,7 @@ func GetWebhookURL(webhookType string) string {
 			return url
 		}
 	}
-	
+
 	// Try type-specific URL first
 	if url := os.Getenv(EnvWebhookURLPrefix + strings.ToUpper(webhookType)); url != "" {
 		return url

@@ -42,6 +42,26 @@
 # - Comment: Adds formatted comment with model info and content
 # - PR: Creates PR with title and body (requires head_branch variable)
 
+# Microsoft Teams Processor Examples (v0.0.2+)
+# --------------------------------------------
+# Teams processor sends formatted messages to Teams channels via webhooks
+# Format: teams-channel_identifier (channel_identifier is optional)
+
+# Send daily report to Teams
+0 9 * * * claude daily_report teams-general
+
+# Send monitoring alerts to specific Teams channel
+*/30 * * * * openai system_monitor teams-monitoring
+
+# Send critical alerts with variables
+0 * * * * claude critical_check teams-alerts severity=high,system=production
+
+# The Teams processor uses Microsoft MessageCard format with:
+# - Themed colors (blue for general, red for alerts)
+# - Structured sections with facts
+# - Markdown support
+# - 25KB message size validation
+
 # ============================================================================
 # POST-MVP PROCESSORS (Coming Soon)
 # ============================================================================

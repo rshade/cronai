@@ -61,7 +61,7 @@ func DefaultModelConfig() *ModelConfig {
 			SystemMessage: "You are a helpful assistant.",
 		},
 		ClaudeConfig: &ClaudeConfig{
-			Model:         "claude-3-5-sonnet-latest",
+			Model:         "claude-3-sonnet-20240229",
 			SystemMessage: "You are a helpful assistant.",
 		},
 		GeminiConfig: &GeminiConfig{
