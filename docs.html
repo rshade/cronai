@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.7.0">
 <title data-rh="true">CronAI | CronAI Documentation</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://rshade.github.io/cronai/img/docusaurus-social-card.jpg"><meta data-rh="true" name="twitter:image" content="https://rshade.github.io/cronai/img/docusaurus-social-card.jpg"><meta data-rh="true" property="og:url" content="https://rshade.github.io/cronai/docs"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CronAI | CronAI Documentation"><meta data-rh="true" name="description" content="AI agent for scheduled prompt execution - Your automated AI assistant."><meta data-rh="true" property="og:description" content="AI agent for scheduled prompt execution - Your automated AI assistant."><link data-rh="true" rel="icon" href="/cronai/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://rshade.github.io/cronai/docs"><link data-rh="true" rel="alternate" href="https://rshade.github.io/cronai/docs" hreflang="en"><link data-rh="true" rel="alternate" href="https://rshade.github.io/cronai/docs" hreflang="x-default"><link rel="stylesheet" href="/cronai/assets/css/styles.c34166a7.css">
-<script src="/cronai/assets/js/runtime~main.8dcf4e20.js" defer="defer"></script>
+<script src="/cronai/assets/js/runtime~main.3da0c86d.js" defer="defer"></script>
 <script src="/cronai/assets/js/main.8dbfbead.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -18,7 +18,9 @@
 <li>✅ Support for multiple AI models:<!-- -->
 <ul>
 <li>OpenAI (gpt-3.5-turbo, gpt-4)</li>
-<li>Claude (claude-3-sonnet, claude-3-opus)</li>
+<li>Claude 4 (opus, sonnet, haiku) - Available in v0.0.2+</li>
+<li>Claude 3.5 (opus, sonnet, haiku) - Available in v0.0.2+</li>
+<li>Claude 3 (opus, sonnet, haiku) - Available in v0.0.2+</li>
 <li>Gemini</li>
 </ul>
 </li>
@@ -27,6 +29,7 @@
 <ul>
 <li>File output - Save responses to files</li>
 <li>GitHub integration - Create issues and add comments</li>
+<li>Microsoft Teams webhooks - Send to Teams channels (Available in v0.0.2+)</li>
 <li>Console output - Display responses in terminal</li>
 </ul>
 </li>
@@ -38,7 +41,7 @@
 <ul>
 <li>⚠️ Email processor - Currently logs actions only</li>
 <li>⚠️ Slack processor - Currently logs actions only</li>
-<li>⚠️ Webhook processor - Currently logs actions only</li>
+<li>⚠️ Generic webhook processor - Currently logs actions only</li>
 </ul>
 <p>Additional planned features:</p>
 <ul>
@@ -65,6 +68,7 @@
 <li><code>file-path/to/output.txt</code>: Save to file</li>
 <li><code>github-issue:owner/repo</code>: Create GitHub issue</li>
 <li><code>github-comment:owner/repo#123</code>: Add comment to GitHub issue</li>
+<li><code>teams-channel</code>: Send to Microsoft Teams webhook (Available in v0.0.2+)</li>
 <li><code>console</code>: Display in console</li>
 </ul>
 </li>
@@ -72,7 +76,7 @@
 <li><strong>model_params</strong> (optional): Model-specific parameters in the format <code>model_params:param1=value1,param2=value2,...</code></li>
 </ul>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="example-configuration">Example Configuration<a href="#example-configuration" class="hash-link" aria-label="Direct link to Example Configuration" title="Direct link to Example Configuration">​</a></h3>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Run daily at 8 AM using OpenAI, saving to file</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 8 * * * openai product_manager file-/var/log/cronai/product_manager.log</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run weekly on Monday at 9 AM using Claude, creating GitHub issue</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 9 * * 1 claude weekly_report github-issue:your-org/your-repo</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run daily health check with variables</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 6 * * * openai system_check file-/var/log/cronai/health.log system=production,check_level=detailed</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run with custom model parameters (temperature and specific model version)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 9 * * 1 openai weekly_report file-/var/log/cronai/report.log model_params:temperature=0.5,model=gpt-4</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Run daily at 8 AM using OpenAI, saving to file</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 8 * * * openai product_manager file-/var/log/cronai/product_manager.log</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run weekly on Monday at 9 AM using Claude, creating GitHub issue</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 9 * * 1 claude weekly_report github-issue:your-org/your-repo</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run daily health check with variables</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 6 * * * openai system_check file-/var/log/cronai/health.log system=production,check_level=detailed</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Send monitoring alerts to Microsoft Teams (v0.0.2+)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 */4 * * * claude system_health teams-monitoring</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run with custom model parameters (temperature and specific model version)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0 9 * * 1 openai weekly_report file-/var/log/cronai/report.log model_params:temperature=0.5,model=gpt-4</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
 <p>See the <a href="https://github.com/rshade/cronai/blob/main/cronai.config.example" target="_blank" rel="noopener noreferrer">Example Configuration Files</a> in the repository for more examples.</p>
 <h2 class="anchor anchorWithStickyNavbar_LWe7" id="usage">Usage<a href="#usage" class="hash-link" aria-label="Direct link to Usage" title="Direct link to Usage">​</a></h2>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="starting-the-service">Starting the Service<a href="#starting-the-service" class="hash-link" aria-label="Direct link to Starting the Service" title="Direct link to Starting the Service">​</a></h3>
