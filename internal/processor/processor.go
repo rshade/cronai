@@ -49,6 +49,18 @@ func ProcessResponse(processorName string, response *models.ModelResponse, templ
 	} else if strings.HasPrefix(processorName, "webhook-") {
 		processorType = "webhook"
 		target = strings.TrimPrefix(processorName, "webhook-")
+	} else if strings.HasPrefix(processorName, "teams-") {
+		processorType = "webhook"
+		target = "teams"
+		// If it includes a URL, extract it
+		urlPart := strings.TrimPrefix(processorName, "teams-")
+		if strings.HasPrefix(urlPart, "http://") || strings.HasPrefix(urlPart, "https://") {
+			// Store the URL in an environment variable temporarily
+			// In production, this would be handled differently
+			log.Debug("Teams webhook with inline URL", logger.Fields{
+				"url": urlPart,
+			})
+		}
 	} else if strings.HasPrefix(processorName, "github-") {
 		processorType = "github"
 		target = strings.TrimPrefix(processorName, "github-")

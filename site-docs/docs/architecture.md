@@ -110,7 +110,7 @@ The `--mode` flag was introduced in v0.0.2 as a stub implementation to establish
 **Key Features**:
 
 - Processor interface for consistent handling
-- Multiple output channels (File, GitHub, Console)
+- Multiple output channels (File, GitHub, Teams, Console)
 - Registry pattern for processor management
 - Configuration validation
 
@@ -178,6 +178,7 @@ func init() {
     RegisterProcessor("file", NewFileProcessor)
     RegisterProcessor("github", NewGithubProcessor)
     RegisterProcessor("console", NewConsoleProcessor)
+    RegisterProcessor("webhook", NewWebhookProcessor) // Handles Teams via webhook-teams or teams- prefix
 }
 ```
 

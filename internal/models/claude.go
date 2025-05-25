@@ -203,8 +203,8 @@ func (c *ClaudeClient) getModelName() string {
 		}
 
 		// Check if it's a supported model
-		if SupportedClaudeModels[strings.ToLower(model)] {
-			return strings.ToLower(model)
+		if SupportedClaudeModels[model] {
+			return model
 		}
 
 		// If not supported, log a warning and use default
