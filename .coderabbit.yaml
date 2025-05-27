@@ -1,0 +1,338 @@
+# CodeRabbit Configuration for CronAI
+# This configuration optimizes code review for a Go-based CLI tool project
+
+# Language-specific settings
+language_specific:
+  go:
+    # Enforce Go best practices
+    enabled: true
+    # Minimum test coverage for new code
+    test_coverage_threshold: 80
+    # Check for Go-specific patterns
+    patterns:
+      - gofmt_compliance
+      - go_vet_compliance
+      - ineffassign
+      - misspell
+      - unconvert
+      - gocyclo
+      - dupl
+      - goconst
+      - gosec
+      - staticcheck
+
+# Review settings
+reviews:
+  # Enable auto-review on all PRs
+  auto_review_enabled: true
+
+  # Review triggers
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: true
+  review_status: true
+  collapse_walkthrough: false
+
+  # Review components
+  path_filters:
+    - "**.go"
+    - "**.md"
+    - "go.mod"
+    - "go.sum"
+    - "Makefile"
+    - ".github/workflows/**"
+    - "docs/**"
+    - "!**/vendor/**"
+    - "!**/node_modules/**"
+    - "!**/*_gen.go"
+    - "!**/*_test.go" # Still review test files but with different rules
+    - "!coverage.html"
+    - "!**/*.log"
+    - "!build/**"
+    - "!dist/**"
+    - "!CLAUDE.md"
+    - "!.claude/**"
+    - "!.cursor/**"
+    - "!.cursor-*"
+    - "!.vscode/**"
+    - "!.idea/**"
+    - "!**/.DS_Store"
+    - "!**/Thumbs.db"
+    - "!**/*.swp"
+    - "!**/*.swo"
+    - "!**/*~"
+    - "!.env*"
+    - "!*.local"
+    - "!PR_MESSAGE.md"
+
+  # Path-specific instructions
+  path_instructions:
+    - path: "**/*_test.go"
+      instructions: |
+        - Ensure tests follow table-driven test patterns
+        - Check for proper error handling in tests
+        - Verify test coverage for edge cases
+        - Ensure proper cleanup with defer statements
+        - Check for race conditions with t.Parallel() where appropriate
+
+    - path: "internal/queue/**"
+      instructions: |
+        - Ensure proper mutex usage for concurrent operations
+        - Verify context cancellation is properly handled
+        - Check for potential deadlocks in channel operations
+        - Ensure error messages provide sufficient context
+
+    - path: "internal/models/**"
+      instructions: |
+        - Verify API key handling doesn't expose secrets
+        - Ensure proper validation of model parameters
+        - Check for rate limiting considerations
+
+    - path: "cmd/**"
+      instructions: |
+        - Ensure CLI commands have proper help text
+        - Verify error messages are user-friendly
+        - Check for proper flag validation
+        - Ensure commands follow Cobra best practices
+
+    - path: "**.md"
+      instructions: |
+        - Check for broken links
+        - Ensure code examples are up to date
+        - Verify proper markdown formatting
+        - Check for spelling and grammar
+
+# Analysis settings
+analysis:
+  # Enable all analysis features
+  enable_complexity_analysis: true
+  enable_security_analysis: true
+  enable_performance_analysis: true
+  enable_best_practices: true
+  enable_maintainability_check: true
+  enable_error_handling_check: true
+
+  # Complexity thresholds
+  complexity:
+    max_function_length: 50
+    max_file_length: 500
+    max_cyclomatic_complexity: 10
+    max_cognitive_complexity: 15
+
+# Security settings
+security:
+  # Security checks
+  check_hardcoded_secrets: true
+  check_sql_injection: true
+  check_command_injection: true
+  check_path_traversal: true
+  check_sensitive_data_exposure: true
+
+  # Specific patterns to flag
+  sensitive_patterns:
+    - "api[_-]?key"
+    - "secret"
+    - "password"
+    - "token"
+    - "private[_-]?key"
+
+# Style preferences
+style:
+  # Go-specific style
+  go:
+    # Enforce standard Go conventions
+    enforce_gofmt: true
+    enforce_golint: true
+    enforce_govet: true
+
+    # Naming conventions
+    enforce_exported_comment: true
+    enforce_package_comment: true
+    enforce_receiver_naming: true
+
+    # Error handling
+    enforce_error_check: true
+    enforce_error_wrap: true
+
+    # Best practices
+    enforce_context_first: true
+    enforce_interface_segregation: true
+    prefer_early_return: true
+
+# Documentation requirements
+documentation:
+  # Require documentation for public APIs
+  require_exported_docs: true
+  require_package_docs: true
+
+  # Documentation quality checks
+  check_spelling: true
+  check_grammar: true
+  check_broken_links: true
+
+  # Specific requirements
+  require_examples_for_exported_functions: false
+  require_readme_sections:
+    - "Installation"
+    - "Usage"
+    - "Configuration"
+    - "Contributing"
+
+# Performance settings
+performance:
+  # Flag performance issues
+  check_unnecessary_allocations: true
+  check_inefficient_loops: true
+  check_string_concatenation: true
+  check_unnecessary_conversions: true
+
+  # Suggest optimizations
+  suggest_string_builder: true
+  suggest_bytes_buffer: true
+  suggest_sync_pool: true
+
+# Testing requirements
+testing:
+  # Enforce testing standards
+  require_tests_for_exported: true
+  require_table_driven_tests: true
+  require_parallel_tests: false
+  require_benchmark_tests: false
+
+  # Test quality checks
+  check_test_naming: true
+  check_test_coverage: true
+  check_error_handling_in_tests: true
+  check_cleanup_in_tests: true
+
+  # Coverage thresholds
+  minimum_coverage: 70
+  minimum_coverage_new_files: 80
+
+# Code quality
+code_quality:
+  # Duplication
+  max_duplicate_lines: 50
+
+  # Dependencies
+  check_unused_dependencies: true
+  check_outdated_dependencies: true
+
+  # General quality
+  enforce_single_responsibility: true
+  enforce_dry_principle: true
+  enforce_solid_principles: true
+
+# Custom rules
+custom_rules:
+  - name: "Check logger initialization"
+    pattern: "log\\s*:=\\s*"
+    message: "Use the package-level logger or SetLogger function"
+    severity: "warning"
+
+  - name: "Check error wrapping"
+    pattern: 'fmt\\.Errorf\\("[^"]+: %v"'
+    message: "Use %w for error wrapping to maintain error chain"
+    severity: "warning"
+
+  - name: "Check context usage"
+    pattern: "context\\.Background\\(\\)"
+    message: "Consider passing context from caller instead of using Background()"
+    severity: "info"
+    file_pattern: "!**/*_test.go"
+
+# Issue management
+issues:
+  # Auto-label PRs based on paths
+  auto_labeling:
+    - path: "internal/queue/**"
+      labels: ["queue", "feature"]
+    - path: "internal/models/**"
+      labels: ["models", "ai"]
+    - path: "cmd/**"
+      labels: ["cli", "ux"]
+    - path: "docs/**"
+      labels: ["documentation"]
+    - path: "**/*_test.go"
+      labels: ["tests"]
+    - path: ".github/**"
+      labels: ["ci/cd"]
+
+# Comment settings
+comments:
+  # Be concise but thorough
+  comment_style: "constructive"
+
+  # Group similar issues
+  group_similar_issues: true
+
+  # Provide fix suggestions
+  include_fix_suggestions: true
+
+  # Add examples where helpful
+  include_examples: true
+
+  # Severity levels for different issue types
+  severity_levels:
+    security: "critical"
+    bug: "high"
+    performance: "medium"
+    style: "low"
+    documentation: "info"
+
+# Specific behaviors
+behaviors:
+  # Skip review for certain conditions
+  skip_review:
+    - author_is_bot: true
+    - only_formatting_changes: true
+    - only_documentation_changes: false
+    - draft_pr: true
+
+  # Request changes for critical issues
+  request_changes_on:
+    - security_issues: true
+    - missing_tests: true
+    - broken_tests: true
+    - significant_performance_issues: true
+    - hardcoded_secrets: true
+
+# Tool integrations
+tools:
+  # Integrate with Go tools
+  golangci_lint:
+    enabled: true
+    config_file: ".golangci.yml"
+
+  # Security scanning
+  gosec:
+    enabled: true
+
+  # License checking
+  license_check:
+    enabled: true
+    allowed_licenses:
+      - "MIT"
+      - "Apache-2.0"
+      - "BSD-3-Clause"
+      - "BSD-2-Clause"
+
+# Summary preferences
+summary:
+  # Include these sections in PR summary
+  include_sections:
+    - overview
+    - changes_by_file
+    - key_findings
+    - suggestions
+    - security_notes
+
+  # Length preferences
+  max_length: 500
+
+  # Focus areas
+  focus_on:
+    - breaking_changes
+    - api_changes
+    - security_implications
+    - performance_impact
