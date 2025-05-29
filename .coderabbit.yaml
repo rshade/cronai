@@ -75,20 +75,20 @@ reviews:
         - Ensure proper cleanup with defer statements
         - Check for race conditions with t.Parallel() where appropriate
 
-    - path: "internal/queue/**"
+    - path: "internal/queue/*.go"
       instructions: |
         - Ensure proper mutex usage for concurrent operations
         - Verify context cancellation is properly handled
         - Check for potential deadlocks in channel operations
         - Ensure error messages provide sufficient context
 
-    - path: "internal/models/**"
+    - path: "internal/models/*.go"
       instructions: |
         - Verify API key handling doesn't expose secrets
         - Ensure proper validation of model parameters
         - Check for rate limiting considerations
 
-    - path: "cmd/**"
+    - path: "cmd/*.go"
       instructions: |
         - Ensure CLI commands have proper help text
         - Verify error messages are user-friendly
