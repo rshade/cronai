@@ -25,6 +25,7 @@ The current MVP release includes:
   - Console output
 - ✅ Variable substitution in prompts
 - ✅ Systemd service for deployment
+- ✅ Queue mode for distributed task execution via RabbitMQ and in-memory queues - Available in v0.0.2+
 
 ### Planned Post-MVP Features (Coming Soon)
 
@@ -36,7 +37,6 @@ The following features are in development and will be available in future releas
 - Enhanced templating capabilities
 - Web UI for prompt management
 - Bot mode for event-driven webhook handling (stub available via `--mode bot`)
-- Queue mode for distributed task execution (stub available via `--mode queue`)
 
 See [limitations-and-improvements.md](docs/limitations-and-improvements.md) for a detailed breakdown of current limitations and planned improvements.
 
@@ -299,9 +299,11 @@ cronai start --mode cron
 # Specify a custom config file
 cronai start --config /path/to/config
 
-# Future operation modes (coming soon)
+# Queue mode for message queue integration (available since v0.0.2)
+cronai start --mode queue
+
+# Future operation modes
 cronai start --mode bot    # Event-driven webhook handler (planned)
-cronai start --mode queue  # Job queue processor (planned)
 
 # Run a single task immediately
 cronai run --model openai --prompt system_health --processor file-health.log
@@ -320,11 +322,40 @@ cronai prompt show system/system_health
 
 ### Operation Modes
 
-As of v0.0.2, CronAI supports the `--mode` flag to prepare for future operation modes:
+CronAI supports multiple operation modes via the `--mode` flag:
 
 - **cron** (default): Traditional scheduled task execution using cron syntax
+- **queue**: Message queue processor for distributed task execution via RabbitMQ or in-memory queues
 - **bot** (coming soon): Event-driven webhook handler for real-time responses
-- **queue** (coming soon): Job queue processor for distributed task execution
+
+#### Queue Mode
+
+Queue mode allows CronAI to consume tasks from external message queues. Configure with environment variables:
+
+```bash
+# Configure RabbitMQ queue
+export QUEUE_TYPE=rabbitmq
+export QUEUE_CONNECTION=amqp://guest:guest@localhost:5672/
+export QUEUE_NAME=cronai-tasks
+
+# Start queue mode
+cronai start --mode queue
+```
+
+Send JSON messages to your queue:
+
+```json
+{
+  "model": "openai",
+  "prompt": "system_health",
+  "processor": "console",
+  "variables": {
+    "environment": "production"
+  }
+}
+```
+
+See [docs/queue.md](docs/queue.md) for detailed queue configuration and usage.
 
 The `--mode` flag establishes the CLI interface early, allowing users to prepare for future features without breaking changes.text
 
