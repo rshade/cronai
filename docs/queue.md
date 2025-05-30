@@ -17,9 +17,28 @@ The queue system is built with a plugin architecture that allows for easy extens
 
 ## Configuration
 
-Queue consumers are configured alongside cron tasks in the `cronai.config` file.
+Queue mode can be configured using environment variables or alongside cron tasks in the `cronai.config` file.
 
-### Syntax
+### Environment Variable Configuration
+
+For simple single-queue setups, use environment variables:
+
+```bash
+export QUEUE_TYPE=rabbitmq
+export QUEUE_CONNECTION=amqp://guest:guest@localhost:5672/
+export QUEUE_NAME=cronai-tasks
+export QUEUE_RETRY_LIMIT=3
+export QUEUE_RETRY_DELAY=5s
+export QUEUE_RETRY_POLICY=exponential
+export QUEUE_INITIAL_DELAY=1s
+export QUEUE_MAX_DELAY=30s
+```
+
+### File-based Configuration (Coming Soon)
+
+Queue consumers can be configured alongside cron tasks in the `cronai.config` file. This feature is planned for a future release as part of the enhanced queue configuration capabilities.
+
+#### Syntax
 
 ```text
 queue <name> <type> <connection> <queue> [options]
@@ -227,11 +246,46 @@ The queue system includes comprehensive logging:
 - Error conditions with context
 - Performance metrics (processing duration)
 
+## Available Queue Providers
+
+Currently implemented queue providers:
+
+1. **RabbitMQ** (`rabbitmq`): Full-featured AMQP message broker
+2. **Memory** (`memory`): In-memory queue for testing and development
+
+## Usage
+
+### Starting Queue Mode
+
+```bash
+# Start with environment variable configuration
+cronai start --mode queue
+
+# Or with explicit queue settings
+QUEUE_TYPE=memory QUEUE_NAME=test-tasks cronai start --mode queue
+```
+
+### Example Message
+
+Send a JSON message to your configured queue:
+
+```json
+{
+  "model": "openai",
+  "prompt": "weekly_report",
+  "processor": "console",
+  "variables": {
+    "date": "2025-01-15",
+    "project": "CronAI"
+  }
+}
+```
+
 ## Future Enhancements
 
 Planned improvements for the queue system:
 
-1. **Provider Implementations**: RabbitMQ, AWS SQS, Azure Service Bus, Google Pub/Sub
+1. **Additional Provider Implementations**: AWS SQS, Azure Service Bus, Google Pub/Sub
 2. **Dead Letter Queues**: Automatic handling of permanently failed messages
 3. **Message Batching**: Process multiple messages in a single AI call
 4. **Priority Queues**: Support for message priorities

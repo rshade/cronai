@@ -84,10 +84,9 @@ func TestValidateMode(t *testing.T) {
 			errMsg:  "mode 'bot' is not yet implemented (coming in future releases)",
 		},
 		{
-			name:    "queue mode not yet implemented",
+			name:    "valid queue mode",
 			mode:    "queue",
-			wantErr: true,
-			errMsg:  "mode 'queue' is not yet implemented (coming in future releases)",
+			wantErr: false,
 		},
 		{
 			name:    "invalid mode",
