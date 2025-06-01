@@ -454,7 +454,7 @@ MVP implementation focusing on:
 - Claude model support (#13) - Add support for Anthropic Claude 3 models
 - Slack processor (#96) - Enable and test Slack processor functionality  
 - Microsoft Teams processor (#54) - Implement Teams webhook processor
-- Bot mode foundations (#120, #121, #122) - Basic webhook server and event routing
+- Bot mode foundations (#120, #121, #122) - Basic webhook server and event routing ✅ COMPLETED
 - Queue mode infrastructure (#63, #86) - Core queue system and basic message queue support
 
 ### Q3 2025 - Enhanced Usability
@@ -546,6 +546,8 @@ The application uses a `.env` file for configuration with the following variable
 The application uses Cobra for CLI commands:
 
 - `cronai start` - Start the service with the configuration file
+  - `--mode`: Operation mode (cron, bot, queue) - default: cron
+  - `--config`: Path to configuration file
 - `cronai run` - Run a single task immediately
   - `--model`: AI model to use
   - `--prompt`: Name of prompt file

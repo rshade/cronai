@@ -248,3 +248,8 @@ func ParseLevel(level string) (Level, error) {
 		return InfoLevel, fmt.Errorf("unknown log level: %s", level)
 	}
 }
+
+// GetLogger returns the default logger instance (alias for DefaultLogger)
+func GetLogger() *Logger {
+	return DefaultLogger()
+}
