@@ -29,12 +29,23 @@
 # Add comment to a specific issue with contextual variables
 0 10 * * * claude issue_analysis github-comment:myorg/myrepo#123 priority=high,status=in-progress
 
+# Slack processor with variables (v0.0.2+)
+# Variables are passed to the template and included in message formatting
+0 9 * * 1 claude weekly_report slack:#team-updates team=backend,sprint=42,date={{CURRENT_DATE}}
+
+# Send monitoring alert to Slack with context
+*/15 * * * * claude system_health slack:#monitoring cluster=Primary,severity=high,environment=Production
+
+# Send customized reports to different channels
+0 8 * * * claude daily_summary slack:#general team=product,date={{CURRENT_DATE}},focus=roadmap
+0 10 * * * openai metrics_report slack:#analytics period=daily,date={{CURRENT_DATE}},department=Engineering
+
+# Teams processor with variables (available)
+0 9 * * * claude daily_report teams-general team=engineering,date={{CURRENT_DATE}}
+
 # ============================================================================
 # POST-MVP PROCESSORS (Coming Soon)
 # ============================================================================
-
-# PLANNED: Slack integration
-# 0 8 * * * claude product_manager slack-pm-channel
 
 # PLANNED: Email integration with variables  
 # 0 9 * * 1 openai report_template email-team@company.com reportType=Weekly,date={{CURRENT_DATE}}
