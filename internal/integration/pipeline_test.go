@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v72/github"
@@ -148,10 +149,24 @@ func TestIntegration_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, files, "Output directory should contain files")
 
-	// Read the first file (should be our output)
-	outputPath := filepath.Join(outputDir, files[0].Name())
-	outputContent, err := os.ReadFile(outputPath)
+	// Find the actual output file (may be in subdirectories)
+	var outputContent []byte
+	found := false
+	err = filepath.WalkDir(outputDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && strings.HasSuffix(path, ".txt") && !found {
+			outputContent, err = os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			found = true
+		}
+		return nil
+	})
 	require.NoError(t, err)
+	require.True(t, found, "Should find at least one output file")
 	assert.Contains(t, string(outputContent), "Hello, World!")
 
 	// Process with GitHub processor (only if running real tests with GitHub token)

@@ -8,7 +8,8 @@ import (
 // Environment variable names for processors
 const (
 	// Slack processor environment variables
-	EnvSlackToken = "SLACK_TOKEN"
+	EnvSlackToken      = "SLACK_TOKEN"
+	EnvSlackWebhookURL = "SLACK_WEBHOOK_URL"
 
 	// Email processor environment variables
 	EnvSMTPServer   = "SMTP_SERVER"

@@ -29,7 +29,7 @@ reviews:
   # Review triggers
   request_changes_workflow: true
   high_level_summary: true
-  poem: true
+  poem: false
   review_status: true
   collapse_walkthrough: false
 
@@ -42,6 +42,7 @@ reviews:
     - "Makefile"
     - ".github/workflows/**"
     - "docs/**"
+    - "internal/processor/**"
     - "!**/vendor/**"
     - "!**/node_modules/**"
     - "!**/*_gen.go"
@@ -67,6 +68,20 @@ reviews:
 
   # Path-specific instructions
   path_instructions:
+    - path: "internal/processor/*.go"
+      instructions: |
+        - Verify proper error handling and logging
+        - Check for proper cleanup of resources
+        - Ensure proper validation of input parameters
+        - Check for proper handling of external service responses
+
+    - path: "internal/processor/*_test.go"
+      instructions: |
+        - Ensure tests cover error cases
+        - Verify proper mocking of external services
+        - Check for proper cleanup in tests
+        - Ensure test coverage for all public methods
+
     - path: "**/*_test.go"
       instructions: |
         - Ensure tests follow table-driven test patterns
@@ -271,6 +286,13 @@ comments:
 
   # Add examples where helpful
   include_examples: true
+
+  # Auto-resolve comments when fixed or outdated
+  auto_resolve:
+    on_fix: true
+    on_outdated: true
+    require_commit_message: true
+    commit_message_pattern: "fix|resolve|address"
 
   # Severity levels for different issue types
   severity_levels:
