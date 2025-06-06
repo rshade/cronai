@@ -26,6 +26,7 @@ The current MVP release includes:
 - ✅ Variable substitution in prompts
 - ✅ Systemd service for deployment
 - ✅ Queue mode for distributed task execution via RabbitMQ and in-memory queues - Available in v0.0.2+
+- ✅ Bot mode for event-driven webhook handling - Available in v0.0.2+
 
 ### Planned Post-MVP Features (Coming Soon)
 
@@ -36,7 +37,6 @@ The following features are in development and will be available in future releas
 - Generic webhook processor integration
 - Enhanced templating capabilities
 - Web UI for prompt management
-- Bot mode for event-driven webhook handling (stub available via `--mode bot`)
 
 See [limitations-and-improvements.md](docs/limitations-and-improvements.md) for a detailed breakdown of current limitations and planned improvements.
 
@@ -50,7 +50,7 @@ go install github.com/rshade/cronai/cmd/cronai@latest
 git clone https://github.com/rshade/cronai.git
 cd cronai
 go build -o cronai ./cmd/cronai
-```text
+```
 
 ## Configuration
 
@@ -302,8 +302,8 @@ cronai start --config /path/to/config
 # Queue mode for message queue integration (available since v0.0.2)
 cronai start --mode queue
 
-# Future operation modes
-cronai start --mode bot    # Event-driven webhook handler (planned)
+# Bot mode for webhook handling (available since v0.0.2)
+cronai start --mode bot
 
 # Run a single task immediately
 cronai run --model openai --prompt system_health --processor file-health.log
@@ -326,7 +326,7 @@ CronAI supports multiple operation modes via the `--mode` flag:
 
 - **cron** (default): Traditional scheduled task execution using cron syntax
 - **queue**: Message queue processor for distributed task execution via RabbitMQ or in-memory queues
-- **bot** (coming soon): Event-driven webhook handler for real-time responses
+- **bot**: Event-driven webhook handler for GitHub events
 
 #### Queue Mode
 
@@ -357,7 +357,29 @@ Send JSON messages to your queue:
 
 See [docs/queue.md](docs/queue.md) for detailed queue configuration and usage.
 
-The `--mode` flag establishes the CLI interface early, allowing users to prepare for future features without breaking changes.text
+#### Bot Mode
+
+Bot mode runs a webhook server that listens for GitHub events and processes them with AI:
+
+```bash
+# Configure bot mode
+export CRONAI_BOT_PORT=8080
+export GITHUB_WEBHOOK_SECRET=your-webhook-secret
+export CRONAI_DEFAULT_MODEL=openai
+export CRONAI_BOT_PROCESSOR=console  # Optional: where to send AI responses
+
+# Start bot mode
+cronai start --mode bot
+```
+
+The bot will listen on the configured port for GitHub webhooks at `/webhook`. Supported events:
+
+- Issues (opened, closed, etc.)
+- Pull requests (opened, synchronize, etc.)
+- Push events
+- Release events
+
+See [docs/bot-mode.md](docs/bot-mode.md) for detailed bot configuration and webhook setup.
 
 ## Running as a systemd Service
 

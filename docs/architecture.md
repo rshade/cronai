@@ -14,11 +14,11 @@ Configuration → Scheduling → Prompt Management → Model Execution → Respo
 
 CronAI is designed to support multiple operation modes to accommodate different use cases:
 
-- **Cron Mode** (default, currently implemented): Traditional scheduled task execution using cron syntax
-- **Bot Mode** (planned): Event-driven webhook handler for real-time AI responses
-- **Queue Mode** (planned): Job queue processor for distributed task execution
+- **Cron Mode** (default): Traditional scheduled task execution using cron syntax
+- **Bot Mode** (v0.0.2+): Event-driven webhook handler for real-time AI responses
+- **Queue Mode** (v0.0.2+): Job queue processor for distributed task execution
 
-The `--mode` flag was introduced in v0.0.2 as a stub implementation to establish the CLI interface early, avoiding breaking changes when additional modes are implemented. Currently, only 'cron' mode is functional.
+The `--mode` flag was introduced in v0.0.2 as a stub implementation to establish the CLI interface early, avoiding breaking changes when additional modes are implemented. As of v0.0.2+, cron, bot, and queue modes are all functional.
 
 ## Components Diagram
 

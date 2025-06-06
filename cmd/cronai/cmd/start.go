@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/rshade/cronai/internal/bot"
 	"github.com/rshade/cronai/internal/cron"
 	"github.com/rshade/cronai/internal/queue"
 	"github.com/rshade/cronai/internal/queue/consumers"
@@ -35,9 +36,11 @@ Examples:
   # Start with custom config
   cronai start --config=/etc/cronai/production.config
 
-  # Future modes (not yet implemented)
-  cronai start --mode bot    # Event-driven webhook handler
-  cronai start --mode queue  # Job queue processor
+  # Start in bot mode (webhook server)
+  cronai start --mode bot
+
+  # Start in queue mode
+  cronai start --mode queue
 
   # Run in background (systemd)
   sudo systemctl start cronai`,
@@ -62,6 +65,10 @@ Examples:
 			if err := cron.StartService(configPath); err != nil {
 				fmt.Printf("Error starting cron service: %v\n", err)
 			}
+		case "bot":
+			if err := bot.StartService(configPath); err != nil {
+				fmt.Printf("Error starting bot service: %v\n", err)
+			}
 		case "queue":
 			// Register all consumer types
 			if err := consumers.RegisterAll(); err != nil {
@@ -80,10 +87,8 @@ Examples:
 // validateMode validates the operation mode flag
 func validateMode(mode string) error {
 	switch mode {
-	case "cron", "queue":
+	case "cron", "bot", "queue":
 		return nil
-	case "bot":
-		return fmt.Errorf("mode '%s' is not yet implemented (coming in future releases)", mode)
 	default:
 		return fmt.Errorf("invalid mode '%s': must be one of: cron, bot, queue", mode)
 	}
@@ -93,9 +98,9 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 
 	startCmd.Flags().StringVar(&operationMode, "mode", "cron",
-		"Operation mode: cron (default), bot (future), queue\n"+
+		"Operation mode: cron (default), bot, queue\n"+
 			"Available modes:\n"+
 			"  cron  - Traditional scheduled task execution (default)\n"+
-			"  bot   - Event-driven webhook handler (coming soon)\n"+
+			"  bot   - Event-driven webhook handler for GitHub events\n"+
 			"  queue - Job queue processor for external message queues")
 }

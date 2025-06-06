@@ -36,6 +36,8 @@ const (
 	CategorySystem
 	// CategoryApplication is used for application-level errors
 	CategoryApplication
+	// CategorySecurity is used for security-related errors
+	CategorySecurity
 )
 
 // String returns the string representation of the error category.
@@ -53,6 +55,8 @@ func (c Category) String() string {
 		return "SYSTEM"
 	case CategoryApplication:
 		return "APPLICATION"
+	case CategorySecurity:
+		return "SECURITY"
 	default:
 		return fmt.Sprintf("CATEGORY(%d)", c)
 	}
