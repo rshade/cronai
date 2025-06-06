@@ -2,5 +2,24 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": true,
+  "rebaseWhen": "behind-base-branch",
+  "rebaseLabel": "rebase",
+  "stopUpdatingLabel": "stop-updating",
+  "packageRules": [
+    {
+      "description": "Automerge non-major updates",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "Disable automerge for major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
   ]
 }
