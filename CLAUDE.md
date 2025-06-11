@@ -41,6 +41,12 @@ The processor system follows these patterns:
 - **Template Integration**: Processors integrate with the templating system for output formatting
 - **Error Handling**: Consistent error wrapping using the internal errors package
 - **GitHub Integration**: The GitHub processor uses the google/go-github library for API calls
+- **Slack Integration**: The Slack processor supports both webhook URLs and OAuth token methods for maximum flexibility
+  - Dual authentication: Uses `SLACK_TOKEN` (OAuth) or `SLACK_WEBHOOK_URL` (webhook)
+  - Automatic method selection based on available environment variables
+  - JSON payload validation with proper error handling
+  - Automatic monitoring template detection for alert-style formatting
+  - Comprehensive error handling with proper request/response lifecycle management
 
 ## Coding Standards and Robustness
 
@@ -176,6 +182,7 @@ The processor system follows these patterns:
   - Ensure all examples in documentation reflect the latest capabilities
 - Use GitHub Actions for CI/CD pipelines
 - Ensure CI passes before merging PRs
+- **CodeRabbit Configuration**: When creating new files or directories, check if they need to be added to `.coderabbit.yaml` configuration to ensure proper code review coverage
 
 ### Changelog Management
 

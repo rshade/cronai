@@ -199,6 +199,7 @@ CronAI currently supports these response processors in the MVP:
 
 - **File**: `file-path/to/file.txt` - Save the response to a file
 - **GitHub**: `github-issue:owner/repo` or `github-comment:owner/repo#123` - Create issues or comments
+- **Slack**: `slack:#channel` - Send to Slack channel via webhook or OAuth (v0.0.2+)
 - **Microsoft Teams**: `teams-channel` - Send to Teams webhook (v0.0.2+)
 - **Console**: `console` - Display the response in the console
 
@@ -225,28 +226,83 @@ Where `action` can be:
 
 # Add a comment to issue #123  
 0 10 * * * claude issue_analysis github-comment:myorg/myrepo#123
+```
+
+### Slack Processor (v0.0.2+)
+
+The Slack processor sends formatted messages to Slack channels. It supports both webhook URLs and OAuth bot tokens for maximum flexibility.
+
+#### Slack Format
+
 ```text
+slack:#channel_name
+```
+
+Where `#channel_name` is the Slack channel where you want to send messages (e.g., `#general`, `#monitoring`, `#alerts`).
+
+#### Slack Setup
+
+Set up Slack integration using **one** of these methods:
+
+##### Method 1: Webhook URL (Easiest)
+
+```bash
+export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+##### Method 2: OAuth Bot Token (More Flexible)
+
+```bash
+export SLACK_TOKEN="xoxb-your-slack-bot-token"
+```
+
+See the [Slack Setup Guide](docs/slack-setup.md) for detailed configuration instructions.
+
+#### Examples
+
+```text
+# Send daily reports to Slack
+0 9 * * * claude daily_report slack:#general
+
+# Send monitoring alerts to a specific Slack channel
+*/30 * * * * openai system_monitor slack:#monitoring
+
+# Send critical alerts with variables
+0 * * * * claude critical_check slack:#alerts severity=high,system=production
+
+# Send weekly reports with custom variables
+0 8 * * 1 claude weekly_report slack:#team-updates reportType=Weekly,date={{CURRENT_DATE}}
+```
+
+The Slack processor features:
+
+- Block-based message formatting using Slack's Block Kit
+- Automatic monitoring template detection for alert-style formatting
+- JSON payload validation
+- Support for both webhook and OAuth authentication methods
+- Variable interpolation in message content
 
 ### Microsoft Teams Processor (v0.0.2+)
 
 The Teams processor sends formatted messages to Microsoft Teams channels via webhooks.
 
-#### Format
+#### Teams Format
 
 ```text
 teams-channel_identifier
-```text
+```
 
 Where `channel_identifier` is an optional identifier for your Teams channel (e.g., `general`, `monitoring`, `alerts`).
 
-#### Configuration
+#### Teams Configuration
 
 Set up your Teams webhook URL using one of these environment variables:
+
 - `TEAMS_WEBHOOK_URL` - Primary Teams webhook URL
 - `WEBHOOK_URL_TEAMS` - Alternative configuration
 - `WEBHOOK_URL_<CHANNEL>` - Channel-specific URLs (e.g., `WEBHOOK_URL_MONITORING`)
 
-#### Examples
+#### Teams Examples
 
 ```text
 # Send daily reports to Teams
@@ -257,9 +313,10 @@ Set up your Teams webhook URL using one of these environment variables:
 
 # Send critical alerts with custom formatting
 0 * * * * claude critical_check teams-alerts
-```text
+```
 
 The Teams processor uses Microsoft's MessageCard format with:
+
 - Themed color coding (blue for general, red for alerts)
 - Structured sections with activity titles
 - Facts display for metadata (model, timestamp, variables)
@@ -279,11 +336,17 @@ GOOGLE_API_KEY=your_gemini_key
 # GitHub configuration
 GITHUB_TOKEN=your_github_token
 
+# Slack configuration (v0.0.2+) - Choose ONE method
+# Method 1: Webhook URL (simpler setup)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+# Method 2: OAuth Bot Token (recommended for flexibility)
+SLACK_TOKEN=xoxb-your-slack-bot-token
+
 # Microsoft Teams webhook configuration (v0.0.2+)
 TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/your_webhook_url
 # Or use type-specific URLs:
 WEBHOOK_URL_TEAMS=https://outlook.office.com/webhook/your_webhook_url
-```text
+```
 
 ## Usage
 

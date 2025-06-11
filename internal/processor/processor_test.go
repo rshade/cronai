@@ -214,7 +214,7 @@ func TestProcessResponse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Slack Processor With Token",
+			name:      "Slack Processor With Fake Webhook URL",
 			processor: "slack-test-channel",
 			response: &models.ModelResponse{
 				Content:     "Test content",
@@ -224,10 +224,10 @@ func TestProcessResponse(t *testing.T) {
 				ExecutionID: "test-execution",
 			},
 			templateName:  "",
-			expectedError: false,
+			expectedError: true,
 			setup: func() error {
-				// Set SLACK_TOKEN
-				if err := os.Setenv("SLACK_TOKEN", "test-token"); err != nil {
+				// Set fake SLACK_WEBHOOK_URL - this will fail but tests error handling
+				if err := os.Setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test/test/test"); err != nil {
 					return err
 				}
 				return nil
