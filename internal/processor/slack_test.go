@@ -332,6 +332,7 @@ func TestSlackProcessor_sendViaWebhook(t *testing.T) {
 
 // TestSlackProcessor_sendViaOAuth is disabled as it requires modification to accept custom API endpoint for testing
 // TODO: Implement proper OAuth testing with dependency injection
+// Issue URL: https://github.com/rshade/cronai/issues/162
 /*
 func TestSlackProcessor_sendViaOAuth(t *testing.T) {
 	tests := []struct {
