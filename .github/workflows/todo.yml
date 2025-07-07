@@ -24,7 +24,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: TODO to Issue
-        uses: alstr/todo-to-issue-action@v5.1.12
+        uses: alstr/todo-to-issue-action@v5.1.13
         with:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INSERT_ISSUE_URLS: "true"
