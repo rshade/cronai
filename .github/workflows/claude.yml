@@ -56,9 +56,9 @@ jobs:
           
           # Read the selected persona file
           if [ -f "$PERSONA_FILE" ]; then
-            echo "SYSTEM_PROMPT<<EOF" >> $GITHUB_OUTPUT
+            echo "SYSTEM_PROMPT<<CLAUDE_PERSONA_END" >> $GITHUB_OUTPUT
             cat "$PERSONA_FILE" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            echo "CLAUDE_PERSONA_END" >> $GITHUB_OUTPUT
           else
             echo "SYSTEM_PROMPT=" >> $GITHUB_OUTPUT
           fi
