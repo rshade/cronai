@@ -65,7 +65,7 @@ jobs:
             echo "SYSTEM_PROMPT=" >> $GITHUB_OUTPUT
           fi
           
-      - uses: anthropics/claude-code-action@beta
+      - uses: anthropics/claude-code-action@v0.0.32
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -74,7 +74,7 @@ jobs:
           # Trigger on 'claude' label for issues
           label_trigger: "claude"
           # Load system prompt from selected persona
-          system_prompt: ${{ steps.persona.outputs.SYSTEM_PROMPT }}
+          custom_instructions: ${{ steps.persona.outputs.SYSTEM_PROMPT }}
           # Environment variables for context
           claude_env: |
             PROJECT_NAME: CronAI
