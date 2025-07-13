@@ -212,7 +212,12 @@ func (s *SlackProcessor) sendViaWebhook(webhookURL string, payload []byte) error
 
 // sendViaOAuth sends the message using OAuth token and the Slack Web API
 func (s *SlackProcessor) sendViaOAuth(token string, payload []byte) error {
-	req, err := http.NewRequest("POST", "https://slack.com/api/chat.postMessage", bytes.NewBuffer(payload))
+	return s.sendViaOAuthWithURL(token, payload, "https://slack.com/api/chat.postMessage")
+}
+
+// sendViaOAuthWithURL allows testing with custom API endpoint
+func (s *SlackProcessor) sendViaOAuthWithURL(token string, payload []byte, apiURL string) error {
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payload))
 	if err != nil {
 		return errors.Wrap(errors.CategoryApplication, err, "failed to create Slack API request")
 	}

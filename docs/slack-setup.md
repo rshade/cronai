@@ -160,7 +160,7 @@ You can create custom templates in your `templates/` directory:
 #### "channel_not_found" Error
 
 - For private channels, ensure the bot is invited to the channel
-- For OAuth method, verify the bot has proper scopes
+- For OAuth method, verify the bot has the proper scopes
 - Check that the channel name includes the `#` prefix
 
 #### "invalid_auth" Error

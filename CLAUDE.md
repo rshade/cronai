@@ -62,7 +62,8 @@ The project uses a sophisticated multi-persona Claude GitHub Assistant system:
 - **Issue Templates**: Three specialized templates that automatically add the correct persona labels
 - **Documentation**: Comprehensive setup guide in `.github/claude/README.md`
 
-#### Claude GitHub Action Configuration Patterns:
+#### Claude GitHub Action Configuration Patterns
+
 - Use conditional logic in workflows to select different configurations based on labels
 - Add explicit permissions to workflows for security (`contents: read`, `issues: write`, `pull-requests: write`)
 - Set conversation limits (`max_turns: "10"`) to control API costs
@@ -171,6 +172,43 @@ The project uses a sophisticated multi-persona Claude GitHub Assistant system:
 - Mock external dependencies in tests
 - Use table-driven tests when appropriate
 
+### Testing Patterns
+
+#### OAuth/External API Testing Pattern
+
+When testing functions that call external APIs, create a testable wrapper function that accepts the API URL as a parameter:
+
+```go
+// Main function calls production API
+func (s *SlackProcessor) sendViaOAuth(token string, payload []byte) error {
+    return s.sendViaOAuthWithURL(token, payload, "https://slack.com/api/chat.postMessage")
+}
+
+// Testable wrapper accepts custom URL for mocking
+func (s *SlackProcessor) sendViaOAuthWithURL(token string, payload []byte, apiURL string) error {
+    req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payload))
+    // ... rest of implementation
+}
+```
+
+Test the wrapper function using `httptest.NewServer`:
+
+```go
+func TestSlackProcessor_sendViaOAuth(t *testing.T) {
+    mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Verify headers, method, etc.
+        w.WriteHeader(http.StatusOK)
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+    }))
+    defer mockServer.Close()
+    
+    err := processor.sendViaOAuthWithURL(token, payload, mockServer.URL)
+    // assertions...
+}
+```
+
+This pattern allows comprehensive testing without requiring real API keys while keeping production code clean.
+
 ### Git and CI/CD Practices
 
 - **ALWAYS use conventional commit format for ALL commits**:
@@ -205,6 +243,38 @@ The project uses a sophisticated multi-persona Claude GitHub Assistant system:
 - Use GitHub Actions for CI/CD pipelines
 - Ensure CI passes before merging PRs
 - **CodeRabbit Configuration**: When creating new files or directories, check if they need to be added to `.coderabbit.yaml` configuration to ensure proper code review coverage
+
+### Common Issues & Solutions
+
+#### Test and Build Timeouts
+- **Issue**: `make test`, `make lint`, or other make commands timeout after 2 minutes
+- **Root Cause**: Go downloading dependencies during test execution
+- **Solutions**:
+  1. Run `go mod download` first to cache dependencies
+  2. Use package-specific targets: `make test-pkg`, `make lint-pkg` 
+  3. Run scripts directly: `./scripts/test-pkg.sh`, `./scripts/lint-all.sh`
+  4. Test individual packages: `go test ./internal/processor`
+
+#### Conventional Commit Check Failures
+- **Issue**: Historical commits don't follow conventional commit format
+- **Solution**: Requires maintainer intervention - cannot be fixed by modifying files
+- **Note**: Only affects existing commits in PR history, not new commits
+
+#### Markdown Linting Errors
+- **Issue**: Multiple markdown linting failures (MD022, MD026, MD032)
+- **Solution**: Often fixable with single edit by:
+  - Removing trailing punctuation from headings (`:` → ``)
+  - Adding blank lines before/after headings and lists
+  - Example: Fix `#### Heading:` + `- list item` → `#### Heading` + `\n` + `- list item`
+
+#### Coverage Failures
+- **Issue**: CodeCov patch/project failures due to low test coverage
+- **Focus Areas for Quick Wins**:
+  1. Error handling methods (`Error()`, `Unwrap()`)
+  2. Edge cases and fallback scenarios  
+  3. Input validation functions
+  4. Testable wrapper functions for external APIs
+- **Areas to Avoid**: Actual API execution methods (require real credentials)
 
 ### Changelog Management
 
@@ -410,6 +480,17 @@ Special variables that are automatically populated:
 ### Repository Information
 - `gh repo view OWNER/REPO --json defaultBranchRef,name,owner,url` - Get repository details in JSON format
 - `gh auth status` - Check GitHub authentication status and token scopes
+
+### PR and CI Monitoring
+- `gh pr checks` - Check PR CI status and failures for current branch
+- `gh pr checks 160` - Check CI status for specific PR number
+- `gh run view RUN_ID` - Get detailed GitHub Actions run information and logs
+- `gh run view RUN_ID --log-failed` - Get logs for failed jobs only
+
+### CodeRabbit Tools
+- `~/bin/coderabbit-fix PR_NUMBER --ai-format` - Generate AI-formatted CodeRabbit issue analysis with detailed fix instructions
+- `~/bin/coderabbit-fix PR_NUMBER --dry-run` - Show what would be changed without making actual changes
+- `~/bin/coderabbit-fix PR_NUMBER --prioritize` - Group issues by priority for systematic fixing
 
 ## Development Commands
 

@@ -42,7 +42,7 @@ jobs:
         run: |
           git add -A
           if git status --porcelain | grep .; then
-            git commit -m "Automatically added GitHub issue links to TODOs"
+            git commit -m "chore: automatically add GitHub issue links to TODOs"
             # Make sure we have the branch explicitly checked out
             git branch
             # Push using token to ensure proper authentication

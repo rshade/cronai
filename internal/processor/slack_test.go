@@ -330,10 +330,6 @@ func TestSlackProcessor_sendViaWebhook(t *testing.T) {
 	}
 }
 
-// TestSlackProcessor_sendViaOAuth is disabled as it requires modification to accept custom API endpoint for testing
-// TODO: Implement proper OAuth testing with dependency injection
-// Issue URL: https://github.com/rshade/cronai/issues/162
-/*
 func TestSlackProcessor_sendViaOAuth(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -373,7 +369,24 @@ func TestSlackProcessor_sendViaOAuth(t *testing.T) {
 			serverResp:   map[string]interface{}{},
 			serverStatus: http.StatusUnauthorized,
 			wantErr:      true,
-			errContains:  "Slack API error: 401",
+			errContains:  "slack API error: 401",
+		},
+		{
+			name:         "invalid JSON response",
+			token:        "xoxb-test-token",
+			payload:      []byte(`{"channel":"#general","text":"test message"}`),
+			serverResp:   nil, // Will cause invalid JSON
+			serverStatus: http.StatusOK,
+			wantErr:      true,
+			errContains:  "failed to parse Slack API response",
+		},
+		{
+			name:         "network error simulation",
+			token:        "xoxb-invalid",
+			payload:      []byte(`{"channel":"#general","text":"test message"}`),
+			serverResp:   map[string]interface{}{"ok": true},
+			serverStatus: http.StatusOK,
+			wantErr:      false, // Network error will be simulated differently
 		},
 	}
 
@@ -388,21 +401,88 @@ func TestSlackProcessor_sendViaOAuth(t *testing.T) {
 					t.Errorf("Expected Authorization header %v, got %v", expectedAuth, authHeader)
 				}
 
+				// Verify Content-Type header
+				contentType := r.Header.Get("Content-Type")
+				if contentType != "application/json" {
+					t.Errorf("Expected Content-Type application/json, got %v", contentType)
+				}
+
+				// Verify request method
+				if r.Method != "POST" {
+					t.Errorf("Expected POST method, got %v", r.Method)
+				}
+
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.serverStatus)
-				if err := json.NewEncoder(w).Encode(tt.serverResp); err != nil {
-					t.Errorf("Failed to encode response: %v", err)
+
+				if tt.serverResp != nil {
+					if err := json.NewEncoder(w).Encode(tt.serverResp); err != nil {
+						t.Errorf("Failed to encode response: %v", err)
+					}
+				} else {
+					// Write invalid JSON for testing
+					if _, err := w.Write([]byte("invalid json")); err != nil {
+						t.Errorf("Failed to write invalid JSON: %v", err)
+					}
 				}
 			}))
 			defer mockServer.Close()
 
-			// We need to modify the sendViaOAuth method to accept a custom URL for testing
-			// For now, we'll skip this test as it requires code changes
-			t.Skip("Requires modification to accept custom API endpoint for testing")
+			processor := &SlackProcessor{
+				config: Config{
+					Type:   "slack",
+					Target: "#general",
+				},
+			}
+
+			err := processor.sendViaOAuthWithURL(tt.token, tt.payload, mockServer.URL)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("sendViaOAuthWithURL() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err != nil && tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+				t.Errorf("sendViaOAuthWithURL() error = %v, want error containing %v", err, tt.errContains)
+			}
 		})
 	}
 }
-*/
+
+func TestSlackProcessor_sendViaOAuth_NetworkErrors(t *testing.T) {
+	processor := &SlackProcessor{
+		config: Config{
+			Type:   "slack",
+			Target: "#general",
+		},
+	}
+
+	// Test with invalid URL to simulate network error
+	err := processor.sendViaOAuthWithURL("xoxb-test", []byte(`{}`), "http://invalid-url-that-does-not-exist.local")
+	if err == nil {
+		t.Error("Expected network error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Slack API request failed") {
+		t.Errorf("Expected 'Slack API request failed' error, got: %v", err)
+	}
+}
+
+func TestSlackProcessor_sendViaOAuth_RequestCreationError(t *testing.T) {
+	processor := &SlackProcessor{
+		config: Config{
+			Type:   "slack",
+			Target: "#general",
+		},
+	}
+
+	// Test with invalid URL to cause request creation error
+	err := processor.sendViaOAuthWithURL("test", []byte(`{}`), "://invalid-url")
+	if err == nil {
+		t.Error("Expected request creation error, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to create Slack API request") {
+		t.Errorf("Expected 'failed to create Slack API request' error, got: %v", err)
+	}
+}
 
 func TestSlackProcessor_GetType(t *testing.T) {
 	processor := &SlackProcessor{
