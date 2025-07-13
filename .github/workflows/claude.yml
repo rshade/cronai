@@ -1,0 +1,87 @@
+name: Claude Assistant
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned, labeled]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  claude-response:
+    runs-on: ubuntu-latest
+    # Only run if the comment contains the trigger phrase or issue has the label
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Select Claude persona
+        id: persona
+        run: |
+          # Default persona
+          PERSONA_FILE=".github/claude/default.md"
+          
+          # Check for persona-specific labels
+          if echo '${{ toJson(github.event.issue.labels.*.name) }}' | grep -q "claude-reviewer"; then
+            PERSONA_FILE=".github/claude/code-reviewer.md"
+          elif echo '${{ toJson(github.event.issue.labels.*.name) }}' | grep -q "claude-engineer"; then
+            PERSONA_FILE=".github/claude/software-engineer.md"
+          elif echo '${{ toJson(github.event.issue.labels.*.name) }}' | grep -q "claude-assistant"; then
+            PERSONA_FILE=".github/claude/default.md"
+          fi
+          
+          # For PR events, check different label structure
+          if [[ "${{ github.event_name }}" == "pull_request"* ]]; then
+            if echo '${{ toJson(github.event.pull_request.labels.*.name) }}' | grep -q "claude-reviewer"; then
+              PERSONA_FILE=".github/claude/code-reviewer.md"
+            elif echo '${{ toJson(github.event.pull_request.labels.*.name) }}' | grep -q "claude-engineer"; then
+              PERSONA_FILE=".github/claude/software-engineer.md"
+            fi
+          fi
+          
+          echo "Selected persona file: $PERSONA_FILE"
+          
+          # Read the selected persona file
+          if [ -f "$PERSONA_FILE" ]; then
+            echo "SYSTEM_PROMPT<<EOF" >> $GITHUB_OUTPUT
+            cat "$PERSONA_FILE" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "SYSTEM_PROMPT=" >> $GITHUB_OUTPUT
+          fi
+          
+      - uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Use @claude as the trigger phrase
+          trigger_phrase: "@claude"
+          # Trigger on 'claude' label for issues
+          label_trigger: "claude"
+          # Load system prompt from selected persona
+          system_prompt: ${{ steps.persona.outputs.SYSTEM_PROMPT }}
+          # Environment variables for context
+          claude_env: |
+            PROJECT_NAME: CronAI
+            PROJECT_TYPE: go
+            LANGUAGE: go
+            MAIN_BRANCH: main
+          # Limit conversation turns to prevent runaway costs
+          max_turns: "10"
+          # Grant read access to actions for workflow analysis
+          additional_permissions: |
+            actions: read
+            contents: read

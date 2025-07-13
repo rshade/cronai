@@ -53,6 +53,7 @@ reviews:
     - "!dist/**"
     - "!CLAUDE.md"
     - "!.claude/**"
+    - "!.github/claude/**"
     - "!.cursor/**"
     - "!.cursor-*"
     - "!.vscode/**"

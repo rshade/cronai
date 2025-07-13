@@ -48,6 +48,28 @@ The processor system follows these patterns:
   - Automatic monitoring template detection for alert-style formatting
   - Comprehensive error handling with proper request/response lifecycle management
 
+### Claude GitHub Action Integration
+
+The project uses a sophisticated multi-persona Claude GitHub Assistant system:
+
+- **Persona System**: Three distinct personas activated by GitHub labels:
+  - `claude-reviewer`: Code reviewer persona for detailed technical review (.github/claude/code-reviewer.md)
+  - `claude-engineer`: Software engineer persona for implementation guidance (.github/claude/software-engineer.md)
+  - `claude-assistant`: General assistant persona for questions and help (.github/claude/default.md)
+- **Label-Based Selection**: The workflow automatically selects the appropriate persona based on issue/PR labels
+- **System Prompts**: Stored in `.github/claude/` directory as separate markdown files for version control
+- **Workflow Integration**: The GitHub Action workflow reads prompt files and passes them to the `system_prompt` parameter
+- **Issue Templates**: Three specialized templates that automatically add the correct persona labels
+- **Documentation**: Comprehensive setup guide in `.github/claude/README.md`
+
+#### Claude GitHub Action Configuration Patterns:
+- Use conditional logic in workflows to select different configurations based on labels
+- Add explicit permissions to workflows for security (`contents: read`, `issues: write`, `pull-requests: write`)
+- Set conversation limits (`max_turns: "10"`) to control API costs
+- Check out repository before reading local files in workflows
+- Pass project context via `claude_env` environment variables
+- The `anthropics/claude-code-action@beta` doesn't natively read prompt files - content must be read and passed as string
+
 ## Coding Standards and Robustness
 
 ### Error Handling
@@ -375,6 +397,20 @@ Special variables that are automatically populated:
 - `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
 - `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
 
+## GitHub CLI Commands
+
+### Label Management
+- `gh label create "LABEL_NAME" --description "Description" --color "HEX_COLOR" --repo OWNER/REPO` - Create GitHub labels with descriptions and colors
+- `gh label list --repo OWNER/REPO` - List all repository labels
+
+### Secrets Management
+- `gh api repos/OWNER/REPO/actions/secrets --method GET` - Check existing GitHub repository secrets
+- `gh secret set SECRET_NAME --repo OWNER/REPO` - Add repository secrets via CLI (prompts for secure input)
+
+### Repository Information
+- `gh repo view OWNER/REPO --json defaultBranchRef,name,owner,url` - Get repository details in JSON format
+- `gh auth status` - Check GitHub authentication status and token scopes
+
 ## Development Commands
 
 CronAI includes a Makefile to simplify common development tasks.
@@ -579,3 +615,81 @@ When working on CronAI, ensure all documentation stays up to date:
   - Example config files should demonstrate new features
 
 Always ensure documentation reflects the current state of the code and provides accurate guidance for users and contributors.
+
+## LangChainGo Integration Reference
+
+### Overview
+LangChainGo (github.com/tmc/langchaingo) is a Go implementation of the LangChain framework for building composable AI applications. It provides valuable patterns and abstractions that could enhance CronAI's architecture.
+
+### Key Architecture Patterns from LangChainGo
+
+#### 1. Model Abstraction
+- **Unified Interface**: All LLM providers implement a common `Model` interface with methods:
+  - `GenerateContent()`: For multi-modal, chat-like interactions
+  - `Call()`: Simplified text generation (being deprecated)
+- **Provider Support**: Extensive provider coverage including OpenAI, Anthropic, Google AI, AWS Bedrock, Ollama, Hugging Face, and many others
+- **Context-Aware**: All operations accept Go context for cancellation and timeout support
+
+#### 2. Composability Through Chains
+- **Chain Interface**: Enables sequential operation composition with:
+  - Input/output key definitions
+  - Memory management between steps
+  - Context propagation
+- **Execution Patterns**: Supports both synchronous (`Call()`) and asynchronous (`Apply()`) execution
+- **Memory Integration**: Built-in support for conversation memory and state persistence
+
+#### 3. Prompt Management
+- **Template System**: Rich prompt templating with:
+  - Variable substitution
+  - Chat-specific prompt templates
+  - Few-shot learning support
+  - Example selectors for dynamic prompting
+- **Message Abstraction**: Structured handling of chat messages and conversations
+
+### Integration Patterns Relevant to CronAI
+
+#### 1. Model Configuration
+- Uses functional options pattern for configuration
+- Provider-specific options while maintaining common interface
+- Example: `llm, err := openai.New(openai.WithAPIKey(key))`
+
+#### 2. Error Handling
+- Consistent error propagation through all layers
+- Context-based cancellation support
+- Graceful degradation patterns
+
+#### 3. Extensibility
+- Clear interface definitions for adding new providers
+- Modular design allows selective component usage
+- Plugin-like architecture for tools and integrations
+
+### Potential Applications for CronAI
+
+1. **Enhanced Model Support**: Could adopt LangChainGo's model abstraction pattern for more unified provider handling
+2. **Chain-Based Workflows**: Implement complex prompt sequences using chain patterns
+3. **Memory Integration**: Add conversation history for bot mode
+4. **Tool Integration**: Leverage tools pattern for extending CronAI capabilities
+5. **Prompt Templates**: Adopt the sophisticated prompt templating system
+
+### Best Practices from LangChainGo
+
+1. **Interface-First Design**: Define clear interfaces before implementation
+2. **Context Propagation**: Always pass context through the call stack
+3. **Modular Architecture**: Keep components loosely coupled
+4. **Provider Abstraction**: Hide provider-specific details behind common interfaces
+5. **Functional Options**: Use for flexible, backward-compatible configuration
+
+### Key Differences from CronAI's Current Approach
+
+1. **Abstraction Level**: LangChainGo provides higher-level abstractions (chains, agents) vs CronAI's direct model calls
+2. **Prompt Management**: More sophisticated templating vs CronAI's file-based approach
+3. **Composability**: Built for complex workflows vs CronAI's single-prompt execution
+4. **Memory/State**: Built-in conversation memory vs CronAI's stateless execution
+
+### Recommended Considerations
+
+If integrating LangChainGo patterns into CronAI:
+- Start with adopting the model interface pattern for better provider abstraction
+- Consider implementing a simplified chain pattern for multi-step workflows
+- Evaluate the prompt template system for more dynamic prompt generation
+- Look into memory components for bot mode context management
