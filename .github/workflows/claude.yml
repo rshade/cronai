@@ -56,9 +56,11 @@ jobs:
           
           # Read the selected persona file
           if [ -f "$PERSONA_FILE" ]; then
-            echo "SYSTEM_PROMPT<<CLAUDE_PERSONA_END" >> $GITHUB_OUTPUT
-            cat "$PERSONA_FILE" >> $GITHUB_OUTPUT
-            echo "CLAUDE_PERSONA_END" >> $GITHUB_OUTPUT
+            {
+              echo "SYSTEM_PROMPT<<CRONAI_CLAUDE_DELIMITER_XYZ123"
+              cat "$PERSONA_FILE"
+              echo "CRONAI_CLAUDE_DELIMITER_XYZ123"
+            } >> $GITHUB_OUTPUT
           else
             echo "SYSTEM_PROMPT=" >> $GITHUB_OUTPUT
           fi
