@@ -48,3 +48,4 @@ cron_prompts/queue_prompt.md
 # Docusaurus build output
 site-docs/build/
 site-docs/.docusaurus/
+CodeRabbitPrompt.md

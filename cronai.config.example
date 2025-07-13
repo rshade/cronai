@@ -42,6 +42,30 @@
 # - Comment: Adds formatted comment with model info and content
 # - PR: Creates PR with title and body (requires head_branch variable)
 
+# Slack Processor Examples (v0.0.2+)
+# ----------------------------------
+# Slack processor sends formatted messages to Slack channels
+# Supports both webhook URLs and OAuth tokens
+# Format: slack:#channel_name
+
+# Send daily report to Slack
+0 9 * * * claude daily_report slack:#general
+
+# Send monitoring alerts to specific Slack channel
+*/30 * * * * openai system_monitor slack:#monitoring
+
+# Send critical alerts with variables
+0 * * * * claude critical_check slack:#alerts severity=high,system=production
+
+# Send weekly reports with variables
+0 8 * * 1 claude weekly_report slack:#team-updates reportType=Weekly,date={{CURRENT_DATE}}
+
+# The Slack processor supports:
+# - Block-based message formatting
+# - Automatic monitoring template detection
+# - JSON payload validation
+# - Both webhook and OAuth authentication methods
+
 # Microsoft Teams Processor Examples (v0.0.2+)
 # --------------------------------------------
 # Teams processor sends formatted messages to Teams channels via webhooks
@@ -65,9 +89,6 @@
 # ============================================================================
 # POST-MVP PROCESSORS (Coming Soon)
 # ============================================================================
-
-# PLANNED: Slack integration
-# 0 8 * * * claude product_manager slack-pm-channel
 
 # PLANNED: Email integration
 # 0 9 1 * * claude report_template email-team@company.com reportType=Monthly

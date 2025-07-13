@@ -108,7 +108,7 @@ lint-golangci-pkg:
 lint-markdown:
 	@echo "Running markdownlint..."
 	@if command -v markdownlint >/dev/null 2>&1; then \
-		markdownlint . --ignore node_modules; \
+		markdownlint . --ignore-path .markdownlintignore; \
 	else \
 		echo "markdownlint not installed. Install with: npm install -g markdownlint-cli"; \
 	fi

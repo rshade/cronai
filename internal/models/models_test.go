@@ -490,3 +490,86 @@ func TestValidateConfiguration(t *testing.T) {
 		})
 	}
 }
+
+// TestModelError tests the ModelError type methods
+func TestModelError(t *testing.T) {
+	originalErr := errors.New("original error")
+	modelErr := &ModelError{
+		Model:   "claude",
+		Message: "API timeout",
+		Err:     originalErr,
+		Time:    time.Now(),
+		Retry:   2,
+	}
+
+	t.Run("Error method returns formatted string", func(t *testing.T) {
+		result := modelErr.Error()
+		expected := "[claude] retry 2: API timeout"
+		assert.Equal(t, expected, result)
+	})
+
+	t.Run("Unwrap method returns original error", func(t *testing.T) {
+		unwrapped := modelErr.Unwrap()
+		assert.Equal(t, originalErr, unwrapped)
+	})
+}
+
+// TestGetDefaultFallbackSequence tests uncovered fallback scenarios
+func TestGetDefaultFallbackSequence(t *testing.T) {
+	t.Run("unknown model falls back to default sequence", func(t *testing.T) {
+		sequence := getDefaultFallbackSequence("unknown-model")
+		expected := []string{"openai", "claude", "gemini"}
+		assert.Equal(t, expected, sequence)
+	})
+
+	t.Run("gemini model has correct fallback sequence", func(t *testing.T) {
+		sequence := getDefaultFallbackSequence("gemini")
+		expected := []string{"openai", "claude"}
+		assert.Equal(t, expected, sequence)
+	})
+
+	t.Run("claude model has correct fallback sequence", func(t *testing.T) {
+		sequence := getDefaultFallbackSequence("claude")
+		expected := []string{"openai", "gemini"}
+		assert.Equal(t, expected, sequence)
+	})
+
+	t.Run("openai model has correct fallback sequence", func(t *testing.T) {
+		sequence := getDefaultFallbackSequence("openai")
+		expected := []string{"claude", "gemini"}
+		assert.Equal(t, expected, sequence)
+	})
+}
+
+// TestExecuteModelEdgeCases tests edge cases in ExecuteModel
+func TestExecuteModelEdgeCases(t *testing.T) {
+	// Clean environment for tests
+	originalCreateModelClient := createModelClient
+	defer func() { createModelClient = originalCreateModelClient }()
+
+	t.Run("handles model client creation failure", func(t *testing.T) {
+		createModelClient = func(_ string, _ *config.ModelConfig) (ModelClient, error) {
+			return nil, errors.New("failed to create client")
+		}
+
+		response, err := ExecuteModel("openai", "test prompt", nil, "")
+		assert.Error(t, err)
+		assert.Nil(t, response)
+		assert.Contains(t, err.Error(), "failed to create client")
+	})
+
+	t.Run("handles all models failing", func(t *testing.T) {
+		createModelClient = func(modelName string, _ *config.ModelConfig) (ModelClient, error) {
+			return &MockModelClient{
+				ShouldFail:   true,
+				ErrorMessage: "all models fail",
+				Model:        modelName,
+			}, nil
+		}
+
+		response, err := ExecuteModel("openai", "test prompt", nil, "")
+		assert.Error(t, err)
+		assert.Nil(t, response)
+		assert.Contains(t, err.Error(), "all models failed")
+	})
+}

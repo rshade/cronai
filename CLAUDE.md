@@ -41,6 +41,35 @@ The processor system follows these patterns:
 - **Template Integration**: Processors integrate with the templating system for output formatting
 - **Error Handling**: Consistent error wrapping using the internal errors package
 - **GitHub Integration**: The GitHub processor uses the google/go-github library for API calls
+- **Slack Integration**: The Slack processor supports both webhook URLs and OAuth token methods for maximum flexibility
+  - Dual authentication: Uses `SLACK_TOKEN` (OAuth) or `SLACK_WEBHOOK_URL` (webhook)
+  - Automatic method selection based on available environment variables
+  - JSON payload validation with proper error handling
+  - Automatic monitoring template detection for alert-style formatting
+  - Comprehensive error handling with proper request/response lifecycle management
+
+### Claude GitHub Action Integration
+
+The project uses a sophisticated multi-persona Claude GitHub Assistant system:
+
+- **Persona System**: Three distinct personas activated by GitHub labels:
+  - `claude-reviewer`: Code reviewer persona for detailed technical review (.github/claude/code-reviewer.md)
+  - `claude-engineer`: Software engineer persona for implementation guidance (.github/claude/software-engineer.md)
+  - `claude-assistant`: General assistant persona for questions and help (.github/claude/default.md)
+- **Label-Based Selection**: The workflow automatically selects the appropriate persona based on issue/PR labels
+- **System Prompts**: Stored in `.github/claude/` directory as separate markdown files for version control
+- **Workflow Integration**: The GitHub Action workflow reads prompt files and passes them to the `system_prompt` parameter
+- **Issue Templates**: Three specialized templates that automatically add the correct persona labels
+- **Documentation**: Comprehensive setup guide in `.github/claude/README.md`
+
+#### Claude GitHub Action Configuration Patterns
+
+- Use conditional logic in workflows to select different configurations based on labels
+- Add explicit permissions to workflows for security (`contents: read`, `issues: write`, `pull-requests: write`)
+- Set conversation limits (`max_turns: "10"`) to control API costs
+- Check out repository before reading local files in workflows
+- Pass project context via `claude_env` environment variables
+- The `anthropics/claude-code-action@beta` doesn't natively read prompt files - content must be read and passed as string
 
 ## Coding Standards and Robustness
 
@@ -143,6 +172,43 @@ The processor system follows these patterns:
 - Mock external dependencies in tests
 - Use table-driven tests when appropriate
 
+### Testing Patterns
+
+#### OAuth/External API Testing Pattern
+
+When testing functions that call external APIs, create a testable wrapper function that accepts the API URL as a parameter:
+
+```go
+// Main function calls production API
+func (s *SlackProcessor) sendViaOAuth(token string, payload []byte) error {
+    return s.sendViaOAuthWithURL(token, payload, "https://slack.com/api/chat.postMessage")
+}
+
+// Testable wrapper accepts custom URL for mocking
+func (s *SlackProcessor) sendViaOAuthWithURL(token string, payload []byte, apiURL string) error {
+    req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payload))
+    // ... rest of implementation
+}
+```
+
+Test the wrapper function using `httptest.NewServer`:
+
+```go
+func TestSlackProcessor_sendViaOAuth(t *testing.T) {
+    mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Verify headers, method, etc.
+        w.WriteHeader(http.StatusOK)
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+    }))
+    defer mockServer.Close()
+    
+    err := processor.sendViaOAuthWithURL(token, payload, mockServer.URL)
+    // assertions...
+}
+```
+
+This pattern allows comprehensive testing without requiring real API keys while keeping production code clean.
+
 ### Git and CI/CD Practices
 
 - **ALWAYS use conventional commit format for ALL commits**:
@@ -176,6 +242,39 @@ The processor system follows these patterns:
   - Ensure all examples in documentation reflect the latest capabilities
 - Use GitHub Actions for CI/CD pipelines
 - Ensure CI passes before merging PRs
+- **CodeRabbit Configuration**: When creating new files or directories, check if they need to be added to `.coderabbit.yaml` configuration to ensure proper code review coverage
+
+### Common Issues & Solutions
+
+#### Test and Build Timeouts
+- **Issue**: `make test`, `make lint`, or other make commands timeout after 2 minutes
+- **Root Cause**: Go downloading dependencies during test execution
+- **Solutions**:
+  1. Run `go mod download` first to cache dependencies
+  2. Use package-specific targets: `make test-pkg`, `make lint-pkg` 
+  3. Run scripts directly: `./scripts/test-pkg.sh`, `./scripts/lint-all.sh`
+  4. Test individual packages: `go test ./internal/processor`
+
+#### Conventional Commit Check Failures
+- **Issue**: Historical commits don't follow conventional commit format
+- **Solution**: Requires maintainer intervention - cannot be fixed by modifying files
+- **Note**: Only affects existing commits in PR history, not new commits
+
+#### Markdown Linting Errors
+- **Issue**: Multiple markdown linting failures (MD022, MD026, MD032)
+- **Solution**: Often fixable with single edit by:
+  - Removing trailing punctuation from headings (`:` → ``)
+  - Adding blank lines before/after headings and lists
+  - Example: Fix `#### Heading:` + `- list item` → `#### Heading` + `\n` + `- list item`
+
+#### Coverage Failures
+- **Issue**: CodeCov patch/project failures due to low test coverage
+- **Focus Areas for Quick Wins**:
+  1. Error handling methods (`Error()`, `Unwrap()`)
+  2. Edge cases and fallback scenarios  
+  3. Input validation functions
+  4. Testable wrapper functions for external APIs
+- **Areas to Avoid**: Actual API execution methods (require real credentials)
 
 ### Changelog Management
 
@@ -367,6 +466,31 @@ Special variables that are automatically populated:
 - `{{CURRENT_DATE}}`: Current date in YYYY-MM-DD format
 - `{{CURRENT_TIME}}`: Current time in HH:MM:SS format
 - `{{CURRENT_DATETIME}}`: Current date and time in YYYY-MM-DD HH:MM:SS format
+
+## GitHub CLI Commands
+
+### Label Management
+- `gh label create "LABEL_NAME" --description "Description" --color "HEX_COLOR" --repo OWNER/REPO` - Create GitHub labels with descriptions and colors
+- `gh label list --repo OWNER/REPO` - List all repository labels
+
+### Secrets Management
+- `gh api repos/OWNER/REPO/actions/secrets --method GET` - Check existing GitHub repository secrets
+- `gh secret set SECRET_NAME --repo OWNER/REPO` - Add repository secrets via CLI (prompts for secure input)
+
+### Repository Information
+- `gh repo view OWNER/REPO --json defaultBranchRef,name,owner,url` - Get repository details in JSON format
+- `gh auth status` - Check GitHub authentication status and token scopes
+
+### PR and CI Monitoring
+- `gh pr checks` - Check PR CI status and failures for current branch
+- `gh pr checks 160` - Check CI status for specific PR number
+- `gh run view RUN_ID` - Get detailed GitHub Actions run information and logs
+- `gh run view RUN_ID --log-failed` - Get logs for failed jobs only
+
+### CodeRabbit Tools
+- `~/bin/coderabbit-fix PR_NUMBER --ai-format` - Generate AI-formatted CodeRabbit issue analysis with detailed fix instructions
+- `~/bin/coderabbit-fix PR_NUMBER --dry-run` - Show what would be changed without making actual changes
+- `~/bin/coderabbit-fix PR_NUMBER --prioritize` - Group issues by priority for systematic fixing
 
 ## Development Commands
 
@@ -572,3 +696,81 @@ When working on CronAI, ensure all documentation stays up to date:
   - Example config files should demonstrate new features
 
 Always ensure documentation reflects the current state of the code and provides accurate guidance for users and contributors.
+
+## LangChainGo Integration Reference
+
+### Overview
+LangChainGo (github.com/tmc/langchaingo) is a Go implementation of the LangChain framework for building composable AI applications. It provides valuable patterns and abstractions that could enhance CronAI's architecture.
+
+### Key Architecture Patterns from LangChainGo
+
+#### 1. Model Abstraction
+- **Unified Interface**: All LLM providers implement a common `Model` interface with methods:
+  - `GenerateContent()`: For multi-modal, chat-like interactions
+  - `Call()`: Simplified text generation (being deprecated)
+- **Provider Support**: Extensive provider coverage including OpenAI, Anthropic, Google AI, AWS Bedrock, Ollama, Hugging Face, and many others
+- **Context-Aware**: All operations accept Go context for cancellation and timeout support
+
+#### 2. Composability Through Chains
+- **Chain Interface**: Enables sequential operation composition with:
+  - Input/output key definitions
+  - Memory management between steps
+  - Context propagation
+- **Execution Patterns**: Supports both synchronous (`Call()`) and asynchronous (`Apply()`) execution
+- **Memory Integration**: Built-in support for conversation memory and state persistence
+
+#### 3. Prompt Management
+- **Template System**: Rich prompt templating with:
+  - Variable substitution
+  - Chat-specific prompt templates
+  - Few-shot learning support
+  - Example selectors for dynamic prompting
+- **Message Abstraction**: Structured handling of chat messages and conversations
+
+### Integration Patterns Relevant to CronAI
+
+#### 1. Model Configuration
+- Uses functional options pattern for configuration
+- Provider-specific options while maintaining common interface
+- Example: `llm, err := openai.New(openai.WithAPIKey(key))`
+
+#### 2. Error Handling
+- Consistent error propagation through all layers
+- Context-based cancellation support
+- Graceful degradation patterns
+
+#### 3. Extensibility
+- Clear interface definitions for adding new providers
+- Modular design allows selective component usage
+- Plugin-like architecture for tools and integrations
+
+### Potential Applications for CronAI
+
+1. **Enhanced Model Support**: Could adopt LangChainGo's model abstraction pattern for more unified provider handling
+2. **Chain-Based Workflows**: Implement complex prompt sequences using chain patterns
+3. **Memory Integration**: Add conversation history for bot mode
+4. **Tool Integration**: Leverage tools pattern for extending CronAI capabilities
+5. **Prompt Templates**: Adopt the sophisticated prompt templating system
+
+### Best Practices from LangChainGo
+
+1. **Interface-First Design**: Define clear interfaces before implementation
+2. **Context Propagation**: Always pass context through the call stack
+3. **Modular Architecture**: Keep components loosely coupled
+4. **Provider Abstraction**: Hide provider-specific details behind common interfaces
+5. **Functional Options**: Use for flexible, backward-compatible configuration
+
+### Key Differences from CronAI's Current Approach
+
+1. **Abstraction Level**: LangChainGo provides higher-level abstractions (chains, agents) vs CronAI's direct model calls
+2. **Prompt Management**: More sophisticated templating vs CronAI's file-based approach
+3. **Composability**: Built for complex workflows vs CronAI's single-prompt execution
+4. **Memory/State**: Built-in conversation memory vs CronAI's stateless execution
+
+### Recommended Considerations
+
+If integrating LangChainGo patterns into CronAI:
+- Start with adopting the model interface pattern for better provider abstraction
+- Consider implementing a simplified chain pattern for multi-step workflows
+- Evaluate the prompt template system for more dynamic prompt generation
+- Look into memory components for bot mode context management
