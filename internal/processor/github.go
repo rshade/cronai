@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v73/github"
 	"github.com/rshade/cronai/internal/errors"
 	"github.com/rshade/cronai/internal/logger"
 	"github.com/rshade/cronai/internal/models"
