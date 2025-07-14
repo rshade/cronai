@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v73/github"
 	"github.com/rshade/cronai/internal/models"
 	"github.com/rshade/cronai/internal/processor"
 	"github.com/rshade/cronai/pkg/config"

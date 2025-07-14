@@ -10,7 +10,7 @@ on:
     types: [submitted]
 
 permissions:
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
   actions: read
@@ -84,7 +84,7 @@ jobs:
             MAIN_BRANCH: main
           # Limit conversation turns to prevent runaway costs
           max_turns: "10"
-          # Grant read access to actions for workflow analysis
+          # Grant write access for making commits and read access for workflow analysis
           additional_permissions: |
             actions: read
-            contents: read
+            contents: write
