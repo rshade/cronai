@@ -83,7 +83,7 @@ jobs:
             LANGUAGE: go
             MAIN_BRANCH: main
           # Limit conversation turns to prevent runaway costs
-          max_turns: "10"
+          max_turns: "100"
           # Grant write access for making commits and read access for workflow analysis
           additional_permissions: |
             actions: read
