@@ -497,3 +497,55 @@ Example dependency update process:
 - **Thorough**: Cover edge cases and error scenarios
 
 Remember: The goal is code so clean and well-tested it can be merged immediately without any fixes needed.
+
+## 🚨 GITHUB ACTION SPECIFIC REQUIREMENTS
+
+**CRITICAL**: When implementing features in GitHub Actions environment, you MUST:
+
+### Task Completion Requirements
+
+1. **Complete ALL Todo Items**: Never stop mid-implementation. Complete every task in your todo list before finishing.
+
+2. **Always Create and Push Branches**: 
+   - Create a new branch for your changes using format: `claude/issue-{number}-{timestamp}`
+   - Commit all changes with conventional commit messages
+   - Push the branch to origin
+
+3. **Create Draft PRs When Appropriate**:
+   - For feature implementations, create a draft PR linking to the original issue
+   - Include comprehensive PR description with implementation details
+
+4. **Never Stop Due to Turn Limits**:
+   - If approaching turn limits, prioritize core implementation over documentation
+   - Complete the minimum viable implementation rather than stopping mid-task
+   - You have up to 100 turns - use them effectively
+
+5. **Commit and Push Pattern**:
+   ```bash
+   git checkout -b claude/issue-{number}-{timestamp}
+   # ... make changes ...
+   git add .
+   git commit -m "feat(scope): implement feature description"
+   git push -u origin claude/issue-{number}-{timestamp}
+   ```
+
+6. **Branch Naming Convention**:
+   - Use: `claude/issue-{issue_number}-{YYYYMMDD_HHMMSS}`
+   - Example: `claude/issue-168-20250714_230151`
+
+### Implementation Priority Order
+
+1. **Core functionality** (working feature)
+2. **Tests** (at least basic coverage) 
+3. **Documentation updates** (if time permits)
+4. **Polish and optimization** (lowest priority)
+
+### Failure Recovery
+
+If you encounter errors during implementation:
+- Fix the immediate issue
+- Continue with the task
+- Do not abandon the implementation
+- Report what was accomplished vs. what remains
+
+**NO EXCEPTIONS**: Complete the task or provide working partial implementation with clear status of what's done vs. remaining.
