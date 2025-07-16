@@ -29,6 +29,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
+      - name: Configure Git for Claude
+        run: |
+          git config --global commit.gpgsign false
+          git config --global user.name "Claude Bot"
+          git config --global user.email "claude@anthropic.com"
+          
       - name: Select Claude persona
         id: persona
         run: |
@@ -88,3 +94,14 @@ jobs:
           additional_permissions: |
             actions: read
             contents: write
+          # Expand tool access to include all necessary tools for implementation
+          additional_tools: |
+            Edit,MultiEdit,Glob,Grep,LS,Read,Write,
+            mcp__github_comment__update_claude_comment,
+            Bash(git add:*),Bash(git commit:*),Bash(git push:*),
+            Bash(git status:*),Bash(git diff:*),Bash(git log:*),
+            Bash(git rm:*),Bash(git config:*),Bash(git branch:*),
+            Bash(git checkout:*),Bash(git remote:*),Bash(git ls-remote:*),
+            Bash(make:*),Bash(go:*),Bash(npm:*),Bash(yarn:*),
+            Bash(mkdir:*),Bash(touch:*),Bash(rm:*),Bash(cp:*),Bash(mv:*),
+            TodoWrite,Task

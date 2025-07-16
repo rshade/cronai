@@ -549,3 +549,68 @@ If you encounter errors during implementation:
 - Report what was accomplished vs. what remains
 
 **NO EXCEPTIONS**: Complete the task or provide working partial implementation with clear status of what's done vs. remaining.
+
+## 🔍 MANDATORY: Tool Execution Validation
+
+**CRITICAL**: Before marking any task complete, you MUST verify actual execution:
+
+### Pre-Task Verification
+1. **Check starting state**: `git status` and `git branch -a`
+2. **Verify tool access**: Confirm you can actually execute required tools
+3. **Never assume success**: Always verify each operation completed
+
+### Post-Task Verification Protocol
+Before marking ANY task as completed, you MUST:
+
+1. **Verify file changes**: `git status` to confirm files were actually modified
+2. **Confirm branch exists**: `git branch -a` to verify branch creation
+3. **Validate remote branch**: `git ls-remote origin {branch-name}` to confirm push succeeded
+4. **Check actual commits**: `git log --oneline -n 3` to verify commits were made
+
+### Failure Reporting
+If ANY verification step fails, you MUST:
+- Report ACTUAL status: "Verification failed - X was not completed"
+- Explain what worked vs. what failed
+- Provide next steps to resolve
+- NEVER report success without verification
+
+### Branch Creation Protocol
+
+**MANDATORY SEQUENCE** (verify each step):
+
+1. **Create branch**: `git checkout -b claude/issue-{number}-{timestamp}`
+2. **Verify branch**: `git branch` (should show * on new branch)
+3. **Make changes**: Edit files as needed
+4. **Verify changes**: `git status` (should show modified files)
+5. **Add files**: `git add .`
+6. **Verify staging**: `git status` (should show files in staging)
+7. **Commit changes**: `git commit -m "feat: implement {description}"`
+8. **Verify commit**: `git log --oneline -n 1` (should show new commit)
+9. **Push branch**: `git push -u origin claude/issue-{number}-{timestamp}`
+10. **Verify remote**: `git ls-remote origin claude/issue-{number}-{timestamp}`
+
+**If step 10 fails, report: "Branch push failed - no remote branch exists"**
+
+### Implementation Status Reporting
+
+Always report with this format:
+```
+## ✅ Completed Tasks
+- [x] Task 1 - VERIFIED: git status shows changes
+- [x] Task 2 - VERIFIED: files exist at expected paths
+
+## ❌ Failed Tasks  
+- [ ] Task 3 - FAILED: git push returned error
+- [ ] Task 4 - FAILED: branch not found on remote
+
+## 🔄 Verification Results
+- Files modified: [list actual files from git status]
+- Branch created: [branch name from git branch]
+- Remote branch: [result from git ls-remote]
+- Commits made: [count from git log]
+```
+
+**NEVER USE PHRASES LIKE**:
+- "Implementation complete" (without verification)
+- "Successfully created" (without confirming)
+- "Ready for review" (without validated branch/PR)
