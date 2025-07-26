@@ -39,23 +39,23 @@ jobs:
         id: persona
         run: |
           # Default persona
-          PERSONA_FILE=".github/claude/default.md"
+          PERSONA_FILE=".claude/agents/claude-assistant.md"
           
           # Check for persona-specific labels
           if echo '${{ toJson(github.event.issue.labels.*.name) }}' | grep -q "claude-reviewer"; then
-            PERSONA_FILE=".github/claude/code-reviewer.md"
+            PERSONA_FILE=".claude/agents/code-reviewer.md"
           elif echo '${{ toJson(github.event.issue.labels.*.name) }}' | grep -q "claude-engineer"; then
-            PERSONA_FILE=".github/claude/software-engineer.md"
+            PERSONA_FILE=".claude/agents/software-engineer.md"
           elif echo '${{ toJson(github.event.issue.labels.*.name) }}' | grep -q "claude-assistant"; then
-            PERSONA_FILE=".github/claude/default.md"
+            PERSONA_FILE=".claude/agents/claude-assistant.md"
           fi
           
           # For PR events, check different label structure
           if [[ "${{ github.event_name }}" == "pull_request"* ]]; then
             if echo '${{ toJson(github.event.pull_request.labels.*.name) }}' | grep -q "claude-reviewer"; then
-              PERSONA_FILE=".github/claude/code-reviewer.md"
+              PERSONA_FILE=".claude/agents/code-reviewer.md"
             elif echo '${{ toJson(github.event.pull_request.labels.*.name) }}' | grep -q "claude-engineer"; then
-              PERSONA_FILE=".github/claude/software-engineer.md"
+              PERSONA_FILE=".claude/agents/software-engineer.md"
             fi
           fi
           
