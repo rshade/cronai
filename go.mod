@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/anthropics/anthropic-sdk-go v1.12.0
 	github.com/google/generative-ai-go v0.20.1
-	github.com/google/go-github/v73 v73.0.0
+	github.com/google/go-github/v74 v74.0.0
 	github.com/google/go-github/v74 v74.0.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/joho/godotenv v1.5.1
