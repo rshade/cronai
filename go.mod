@@ -3,7 +3,7 @@ module github.com/rshade/cronai
 go 1.24.2
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.13.0
+	github.com/anthropics/anthropic-sdk-go v1.14.0
 	github.com/google/generative-ai-go v0.20.1
 	github.com/google/go-github/v73 v73.0.0
 	github.com/google/go-github/v74 v74.0.0
