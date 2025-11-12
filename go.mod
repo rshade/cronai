@@ -6,7 +6,7 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.17.0
 	github.com/google/generative-ai-go v0.20.1
 	github.com/google/go-github/v73 v73.0.0
-	github.com/google/go-github/v74 v74.0.0
+	github.com/google/go-github/v78 v78.0.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
