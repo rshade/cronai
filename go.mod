@@ -1,6 +1,6 @@
 module github.com/rshade/cronai
 
-go 1.24.2
+go 1.25.0
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.18.0
@@ -15,7 +15,7 @@ require (
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/oauth2 v0.33.0
+	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.256.0
 )
 
